@@ -3,6 +3,8 @@ var gl = require("../index.js");
 var width   = 64;
 var height  = 64;
 
+console.log("here2");
+
 //Create texture
 var tex = gl.createTexture();
 gl.bindTexture(gl.TEXTURE_2D, tex)

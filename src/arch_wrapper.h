@@ -4,10 +4,6 @@
 #if defined (__APPLE__) || defined(MACOSX)
 
     #include <AGL/agl.h>
-    /*
-    #include <OpenGL/gl3.h>
-    #include <OpenGL/gl3ext.h>
-    */
 
     #define USE_AGL                           1
     #define GL_CONTEXT_TYPE                   AGLContext
@@ -35,6 +31,7 @@
 
 #else
 
+    //X11 system
     //Not implemented
 
 #endif

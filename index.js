@@ -1,12 +1,26 @@
-if(typeof window !== "undefined") {
-  //Create browser based gl context
-  var canvas = document.createElement("canvas");
-  var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-  if(!gl) {
-    module.exports = null;
+var WebGLContext;
+if(typeof(window) === "undefined") {
+  WebGLContext = (require)("./webgl.js");
+}
+
+//Creates a WebGL contex
+function createContext() {
+  if(process.browser) {
+    //Create browser based gl context
+    var canvas = document.createElement("canvas");
+    var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    if(!gl) {
+      return null;
+    } else {
+      return gl;
+    }
   } else {
-    module.exports = gl;
+    console.log("here!!");
+    return new WebGLContext();
   }
-} else {
-  module.exports = require("./" + "webgl.js");
+}
+
+module.exports = createContext();
+if(module.exports) {
+  module.exports.createContext = createContext;
 }
