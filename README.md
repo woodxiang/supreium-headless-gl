@@ -1,15 +1,15 @@
 headless-gl
 ===========
-This is a gutted version of [node-webgl](https://github.com/mikeseven/node-webgl) with no external dependencies or fancy drawing stuff.  You can use it to create OpenGL contexts for GPGPU programming in node.  In the browser, it just creates an ordinary WebGL context.
+This is a gutted version of [node-webgl](https://github.com/mikeseven/node-webgl) with no external dependencies, DOM emulation or window handling.  You can use it to create WebGL contexts for GPGPU programming and server-side rendering in node.  It should also work in browsers that support WebGL.
 
 
 Installation
 ============
-On OS X or Linux, you should be able to just do:
+Just do:
 
     npm install headless-gl
     
-I haven't tested this on Windows, but it should work.
+Currently only works on OS X.  I think Linux should be easy, Windows may be more complicated.
 
 Usage
 =====
@@ -23,8 +23,7 @@ Then you can use all the ordinary WebGL methods, with the exception that there i
 
 Why use this thing instead of node-webgl?
 -----------------------------------------
-It depends on what you are trying to do.  node-webgl is good if you are making a graphical application like a game.  On the other hand, because headless-gl does not create any windows, it is suitable for running on a server environment.  This means that you can use it to generate figures using OpenGL or perform GPGPU computations using shaders.  It also faithfully emulates the WebGL api, so you can use headless-gl to debug certain GPU algorithms without spinning up a browser.
-
+It depends on what you are trying to do.  [node-webgl](https://github.com/mikeseven/node-webgl) is good if you are making a graphical application like a game.  On the other hand, because headless-gl does not create any windows, it is suitable for running in a server environment.  This means that you can use it to generate figures using OpenGL or perform GPGPU computations using shaders.
 
 Credits
 =======
