@@ -17,8 +17,7 @@ To get a handle on the headless OpenGL context, just do:
 
     var gl = require("gl");
 
-Then you can use all the ordinary WebGL methods, with the exception that there is no way to load up images.
-
+Then you can use all the ordinary [WebGL methods](https://www.khronos.org/registry/webgl/specs/1.0/).
 
 
 Why use this thing instead of node-webgl?
