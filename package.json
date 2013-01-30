@@ -1,0 +1,25 @@
+{
+  "name": "headless-gl",
+  "version": "0.0.0",
+  "description": "Creates a WebGL context without a window",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "node test/fbo.js",
+    "install": "node-gyp rebuild"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mikolalysenko/headless-gl.git"
+  },
+  "keywords": [
+    "webgl", "opengl", "gl", "headless", "server", "gpgpu"
+  ],
+  "author": "Mikola Lysenko",
+  "license": "BSD",
+  "gypfile": true,
+  "readmeFilename": "README.md",
+  "gitHead": "7744c0aec3707ac931ce3534d8c13fe0c8b7147b"
+}
