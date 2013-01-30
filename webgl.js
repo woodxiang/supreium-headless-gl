@@ -1,5 +1,7 @@
 var gl = module.exports = require('./build/Release/webgl.node');
 
+gl.Init();
+
 gl.WebGLProgram=function (_) { this._ = _; }
 gl.WebGLShader=function (_) { this._ = _; }
 gl.WebGLBuffer=function (_) { this._ = _; }

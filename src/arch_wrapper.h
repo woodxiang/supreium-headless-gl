@@ -3,12 +3,14 @@
 
 #if defined (__APPLE__) || defined(MACOSX)
 
-    #include  <AGL/agl.h>
-    #include "GLES2/gl2.h"
-    #include "GLES2/gl2ext.h"
+    #include <AGL/agl.h>
+    /*
+    #include <OpenGL/gl3.h>
+    #include <OpenGL/gl3ext.h>
+    */
 
-    #define   USE_AGL           1
-    #define   GL_CONTEXT_TYPE   AGLContext
+    #define USE_AGL                           1
+    #define GL_CONTEXT_TYPE                   AGLContext
 
     #define GL_ALIASED_POINT_SIZE_RANGE       0x846D
     #define GL_RED_BITS                       0x0D52
@@ -20,10 +22,9 @@
     #define GL_LUMINANCE                      0x1909
     #define GL_LUMINANCE_ALPHA                0x190A
     #define GL_GENERATE_MIPMAP_HINT           0x8192
-    #define glClearDepthf glClearDepth
-    #define glDepthRangef glDepthRange
-
-
+    #define glClearDepthf                     glClearDepth
+    #define glDepthRangef                     glDepthRange
+    
 #elif defined(WIN32)
 
     //Not implemented

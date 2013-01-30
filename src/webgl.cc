@@ -96,7 +96,7 @@ GL_CONTEXT_TYPE   gl_context = NULL;
 JS_METHOD(Init) {
   HandleScope scope;
   
-  #if defined(USE_AGL)
+  #ifdef USE_AGL
   
     //Create AGL context
     GLint pixelAttr[] = {
@@ -109,6 +109,7 @@ JS_METHOD(Init) {
   
     AGLPixelFormat aglPixelFormat = aglChoosePixelFormat(NULL, 0, pixelAttr);
     if (aglPixelFormat == NULL) {
+      fprintf(stderr, "Error creating GL context!\n");
       ThrowException(JS_STR("aglChoosePixelFormat failed\n"));
       return scope.Close(JS_INT(1));
     }
@@ -116,12 +117,14 @@ JS_METHOD(Init) {
     gl_context = aglCreateContext(aglPixelFormat, NULL);
     aglDestroyPixelFormat(aglPixelFormat);
     if (gl_context == NULL) {
+      fprintf(stderr, "Error creating GL context!\n");
       ThrowException(JS_STR("aglCreateContext failed\n"));
       return scope.Close(JS_INT(1));
     }
   
     if (!aglSetCurrentContext(gl_context)) {
-      printf("aglSetCurrentContext failed\n");
+      fprintf(stderr, "aglSetCurrentContext failed\n");
+      ThrowException(JS_STR("aglSetCurrentContext failed\n"));
       return scope.Close(JS_INT(1));
     }
   
@@ -457,9 +460,6 @@ JS_METHOD(CreateShader) {
   HandleScope scope;
 
   GLuint shader=glCreateShader(args[0]->Int32Value());
-  #ifdef LOGGING
-  cout<<"createShader "<<shader<<endl;
-  #endif
   registerGLObj(GLOBJECT_TYPE_SHADER, shader);
   return scope.Close(Number::New(shader));
 }
@@ -537,9 +537,6 @@ JS_METHOD(CreateProgram) {
   HandleScope scope;
 
   GLuint program=glCreateProgram();
-  #ifdef LOGGING
-  cout<<"createProgram "<<program<<endl;
-  #endif
   registerGLObj(GLOBJECT_TYPE_PROGRAM, program);
   return scope.Close(Number::New(program));
 }
@@ -642,11 +639,10 @@ JS_METHOD(Enable) {
 JS_METHOD(CreateTexture) {
   HandleScope scope;
 
+  printf("Creating texture\n");
+
   GLuint texture;
   glGenTextures(1, &texture);
-  #ifdef LOGGING
-  cout<<"createTexture "<<texture<<endl;
-  #endif
   registerGLObj(GLOBJECT_TYPE_TEXTURE, texture);
   return scope.Close(Number::New(texture));
 }
@@ -729,9 +725,6 @@ JS_METHOD(CreateBuffer) {
 
   GLuint buffer;
   glGenBuffers(1, &buffer);
-  #ifdef LOGGING
-  cout<<"createBuffer "<<buffer<<endl;
-  #endif
   registerGLObj(GLOBJECT_TYPE_BUFFER, buffer);
   return scope.Close(Number::New(buffer));
 }
@@ -752,9 +745,6 @@ JS_METHOD(CreateFramebuffer) {
 
   GLuint buffer;
   glGenFramebuffers(1, &buffer);
-  #ifdef LOGGING
-  cout<<"createFrameBuffer "<<buffer<<endl;
-  #endif
   registerGLObj(GLOBJECT_TYPE_FRAMEBUFFER, buffer);
   return scope.Close(Number::New(buffer));
 }
@@ -1258,9 +1248,6 @@ JS_METHOD(CreateRenderbuffer) {
 
   GLuint renderbuffers;
   glGenRenderbuffers(1,&renderbuffers);
-  #ifdef LOGGING
-  cout<<"createRenderBuffer "<<renderbuffers<<endl;
-  #endif
   registerGLObj(GLOBJECT_TYPE_RENDERBUFFER, renderbuffers);
   return scope.Close(Number::New(renderbuffers));
 }
@@ -1824,27 +1811,6 @@ void AtExit() {
 
   vector<GLObj*>::iterator it;
 
-  #ifdef LOGGING
-  cout<<"WebGL AtExit() called"<<endl;
-  cout<<"  # objects allocated: "<<globjs.size()<<endl;
-  it = globjs.begin();
-  while(globjs.size() && it != globjs.end()) {
-    GLObj *obj=*it;
-    cout<<"[";
-    switch(obj->type) {
-    case GLOBJECT_TYPE_BUFFER: cout<<"buffer"; break;
-    case GLOBJECT_TYPE_FRAMEBUFFER: cout<<"framebuffer"; break;
-    case GLOBJECT_TYPE_PROGRAM: cout<<"program"; break;
-    case GLOBJECT_TYPE_RENDERBUFFER: cout<<"renderbuffer"; break;
-    case GLOBJECT_TYPE_SHADER: cout<<"shader"; break;
-    case GLOBJECT_TYPE_TEXTURE: cout<<"texture"; break;
-    };
-    cout<<": "<<obj->obj<<"] ";
-    ++it;
-  }
-  cout<<endl;
-  #endif
-
   it = globjs.begin();
   while(globjs.size() && it != globjs.end()) {
     GLObj *globj=*it;
@@ -1852,45 +1818,24 @@ void AtExit() {
 
     switch(globj->type) {
     case GLOBJECT_TYPE_PROGRAM:
-      #ifdef LOGGING
-      cout<<"  Destroying GL program "<<obj<<endl;
-      #endif
       glDeleteProgram(obj);
       break;
     case GLOBJECT_TYPE_BUFFER:
-      #ifdef LOGGING
-      cout<<"  Destroying GL buffer "<<obj<<endl;
-      #endif
       glDeleteBuffers(1,&obj);
       break;
     case GLOBJECT_TYPE_FRAMEBUFFER:
-      #ifdef LOGGING
-      cout<<"  Destroying GL frame buffer "<<obj<<endl;
-      #endif
       glDeleteFramebuffers(1,&obj);
       break;
     case GLOBJECT_TYPE_RENDERBUFFER:
-      #ifdef LOGGING
-      cout<<"  Destroying GL render buffer "<<obj<<endl;
-      #endif
       glDeleteRenderbuffers(1,&obj);
       break;
     case GLOBJECT_TYPE_SHADER:
-      #ifdef LOGGING
-      cout<<"  Destroying GL shader "<<obj<<endl;
-      #endif
       glDeleteShader(obj);
       break;
     case GLOBJECT_TYPE_TEXTURE:
-      #ifdef LOGGING
-      cout<<"  Destroying GL texture "<<obj<<endl;
-      #endif
       glDeleteTextures(1,&obj);
       break;
     default:
-      #ifdef LOGGING
-      cout<<"  Unknown object "<<obj<<endl;
-      #endif
       break;
     }
     delete globj;
@@ -1901,7 +1846,7 @@ void AtExit() {
   
   
   //Destroy context
-  #if defined(USE_AGL)
+  #ifdef USE_AGL
     aglDestroyContext(gl_context);
   #else
   
