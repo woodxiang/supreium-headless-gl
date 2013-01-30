@@ -15,7 +15,6 @@ function createContext() {
       return gl;
     }
   } else {
-    console.log("here!!");
     return new WebGLContext();
   }
 }

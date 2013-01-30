@@ -51,6 +51,17 @@ Here is an example that creates an offscreen framebuffer, clears it to red, read
     }
 
 
+Multiple Contexts
+=================
+You can create multiple WebGL contexts if you like.  To do this, just call:
+
+    var my_context = gl.createContext();
+    
+Which will work just like any other WebGL context.  To get rid of a context when you are done with it, jst call destroy() on it:
+
+    my_context.destroy();
+
+
 Why use this thing instead of node-webgl?
 -----------------------------------------
 It depends on what you are trying to do.  [node-webgl](https://github.com/mikeseven/node-webgl) is good if you are making a graphical application like a game.  On the other hand, because headless-gl does not create any windows, it is suitable for running in a server environment.  This means that you can use it to generate figures using OpenGL or perform GPGPU computations using shaders.
