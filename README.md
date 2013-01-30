@@ -7,7 +7,7 @@ Installation
 ============
 Just do:
 
-    npm install headless-gl
+    npm install gl
     
 Currently only works on OS X.  I think Linux should be easy, Windows may be more complicated.
 
@@ -15,7 +15,7 @@ Usage
 =====
 To get a handle on the headless OpenGL context, just do:
 
-    var gl = require("headless-gl");
+    var gl = require("gl");
 
 Then you can use all the ordinary WebGL methods, with the exception that there is no way to load up images.
 
