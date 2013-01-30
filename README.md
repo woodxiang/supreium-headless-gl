@@ -9,7 +9,7 @@ Just do:
 
     npm install gl
     
-Currently only works on OS X.  I think Linux should be easy, Windows may be more complicated.
+Currently only works on OS X.  I think adding Linux should be easy, though Windows may be more complicated.  If you have access to working Linux or Windows systems and want to contribute, please let me know.
 
 Usage
 =====
@@ -18,6 +18,37 @@ To get a handle on the headless OpenGL context, just do:
     var gl = require("gl");
 
 Then you can use all the ordinary [WebGL methods](https://www.khronos.org/registry/webgl/specs/1.0/).
+
+Example
+=======
+Here is an example that creates an offscreen framebuffer, clears it to red, reads the result and writes the image to stdout as a [PPM](http://netpbm.sourceforge.net/doc/ppm.html) :
+
+    //Create context
+    var gl = require("gl");
+    var width   = 64;
+    var height  = 64;
+
+    //Create texture
+    var tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+    //Create frame buffer
+    var fbo = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+
+    //Clear screen to red
+    gl.clearColor(1.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    //Write output
+    var pixels = new Uint8Array(width * height * 3);
+    gl.readPixels(0, 0, width, height, gl.RGB, gl.UNSIGNED_BYTE, pixels);
+    process.stdout.write(["P3\n# gl.ppm\n", width, " ", height, "\n255\n"].join(""));
+    for(var i=0; i<pixels.length; ++i) {
+      process.stdout.write(pixels[i] + " ");
+    }
 
 
 Why use this thing instead of node-webgl?

@@ -639,8 +639,6 @@ JS_METHOD(Enable) {
 JS_METHOD(CreateTexture) {
   HandleScope scope;
 
-  printf("Creating texture\n");
-
   GLuint texture;
   glGenTextures(1, &texture);
   registerGLObj(GLOBJECT_TYPE_TEXTURE, texture);
