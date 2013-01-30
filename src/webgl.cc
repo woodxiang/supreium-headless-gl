@@ -90,17 +90,47 @@ inline Type* getArrayData(Local<Value> arg, int* num = NULL) {
   return data;
 }
 
+//Store reference to context
+GL_CONTEXT_TYPE   gl_context = NULL;
+
 JS_METHOD(Init) {
   HandleScope scope;
-  /*
-  GLenum err = glewInit();
-  if (GLEW_OK != err)
-  {
-    fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
-    return scope.Close(JS_INT(-1));
-  }
-  //fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
-  */
+  
+  #if defined(USE_AGL)
+  
+    //Create AGL context
+    GLint pixelAttr[] = {
+      AGL_RGBA,
+      AGL_DOUBLEBUFFER,
+      AGL_PIXEL_SIZE, 32,
+      AGL_ACCELERATED,
+      AGL_NONE
+    };
+  
+    AGLPixelFormat aglPixelFormat = aglChoosePixelFormat(NULL, 0, pixelAttr);
+    if (aglPixelFormat == NULL) {
+      ThrowException(JS_STR("aglChoosePixelFormat failed\n"));
+      return scope.Close(JS_INT(1));
+    }
+
+    gl_context = aglCreateContext(aglPixelFormat, NULL);
+    aglDestroyPixelFormat(aglPixelFormat);
+    if (gl_context == NULL) {
+      ThrowException(JS_STR("aglCreateContext failed\n"));
+      return scope.Close(JS_INT(1));
+    }
+  
+    if (!aglSetCurrentContext(gl_context)) {
+      printf("aglSetCurrentContext failed\n");
+      return scope.Close(JS_INT(1));
+    }
+  
+  #else
+  
+    ThrowException(JS_STR("Unsupported platform"));
+  
+  #endif
+  
   return scope.Close(JS_INT(0));
 }
 
@@ -1103,7 +1133,7 @@ JS_METHOD(IsEnabled) {
   GLenum cap = args[0]->Int32Value();
 
   bool ret=glIsEnabled(cap)!=0;
-  return scope.Close(Boolean::New(ret));
+  return scope.Close(v8::Boolean::New(ret));
 }
 
 JS_METHOD(LineWidth) {
@@ -1325,7 +1355,7 @@ JS_METHOD(GetVertexAttribOffset) {
 JS_METHOD(IsBuffer) {
   HandleScope scope;
 
-  return scope.Close(Boolean::New(glIsBuffer(args[0]->Uint32Value())!=0));
+  return scope.Close(v8::Boolean::New(glIsBuffer(args[0]->Uint32Value())!=0));
 }
 
 JS_METHOD(IsFramebuffer) {
@@ -1868,6 +1898,16 @@ void AtExit() {
   }
 
   globjs.clear();
+  
+  
+  //Destroy context
+  #if defined(USE_AGL)
+    aglDestroyContext(gl_context);
+  #else
+  
+    //Not implemented yet
+    
+  #endif
 }
 
 } // end namespace webgl
