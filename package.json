@@ -1,5 +1,5 @@
 {
-  "name": "headless-gl",
+  "name": "gl",
   "version": "0.0.0",
   "description": "Creates a WebGL context without a window",
   "main": "index.js",
