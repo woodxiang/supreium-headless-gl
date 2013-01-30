@@ -6,8 +6,8 @@
  */
 
 
+#include "arch_wrapper.h"
 #include "webgl.h"
-#include "image.h"
 #include <cstdlib>
 
 #define JS_GL_CONSTANT(name) target->Set(JS_STR( #name ), JS_INT(GL_ ## name))
@@ -16,10 +16,7 @@ extern "C" {
 void init(Handle<Object> target)
 {
   atexit(webgl::AtExit);
-  atexit(Image::AtExit);
-
-  Image::Initialize(target);
-
+  
   NODE_SET_METHOD(target, "Init", webgl::Init);
  
   NODE_SET_METHOD(target, "uniform1f", webgl::Uniform1f);

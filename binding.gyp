@@ -15,7 +15,6 @@
       ],
       'sources': [ 
           'src/bindings.cc',
-          'src/image.cc',
           'src/webgl.cc',
       ],
       'include_dirs': [
@@ -25,12 +24,10 @@
         './deps/<(platform)',
       ],
       'conditions': [
-        ['OS=="mac"', {'libraries': ['-lGLEW','-lfreeimage','-framework OpenGL']}],
-        ['OS=="linux"', {'libraries': ['-lfreeimage','-lGLEW','-lGL']}],
+        ['OS=="mac"', {'libraries': ['-framework OpenGL']}],
+        ['OS=="linux"', {'libraries': ['-lGL']}],
         ['OS=="win"', {
-          'libraries': [
-            'freeimage64.lib','glew64s.lib','opengl32.lib'
-            ],
+          'libraries': [ 'opengl32.lib' ],
           'defines' : [
             'WIN32_LEAN_AND_MEAN',
             'VC_EXTRALEAN'

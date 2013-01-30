@@ -2,11 +2,10 @@
 #include <vector>
 #include <iostream>
 
+#include "arch_wrapper.h"
 #include "webgl.h"
-#include "image.h"
 #include <node.h>
 #include <node_buffer.h>
-#include <GL/glew.h>
 
 #ifdef _WIN32
   #define  strcasestr(s, t) strstr(strupr(s), t)
@@ -93,14 +92,15 @@ inline Type* getArrayData(Local<Value> arg, int* num = NULL) {
 
 JS_METHOD(Init) {
   HandleScope scope;
+  /*
   GLenum err = glewInit();
   if (GLEW_OK != err)
   {
-    /* Problem: glewInit failed, something is seriously wrong. */
     fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
     return scope.Close(JS_INT(-1));
   }
   //fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
+  */
   return scope.Close(JS_INT(0));
 }
 
