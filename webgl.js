@@ -1101,4 +1101,3 @@ gl.viewport = function viewport(x, y, width, height) {
   }
   return _viewport.call(this, x, y, width, height);
 }
-
