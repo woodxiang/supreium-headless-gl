@@ -1,0 +1,3 @@
+[submodule "WebGL"]
+	path = WebGL
+	url = git://github.com/KhronosGroup/WebGL.git
