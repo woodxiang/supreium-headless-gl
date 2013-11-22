@@ -2,6 +2,11 @@ headless-gl
 ===========
 This is a gutted version of [node-webgl](https://github.com/mikeseven/node-webgl) with no external dependencies, DOM emulation or window handling.  You can use it to create WebGL contexts for GPGPU programming and server-side rendering in node.  It should also work in browsers that support WebGL.
 
+Dependencies
+============
+
+* Opengl
+* GLEW (if running on Linux)
 
 Installation
 ============
@@ -9,7 +14,7 @@ Just do:
 
     npm install gl
     
-Currently only works on OS X.  I think adding Linux should be easy, though Windows may be more complicated.  If you have access to working Linux or Windows systems and want to contribute, please let me know.
+Currently only works on OS X and Linux. If you have access to working Windows system and want to contribute, please let me know.
 
 Usage
 =====
@@ -24,10 +29,10 @@ Example
 Here is an example that creates an offscreen framebuffer, clears it to red, reads the result and writes the image to stdout as a [PPM](http://netpbm.sourceforge.net/doc/ppm.html) :
 
     //Create context
-    var gl = require("gl");
     var width   = 64;
     var height  = 64;
-
+    var gl = require("gl").createContext(width, height);
+    
     //Create texture
     var tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex)
@@ -47,7 +52,7 @@ Here is an example that creates an offscreen framebuffer, clears it to red, read
     gl.readPixels(0, 0, width, height, gl.RGB, gl.UNSIGNED_BYTE, pixels);
     process.stdout.write(["P3\n# gl.ppm\n", width, " ", height, "\n255\n"].join(""));
     for(var i=0; i<pixels.length; ++i) {
-      process.stdout.write(pixels[i] + " ");
+        process.stdout.write(pixels[i] + " ");
     }
 
 

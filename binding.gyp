@@ -25,7 +25,7 @@
       ],
       'conditions': [
         ['OS=="mac"', {'libraries': ['-framework AGL', '-framework OpenGL']}],
-        ['OS=="linux"', {'libraries': ['-lGL']}],
+        ['OS=="linux"', {'libraries': ['-lGL', '-lGLEW']}],
         ['OS=="win"', {
           'libraries': [ 'opengl32.lib' ],
           'defines' : [
