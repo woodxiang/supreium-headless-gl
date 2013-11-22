@@ -4,7 +4,6 @@
 #include <v8.h>
 #include <node.h>
 #include <node_buffer.h>
-#include "arch_wrapper.h"
 #include "webgl.h"
 #include "macros.h"
 
@@ -41,7 +40,7 @@ WebGL*  active_context = NULL;
 // Context creation and object management
 ////////////////////////////////////////////////////////////////////////
 
-WebGL::WebGL() :
+WebGL::WebGL(int width, int height) :
   initialized(false),
   atExit(false) {
   
@@ -73,16 +72,42 @@ WebGL::WebGL() :
       fprintf(stderr, "aglSetCurrentContext failed\n");
       return;
     }
+    initialized = true;
+  #endif
+
+  #ifdef USE_GLX
+    
+    display = XOpenDisplay(0);
+
+    static int attributeList[] = { GLX_RGBA, GLX_DOUBLEBUFFER, GLX_RED_SIZE, 1, GLX_GREEN_SIZE, 1, GLX_BLUE_SIZE, 1, None };
+    XVisualInfo *vi = glXChooseVisual(display, DefaultScreen(display),attributeList);
+   
+    //oldstyle context:
+    gl_context = glXCreateContext(display, vi, 0, GL_TRUE);
+
+    pixmap = XCreatePixmap (display, DefaultRootWindow(display), width, height, 24);
+    glXPixmap = glXCreateGLXPixmap(display, vi, pixmap);
+
+    if (!glXMakeCurrent(display, glXPixmap, gl_context)) {
+      fprintf(stderr, "Failed to initialize GLX\n");
+      return;
+    }
+
+    // Initialize GLEW
+    if (glewInit() != GLEW_OK) {
+      fprintf(stderr, "Failed to initialize GLEW\n");
+      return;
+    }
+
+    initialized = true;
+  #endif
   
-  #else
-  
+  if (!initialized) {
     initialized = false;
     fprintf(stderr, "Unsupported system\n");
     return;
-  
-  #endif
-  
-  initialized = true;
+  }
+
   contexts.push_back(this);
 }
 
@@ -139,9 +164,12 @@ void WebGL::dispose() {
   //Destroy context
   #ifdef USE_AGL
     aglDestroyContext(gl_context);
-  #else
+  #endif
   
-    //Not implemented yet
+  #ifdef USE_GLX
+    glXDestroyContext(display, gl_context);
+    glXDestroyPixmap (display, glXPixmap);
+    XFreePixmap (display, pixmap);
   #endif
 }
 
@@ -157,10 +185,12 @@ bool WebGL::checkContext() {
 
   #ifdef USE_AGL
     return aglSetCurrentContext(gl_context);
-  #else
-    //Not implemented yet
-    return false;
   #endif
+  
+  #ifdef USE_GLX
+    return true;
+  #endif
+  return false;
 }
 
 void WebGL::registerGLObj(GLObjectType type, GLuint obj) {
@@ -191,7 +221,7 @@ void WebGL::disposeAll() {
 Handle<Value> WebGL::New(const Arguments& args) {
   HandleScope scope;
   
-  WebGL* instance = new WebGL();
+  WebGL* instance = new WebGL(args[0]->Int32Value(), args[1]->Int32Value());
   if(!instance->initialized) {
     return ThrowError("Error creating WebGLContext");
   }

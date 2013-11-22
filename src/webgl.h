@@ -43,6 +43,11 @@ public:
   bool initialized;
   bool atExit;
   GL_CONTEXT_TYPE gl_context;
+  #ifdef USE_GLX
+  Display *display;
+  Pixmap pixmap;
+  GLXPixmap glXPixmap;
+  #endif
   std::vector<GLObj*> globjs;
   bool checkContext();
   void registerGLObj(GLObjectType type, GLuint obj);
@@ -51,7 +56,7 @@ public:
   static void disposeAll();
   
   //Constructor/destructor
-  WebGL();
+  WebGL(int width, int height);
   virtual ~WebGL();
   
   JS_METHOD(New);
