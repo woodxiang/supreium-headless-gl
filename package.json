@@ -7,13 +7,18 @@
     "test": "test"
   },
   "browser": "browser_index.js",
+  "engines": {
+    "node": ">=0.7.0"
+  },
   "scripts": {
     "test": "node-gyp rebuild && tape test/run_test.js",
     "build": "node-gyp rebuild",
     "install": "node-gyp rebuild"
   },
   "dependencies": {
-    "node-gyp": "^2.0.2"
+    "node-gyp": "^2.0.2",
+    "nan": "^1.6.2",
+    "bindings": "^1.2.1"
   },
   "devDependencies": {
     "gl-conformance": "^1.0.0",
@@ -34,6 +39,5 @@
   "author": "Mikola Lysenko",
   "license": "BSD",
   "gypfile": true,
-  "readmeFilename": "README.md",
-  "gitHead": "7744c0aec3707ac931ce3534d8c13fe0c8b7147b"
+  "readmeFilename": "README.md"
 }

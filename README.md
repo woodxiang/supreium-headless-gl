@@ -13,7 +13,7 @@ Installation
 Just do:
 
     npm install gl
-    
+
 Currently only works on OS X and Linux. If you have access to working Windows system and want to contribute, please let me know.
 
 Usage
@@ -32,7 +32,7 @@ Here is an example that creates an offscreen framebuffer, clears it to red, read
     var width   = 64;
     var height  = 64;
     var gl = require("gl").createContext(width, height);
-    
+
     //Create texture
     var tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex)
@@ -61,7 +61,7 @@ Multiple Contexts
 You can create multiple WebGL contexts if you like.  To do this, just call:
 
     var my_context = gl.createContext();
-    
+
 Which will work just like any other WebGL context.  To get rid of a context when you are done with it, jst call destroy() on it:
 
     my_context.destroy();

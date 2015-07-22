@@ -5,42 +5,57 @@
   'conditions': [
     # Replace gyp platform with node platform, blech
     ['platform == "mac"', {'variables': {'platform': 'darwin'}}],
-    ['platform == "win"', {'variables': {'platform': 'win32'}}],
+    ['platform == "win"', {'variables': {'platform': 'win32'}}]
   ],
   'targets': [
     {
       'target_name': 'webgl',
       'defines': [
-        'VERSION=0.1.3'
+        'VERSION=0.4.3'
       ],
-      'sources': [ 
+      'sources': [
           'src/bindings.cc',
-          'src/webgl.cc',
+          'src/webgl.cc'
       ],
       'include_dirs': [
-        './deps/include',
+        "<!(node -e \"require('nan')\")",
+        '<(module_root_dir)/deps/include'
       ],
       'library_dirs': [
-        './deps/<(platform)',
+        '<(module_root_dir)/deps/<(platform)'
       ],
       'conditions': [
-        ['OS=="mac"', {'libraries': ['-framework AGL', '-framework OpenGL']}],
-        ['OS=="linux"', {'libraries': ['-lGL', '-lGLEW']}],
-        ['OS=="win"', {
-          'libraries': [ 'opengl32.lib' ],
-          'defines' : [
-            'WIN32_LEAN_AND_MEAN',
-            'VC_EXTRALEAN'
-          ],
-          'cflags' : [
-          '/Ox','/Ob2','/Oi','/Ot','/Oy','/GL','/GF','/Gm-','/EHsc','/MT','/GS','/Gy','/GR-','/Gd','/wd"4530"','/wd"4251"' 
-          ],
-          'ldflags' : [
-            '/OPT:REF','/OPT:ICF','/LTCG'
-          ]
+        ['OS=="mac"', {
+            'libraries': ['-lGLEW', '-framework OpenGL'],
+            'include_dirs': ['/usr/local/include'],
+            'library_dirs': ['/usr/local/lib']
+        }],
+        ['OS=="linux"', {'libraries': ['-lGLEW', '-lGL']}],
+        ['OS=="win"',
+          {
+            'include_dirs': [
+              './deps/glew/include'
+              ],
+            'library_dirs': [
+              './deps/glew/windows/lib/<(target_arch)'
+              ],
+            'libraries': [
+              'glew32.lib',
+              'opengl32.lib'
+              ],
+            'defines' : [
+              'WIN32_LEAN_AND_MEAN',
+              'VC_EXTRALEAN'
+            ],
+            'cflags' : [
+              '/O2','/Oy','/GL','/GF','/Gm-','/EHsc','/MT','/GS','/Gy','/GR-','/Gd','/wd"4530"','/wd"4251"'
+            ],
+            'ldflags' : [
+              '/OPT:REF','/OPT:ICF','/LTCG'
+            ]
           }
-        ],
-      ],
+        ]
+      ]
     }
   ]
 }

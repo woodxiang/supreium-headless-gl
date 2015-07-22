@@ -3,183 +3,175 @@
  *
  *  Created on: Dec 13, 2011
  *      Author: ngk437
- *
- * Modified by Mikola Lysenko, Feb. 2013
  */
 
 
-#include <cstdlib>
-#include <v8.h>
-#include <node.h>
-#include "arch_wrapper.h"
 #include "webgl.h"
-#include "macros.h"
+#include <cstdlib>
 
-using namespace std;
-using namespace v8;
-using namespace node;
+v8::Persistent<v8::FunctionTemplate> WEBGL_TEMPLATE;
 
-
-v8::Persistent<FunctionTemplate> webgl_template;
+#define JS_GL_METHOD(webgl_name, method_name) \
+  webgl_template->PrototypeTemplate()->Set(\
+    NanNew<String>(webgl_name),\
+    NanNew<v8::FunctionTemplate>(\
+      WebGLRenderingContext:: method_name)->GetFunction())
 #define JS_GL_CONSTANT(name) webgl_template->PrototypeTemplate()->Set(JS_STR( #name ), JS_INT(GL_ ## name))
 
 extern "C" {
-static void init(Handle<Object> target)
+void init(Handle<Object> target)
 {
-  //When node exits kill any stray gl contexts
-  atexit(WebGL::disposeAll);
-  
+  atexit(WebGLRenderingContext::disposeAll);
+
   //Create the WebGL template
-  v8::Local<FunctionTemplate> t = v8::FunctionTemplate::New(WebGL::New);
-  webgl_template = v8::Persistent<v8::FunctionTemplate>::New(t);
-  
+  v8::Local<v8::FunctionTemplate> webgl_template = NanNew<FunctionTemplate>(WebGLRenderingContext::New);
+
   webgl_template->InstanceTemplate()->SetInternalFieldCount(1);
-  webgl_template->SetClassName(JS_STR("WebGLContext"));
-  
+  webgl_template->SetClassName(JS_STR("WebGLRenderingContext"));
+
   //Add methods
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform1f", WebGL::Uniform1f);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform2f", WebGL::Uniform2f);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform3f", WebGL::Uniform3f);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform4f", WebGL::Uniform4f);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform1i", WebGL::Uniform1i);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform2i", WebGL::Uniform2i);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform3i", WebGL::Uniform3i);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform4i", WebGL::Uniform4i);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform1fv", WebGL::Uniform1fv);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform2fv", WebGL::Uniform2fv);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform3fv", WebGL::Uniform3fv);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform4fv", WebGL::Uniform4fv);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform1iv", WebGL::Uniform1iv);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform2iv", WebGL::Uniform2iv);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform3iv", WebGL::Uniform3iv);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniform4iv", WebGL::Uniform4iv);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "pixelStorei", WebGL::PixelStorei);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "bindAttribLocation", WebGL::BindAttribLocation);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getError", WebGL::GetError);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "drawArrays", WebGL::DrawArrays);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniformMatrix2fv", WebGL::UniformMatrix2fv);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniformMatrix3fv", WebGL::UniformMatrix3fv);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "uniformMatrix4fv", WebGL::UniformMatrix4fv);
+  JS_GL_METHOD("uniform1f", Uniform1f);
+  JS_GL_METHOD("uniform2f", Uniform2f);
+  JS_GL_METHOD("uniform3f", Uniform3f);
+  JS_GL_METHOD("uniform4f", Uniform4f);
+  JS_GL_METHOD("uniform1i", Uniform1i);
+  JS_GL_METHOD("uniform2i", Uniform2i);
+  JS_GL_METHOD("uniform3i", Uniform3i);
+  JS_GL_METHOD("uniform4i", Uniform4i);
+  JS_GL_METHOD("uniform1fv", Uniform1fv);
+  JS_GL_METHOD("uniform2fv", Uniform2fv);
+  JS_GL_METHOD("uniform3fv", Uniform3fv);
+  JS_GL_METHOD("uniform4fv", Uniform4fv);
+  JS_GL_METHOD("uniform1iv", Uniform1iv);
+  JS_GL_METHOD("uniform2iv", Uniform2iv);
+  JS_GL_METHOD("uniform3iv", Uniform3iv);
+  JS_GL_METHOD("uniform4iv", Uniform4iv);
+  JS_GL_METHOD("pixelStorei", PixelStorei);
+  JS_GL_METHOD("bindAttribLocation", BindAttribLocation);
+  JS_GL_METHOD("getError", GetError);
+  JS_GL_METHOD("drawArrays", DrawArrays);
+  JS_GL_METHOD("uniformMatrix2fv", UniformMatrix2fv);
+  JS_GL_METHOD("uniformMatrix3fv", UniformMatrix3fv);
+  JS_GL_METHOD("uniformMatrix4fv", UniformMatrix4fv);
 
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "generateMipmap", WebGL::GenerateMipmap);
+  JS_GL_METHOD("generateMipmap", GenerateMipmap);
 
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getAttribLocation", WebGL::GetAttribLocation);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "depthFunc", WebGL::DepthFunc);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "viewport", WebGL::Viewport);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "createShader", WebGL::CreateShader);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "shaderSource", WebGL::ShaderSource);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "compileShader", WebGL::CompileShader);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getShaderParameter", WebGL::GetShaderParameter);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getShaderInfoLog", WebGL::GetShaderInfoLog);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "createProgram", WebGL::CreateProgram);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "attachShader", WebGL::AttachShader);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "linkProgram", WebGL::LinkProgram);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getProgramParameter", WebGL::GetProgramParameter);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getUniformLocation", WebGL::GetUniformLocation);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "clearColor", WebGL::ClearColor);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "clearDepth", WebGL::ClearDepth);
+  JS_GL_METHOD("getAttribLocation", GetAttribLocation);
+  JS_GL_METHOD("depthFunc", DepthFunc);
+  JS_GL_METHOD("viewport", Viewport);
+  JS_GL_METHOD("createShader", CreateShader);
+  JS_GL_METHOD("shaderSource", ShaderSource);
+  JS_GL_METHOD("compileShader", CompileShader);
+  JS_GL_METHOD("getShaderParameter", GetShaderParameter);
+  JS_GL_METHOD("getShaderInfoLog", GetShaderInfoLog);
+  JS_GL_METHOD("createProgram", CreateProgram);
+  JS_GL_METHOD("attachShader", AttachShader);
+  JS_GL_METHOD("linkProgram", LinkProgram);
+  JS_GL_METHOD("getProgramParameter", GetProgramParameter);
+  JS_GL_METHOD("getUniformLocation", GetUniformLocation);
+  JS_GL_METHOD("clearColor", ClearColor);
+  JS_GL_METHOD("clearDepth", ClearDepth);
 
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "disable", WebGL::Disable);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "createTexture", WebGL::CreateTexture);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "bindTexture", WebGL::BindTexture);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "texImage2D", WebGL::TexImage2D);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "texParameteri", WebGL::TexParameteri);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "texParameterf", WebGL::TexParameterf);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "clear", WebGL::Clear);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "useProgram", WebGL::UseProgram);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "createFramebuffer", WebGL::CreateFramebuffer);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "bindFramebuffer", WebGL::BindFramebuffer);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "framebufferTexture2D", WebGL::FramebufferTexture2D);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "createBuffer", WebGL::CreateBuffer);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "bindBuffer", WebGL::BindBuffer);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "bufferData", WebGL::BufferData);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "bufferSubData", WebGL::BufferSubData);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "enable", WebGL::Enable);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "blendEquation", WebGL::BlendEquation);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "blendFunc", WebGL::BlendFunc);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "enableVertexAttribArray", WebGL::EnableVertexAttribArray);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "vertexAttribPointer", WebGL::VertexAttribPointer);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "activeTexture", WebGL::ActiveTexture);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "drawElements", WebGL::DrawElements);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "flush", WebGL::Flush);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "finish", WebGL::Finish);
+  JS_GL_METHOD("disable", Disable);
+  JS_GL_METHOD("createTexture", CreateTexture);
+  JS_GL_METHOD("bindTexture", BindTexture);
+  JS_GL_METHOD("texImage2D", TexImage2D);
+  JS_GL_METHOD("texParameteri", TexParameteri);
+  JS_GL_METHOD("texParameterf", TexParameterf);
+  JS_GL_METHOD("clear", Clear);
+  JS_GL_METHOD("useProgram", UseProgram);
+  JS_GL_METHOD("createFramebuffer", CreateFramebuffer);
+  JS_GL_METHOD("bindFramebuffer", BindFramebuffer);
+  JS_GL_METHOD("framebufferTexture2D", FramebufferTexture2D);
+  JS_GL_METHOD("createBuffer", CreateBuffer);
+  JS_GL_METHOD("bindBuffer", BindBuffer);
+  JS_GL_METHOD("bufferData", BufferData);
+  JS_GL_METHOD("bufferSubData", BufferSubData);
+  JS_GL_METHOD("enable", Enable);
+  JS_GL_METHOD("blendEquation", BlendEquation);
+  JS_GL_METHOD("blendFunc", BlendFunc);
+  JS_GL_METHOD("enableVertexAttribArray", EnableVertexAttribArray);
+  JS_GL_METHOD("vertexAttribPointer", VertexAttribPointer);
+  JS_GL_METHOD("activeTexture", ActiveTexture);
+  JS_GL_METHOD("drawElements", DrawElements);
+  JS_GL_METHOD("flush", Flush);
+  JS_GL_METHOD("finish", Finish);
 
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "vertexAttrib1f", WebGL::VertexAttrib1f);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "vertexAttrib2f", WebGL::VertexAttrib2f);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "vertexAttrib3f", WebGL::VertexAttrib3f);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "vertexAttrib4f", WebGL::VertexAttrib4f);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "vertexAttrib1fv", WebGL::VertexAttrib1fv);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "vertexAttrib2fv", WebGL::VertexAttrib2fv);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "vertexAttrib3fv", WebGL::VertexAttrib3fv);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "vertexAttrib4fv", WebGL::VertexAttrib4fv);
+  JS_GL_METHOD("vertexAttrib1f", VertexAttrib1f);
+  JS_GL_METHOD("vertexAttrib2f", VertexAttrib2f);
+  JS_GL_METHOD("vertexAttrib3f", VertexAttrib3f);
+  JS_GL_METHOD("vertexAttrib4f", VertexAttrib4f);
+  JS_GL_METHOD("vertexAttrib1fv", VertexAttrib1fv);
+  JS_GL_METHOD("vertexAttrib2fv", VertexAttrib2fv);
+  JS_GL_METHOD("vertexAttrib3fv", VertexAttrib3fv);
+  JS_GL_METHOD("vertexAttrib4fv", VertexAttrib4fv);
 
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "blendColor", WebGL::BlendColor);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "blendEquationSeparate", WebGL::BlendEquationSeparate);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "blendFuncSeparate", WebGL::BlendFuncSeparate);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "clearStencil", WebGL::ClearStencil);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "colorMask", WebGL::ColorMask);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "copyTexImage2D", WebGL::CopyTexImage2D);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "copyTexSubImage2D", WebGL::CopyTexSubImage2D);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "cullFace", WebGL::CullFace);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "depthMask", WebGL::DepthMask);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "depthRange", WebGL::DepthRange);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "disableVertexAttribArray", WebGL::DisableVertexAttribArray);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "hint", WebGL::Hint);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "isEnabled", WebGL::IsEnabled);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "lineWidth", WebGL::LineWidth);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "polygonOffset", WebGL::PolygonOffset);
+  JS_GL_METHOD("blendColor", BlendColor);
+  JS_GL_METHOD("blendEquationSeparate", BlendEquationSeparate);
+  JS_GL_METHOD("blendFuncSeparate", BlendFuncSeparate);
+  JS_GL_METHOD("clearStencil", ClearStencil);
+  JS_GL_METHOD("colorMask", ColorMask);
+  JS_GL_METHOD("copyTexImage2D", CopyTexImage2D);
+  JS_GL_METHOD("copyTexSubImage2D", CopyTexSubImage2D);
+  JS_GL_METHOD("cullFace", CullFace);
+  JS_GL_METHOD("depthMask", DepthMask);
+  JS_GL_METHOD("depthRange", DepthRange);
+  JS_GL_METHOD("disableVertexAttribArray", DisableVertexAttribArray);
+  JS_GL_METHOD("hint", Hint);
+  JS_GL_METHOD("isEnabled", IsEnabled);
+  JS_GL_METHOD("lineWidth", LineWidth);
+  JS_GL_METHOD("polygonOffset", PolygonOffset);
 
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "scissor", WebGL::Scissor);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "stencilFunc", WebGL::StencilFunc);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "stencilFuncSeparate", WebGL::StencilFuncSeparate);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "stencilMask", WebGL::StencilMask);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "stencilMaskSeparate", WebGL::StencilMaskSeparate);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "stencilOp", WebGL::StencilOp);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "stencilOpSeparate", WebGL::StencilOpSeparate);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "bindRenderbuffer", WebGL::BindRenderbuffer);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "createRenderbuffer", WebGL::CreateRenderbuffer);
+  JS_GL_METHOD("scissor", Scissor);
+  JS_GL_METHOD("stencilFunc", StencilFunc);
+  JS_GL_METHOD("stencilFuncSeparate", StencilFuncSeparate);
+  JS_GL_METHOD("stencilMask", StencilMask);
+  JS_GL_METHOD("stencilMaskSeparate", StencilMaskSeparate);
+  JS_GL_METHOD("stencilOp", StencilOp);
+  JS_GL_METHOD("stencilOpSeparate", StencilOpSeparate);
+  JS_GL_METHOD("bindRenderbuffer", BindRenderbuffer);
+  JS_GL_METHOD("createRenderbuffer", CreateRenderbuffer);
 
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "deleteBuffer", WebGL::DeleteBuffer);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "deleteFramebuffer", WebGL::DeleteFramebuffer);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "deleteProgram", WebGL::DeleteProgram);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "deleteRenderbuffer", WebGL::DeleteRenderbuffer);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "deleteShader", WebGL::DeleteShader);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "deleteTexture", WebGL::DeleteTexture);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "detachShader", WebGL::DetachShader);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "framebufferRenderbuffer", WebGL::FramebufferRenderbuffer);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getVertexAttribOffset", WebGL::GetVertexAttribOffset);
+  JS_GL_METHOD("deleteBuffer", DeleteBuffer);
+  JS_GL_METHOD("deleteFramebuffer", DeleteFramebuffer);
+  JS_GL_METHOD("deleteProgram", DeleteProgram);
+  JS_GL_METHOD("deleteRenderbuffer", DeleteRenderbuffer);
+  JS_GL_METHOD("deleteShader", DeleteShader);
+  JS_GL_METHOD("deleteTexture", DeleteTexture);
+  JS_GL_METHOD("detachShader", DetachShader);
+  JS_GL_METHOD("framebufferRenderbuffer", FramebufferRenderbuffer);
+  JS_GL_METHOD("getVertexAttribOffset", GetVertexAttribOffset);
 
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "isBuffer", WebGL::IsBuffer);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "isFramebuffer", WebGL::IsFramebuffer);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "isProgram", WebGL::IsProgram);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "isRenderbuffer", WebGL::IsRenderbuffer);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "isShader", WebGL::IsShader);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "isTexture", WebGL::IsTexture);
+  JS_GL_METHOD("isBuffer", IsBuffer);
+  JS_GL_METHOD("isFramebuffer", IsFramebuffer);
+  JS_GL_METHOD("isProgram", IsProgram);
+  JS_GL_METHOD("isRenderbuffer", IsRenderbuffer);
+  JS_GL_METHOD("isShader", IsShader);
+  JS_GL_METHOD("isTexture", IsTexture);
 
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "renderbufferStorage", WebGL::RenderbufferStorage);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getShaderSource", WebGL::GetShaderSource);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "validateProgram", WebGL::ValidateProgram);
+  JS_GL_METHOD("renderbufferStorage", RenderbufferStorage);
+  JS_GL_METHOD("getShaderSource", GetShaderSource);
+  JS_GL_METHOD("validateProgram", ValidateProgram);
 
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "texSubImage2D", WebGL::TexSubImage2D);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "readPixels", WebGL::ReadPixels);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getTexParameter", WebGL::GetTexParameter);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getActiveAttrib", WebGL::GetActiveAttrib);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getActiveUniform", WebGL::GetActiveUniform);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getAttachedShaders", WebGL::GetAttachedShaders);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getParameter", WebGL::GetParameter);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getBufferParameter", WebGL::GetBufferParameter);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getFramebufferAttachmentParameter", WebGL::GetFramebufferAttachmentParameter);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getProgramInfoLog", WebGL::GetProgramInfoLog);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getRenderbufferParameter", WebGL::GetRenderbufferParameter);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getVertexAttrib", WebGL::GetVertexAttrib);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getSupportedExtensions", WebGL::GetSupportedExtensions);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "getExtension", WebGL::GetExtension);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "checkFramebufferStatus", WebGL::CheckFramebufferStatus);
+  JS_GL_METHOD("texSubImage2D", TexSubImage2D);
+  JS_GL_METHOD("readPixels", ReadPixels);
+  JS_GL_METHOD("getTexParameter", GetTexParameter);
+  JS_GL_METHOD("getActiveAttrib", GetActiveAttrib);
+  JS_GL_METHOD("getActiveUniform", GetActiveUniform);
+  JS_GL_METHOD("getAttachedShaders", GetAttachedShaders);
+  JS_GL_METHOD("getParameter", GetParameter);
+  JS_GL_METHOD("getBufferParameter", GetBufferParameter);
+  JS_GL_METHOD("getFramebufferAttachmentParameter", GetFramebufferAttachmentParameter);
+  JS_GL_METHOD("getProgramInfoLog", GetProgramInfoLog);
+  JS_GL_METHOD("getRenderbufferParameter", GetRenderbufferParameter);
+  JS_GL_METHOD("getVertexAttrib", GetVertexAttrib);
+  JS_GL_METHOD("getSupportedExtensions", GetSupportedExtensions);
+  JS_GL_METHOD("getExtension", GetExtension);
+  JS_GL_METHOD("checkFramebufferStatus", CheckFramebufferStatus);
 
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "frontFace", WebGL::FrontFace);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "sampleCoverage", WebGL::SampleCoverage);
-  NODE_SET_PROTOTYPE_METHOD(webgl_template, "destroy", WebGL::Destroy);
-  
+  JS_GL_METHOD("frontFace", FrontFace);
+  JS_GL_METHOD("sampleCoverage", SampleCoverage);
+  JS_GL_METHOD("destroy", Destroy);
 
   // OpenGL ES 2.1 constants
 
@@ -381,9 +373,6 @@ static void init(Handle<Object> target)
   JS_GL_CONSTANT(INT);
   JS_GL_CONSTANT(UNSIGNED_INT);
   JS_GL_CONSTANT(FLOAT);
-#ifndef __APPLE__
-  JS_GL_CONSTANT(FIXED);
-#endif
 
   /* PixelFormat */
   JS_GL_CONSTANT(DEPTH_COMPONENT);
@@ -403,16 +392,9 @@ static void init(Handle<Object> target)
   JS_GL_CONSTANT(FRAGMENT_SHADER);
   JS_GL_CONSTANT(VERTEX_SHADER);
   JS_GL_CONSTANT(MAX_VERTEX_ATTRIBS);
-#ifndef __APPLE__
-  JS_GL_CONSTANT(MAX_VERTEX_UNIFORM_VECTORS);
-  JS_GL_CONSTANT(MAX_VARYING_VECTORS);
-#endif
   JS_GL_CONSTANT(MAX_COMBINED_TEXTURE_IMAGE_UNITS);
   JS_GL_CONSTANT(MAX_VERTEX_TEXTURE_IMAGE_UNITS);
   JS_GL_CONSTANT(MAX_TEXTURE_IMAGE_UNITS);
-#ifndef __APPLE__
-  JS_GL_CONSTANT(MAX_FRAGMENT_UNIFORM_VECTORS);
-#endif
   JS_GL_CONSTANT(SHADER_TYPE);
   JS_GL_CONSTANT(DELETE_STATUS);
   JS_GL_CONSTANT(LINK_STATUS);
@@ -591,6 +573,8 @@ static void init(Handle<Object> target)
   JS_GL_CONSTANT(DEPTH_COMPONENT16);
   JS_GL_CONSTANT(STENCIL_INDEX);
   JS_GL_CONSTANT(STENCIL_INDEX8);
+  JS_GL_CONSTANT(DEPTH_STENCIL);
+  JS_GL_CONSTANT(DEPTH24_STENCIL8);
 
   JS_GL_CONSTANT(RENDERBUFFER_WIDTH);
   JS_GL_CONSTANT(RENDERBUFFER_HEIGHT);
@@ -610,15 +594,13 @@ static void init(Handle<Object> target)
   JS_GL_CONSTANT(COLOR_ATTACHMENT0);
   JS_GL_CONSTANT(DEPTH_ATTACHMENT);
   JS_GL_CONSTANT(STENCIL_ATTACHMENT);
+  JS_GL_CONSTANT(DEPTH_STENCIL_ATTACHMENT);
 
   JS_GL_CONSTANT(NONE);
 
   JS_GL_CONSTANT(FRAMEBUFFER_COMPLETE);
   JS_GL_CONSTANT(FRAMEBUFFER_INCOMPLETE_ATTACHMENT);
   JS_GL_CONSTANT(FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT);
-#ifndef __APPLE__
-  //JS_GL_CONSTANT(FRAMEBUFFER_INCOMPLETE_DIMENSIONS);
-#endif
   JS_GL_CONSTANT(FRAMEBUFFER_UNSUPPORTED);
 
   JS_GL_CONSTANT(FRAMEBUFFER_BINDING);
@@ -633,9 +615,10 @@ static void init(Handle<Object> target)
   webgl_template->PrototypeTemplate()->Set(JS_STR( "CONTEXT_LOST_WEBGL" ), JS_INT(0x9242));
   webgl_template->PrototypeTemplate()->Set(JS_STR( "UNPACK_COLORSPACE_CONVERSION_WEBGL" ), JS_INT(0x9243));
   webgl_template->PrototypeTemplate()->Set(JS_STR( "BROWSER_DEFAULT_WEBGL" ), JS_INT(0x9244));
-  
+
   //Export function
-  target->Set(JS_STR("WebGLContext"), webgl_template->GetFunction());
+  NanAssignPersistent(WEBGL_TEMPLATE, webgl_template);
+  target->Set(JS_STR("WebGLRenderingContext"), WEBGL_TEMPLATE->GetFunction());
 }
 
 NODE_MODULE(webgl, init)

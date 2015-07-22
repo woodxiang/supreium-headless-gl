@@ -1,17 +1,14 @@
 "use strict";
 
-var WebGLContext = require('./build/Release/webgl.node').WebGLContext;
-module.exports = WebGLContext;
+var gl = module.exports = require('bindings')('webgl').WebGLRenderingContext;
 
-var gl = WebGLContext.prototype;
-
-gl.WebGLProgram=function (_) { this._ = _; }
-gl.WebGLShader=function (_) { this._ = _; }
-gl.WebGLBuffer=function (_) { this._ = _; }
-gl.WebGLFramebuffer=function (_) { this._ = _; }
+gl.WebGLProgram=function (_)      { this._ = _; }
+gl.WebGLShader=function (_)       { this._ = _; }
+gl.WebGLBuffer=function (_)       { this._ = _; }
+gl.WebGLFramebuffer=function (_)  { this._ = _; }
 gl.WebGLRenderbuffer=function (_) { this._ = _; }
-gl.WebGLTexture=function (_) { this._ = _; }
-gl.WebGLActiveInfo=function (_) { this._=_; this.size=_.size; this.type=_.type; this.name=_.name; }
+gl.WebGLTexture=function (_)      { this._ = _; }
+gl.WebGLActiveInfo=function (_)   { this._=_; this.size=_.size; this.type=_.type; this.name=_.name; }
 gl.WebGLUniformLocation=function (_) { this._ = _; }
 
 ////////////////////////////////////////////////////////////////////////////////
