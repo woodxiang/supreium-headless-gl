@@ -2,31 +2,26 @@
 
 var WebGLContext = require("./webgl.js");
 
-//Interoperate with node-canvas when available
-(function() {
-    var pGetContext;
+function flag(options, name, dflt) {
+  if(!options || !(typeof options === 'object') || !(name in options)) {
+    return dflt
+  }
+  return !!options[name]
+}
 
-    function getContextGLShim(contextid) {
-        if (contextid === "webgl" ||
-            contextid === "experimental-webgl") {
-            if (this._gl_context) {
-                return this._gl_context;
-            }
-            this._gl_context = new WebGLContext();
-            return this._gl_context;
-        }
-        return pGetContext.call(this, contextid);
-    }
-    try {
-        var Canvas = require("canvas");
-        if (Canvas) {
-            pGetContext = Canvas.prototype.getContext;
-            Canvas.prototype.getContext = getContextGLShim;
-        }
-    } catch (e) {}
-})();
+module.exports.createContext = function(width, height, options) {
+    var alpha                 = flag(options, 'alpha', true)
+    var depth                 = flag(options, 'depth', true)
+    var stencil               = flag(options, 'stencil', false)
+    var antialias             = flag(options, 'antialias', true)
+    var premultipliedAlpha    = flag(options, 'premultipliedAlpha', true)
+    var preserveDrawingBuffer = flag(options, 'preserveDrawingBuffer', false)
+    var preferLowPowerToHighPerformance = flag(options, 'preferLowPowerToHighPerformance', false)
+    var failIfMajorPerformanceCaveat = flag(options, 'failIfMajorPerformanceCaveat', false);
 
-
-module.exports.createContext = function(width, height) {
-    return new WebGLContext(width, height);
+    //TODO: Handle options
+    var context = new WebGLContext(width, height);
+    context.drawingBufferWidth = width
+    context.drawingBufferHeight = height
+    return context
 }

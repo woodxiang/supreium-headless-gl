@@ -8,11 +8,12 @@
   },
   "browser": "browser_index.js",
   "scripts": {
-    "test": "tap test/run_test.js",
+    "test": "node-gyp rebuild && tape test/run_test.js",
+    "build": "node-gyp rebuild",
     "install": "node-gyp rebuild"
   },
   "dependencies": {
-    "node-gyp": "~0.9.5"
+    "node-gyp": "^2.0.2"
   },
   "devDependencies": {
     "gl-conformance": "^1.0.0",
