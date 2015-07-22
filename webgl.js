@@ -802,13 +802,14 @@ gl.texImage2D = function texImage2D(target, level, internalformat, width, height
     if(!(
         typeof target === "number" &&
         typeof level === "number" && typeof internalformat === "number" &&
-        typeof width === "number" && typeof height === "number" &&
-        border==null)) {
+        typeof width === "number" && typeof height === "number")) {
       throw new TypeError('Expected texImage2D(number target, number level, number internalformat, number format, number type, Image pixels)');
     }
+
     pixels=border;
     type=height;
     format=width;
+
     return _texImage2D.call(this, target, level, internalformat, pixels.width, pixels.height, 0, format, type, pixels);
   }
   else if (arguments.length == 9) {
@@ -856,15 +857,18 @@ gl.uniform1f = function uniform1f(location, x) {
   if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && (typeof x === "number" || typeof x === "boolean"))) {
     throw new TypeError('Expected uniform1f(WebGLUniformLocation location, number x)');
   }
-  return _uniform1f.call(this, location ? location._ : 0, x);
+  return _uniform1f.call(this, location ? location._ : 0, +x);
 }
 
 var _uniform1fv = gl.uniform1fv;
 gl.uniform1fv = function uniform1fv(location, v) {
-  if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof v === "object")) {
+  if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof v === "object" && v.length === 1)) {
     throw new TypeError('Expected uniform1fv(WebGLUniformLocation location, FloatArray v)');
   }
-  return _uniform1fv.call(this, location ? location._ : 0, v);
+  if(v instanceof Float32Array) {
+    return _uniform1fv.call(this, location ? location._ : 0, v);
+  }
+  return _uniform1f.call(this, location ? location._ : 0, v[0]);
 }
 
 var _uniform1i = gl.uniform1i;
@@ -872,17 +876,18 @@ gl.uniform1i = function uniform1i(location, x) {
   if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && (typeof x === "number" || typeof x ==="boolean"))) {
     throw new TypeError('Expected uniform1i(WebGLUniformLocation location, number x)');
   }
-  if(typeof x === "boolean")
-    x= x ? 1 : 0;
-  return _uniform1i.call(this, location ? location._ : 0, x);
+  return _uniform1i.call(this, location ? location._ : 0, x|0);
 }
 
 var _uniform1iv = gl.uniform1iv;
 gl.uniform1iv = function uniform1iv(location, v) {
-  if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof v === "object")) {
+  if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof v === "object" && v.length === 1)) {
     throw new TypeError('Expected uniform1iv(WebGLUniformLocation location, Int32Array v)');
   }
-  return _uniform1iv.call(this, location ? location._ : 0, v);
+  if(v instanceof Int32Array) {
+    return _uniform1iv.call(this, location ? location._ : 0, v);
+  }
+  return _uniform1i.call(this, location ? location._ : 0, v[0]);
 }
 
 var _uniform2f = gl.uniform2f;
@@ -890,15 +895,18 @@ gl.uniform2f = function uniform2f(location, x, y) {
   if (!(arguments.length === 3 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof x === "number" && typeof y === "number")) {
     throw new TypeError('Expected uniform2f(WebGLUniformLocation location, number x, number y)');
   }
-  return _uniform2f.call(this, location ? location._ : 0, x, y);
+  return _uniform2f.call(this, location ? location._ : 0, +x, +y);
 }
 
 var _uniform2fv = gl.uniform2fv;
 gl.uniform2fv = function uniform2fv(location, v) {
-  if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof v === "object")) {
+  if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof v === "object" && v.length === 2)) {
     throw new TypeError('Expected uniform2fv(WebGLUniformLocation location, FloatArray v)');
   }
-  return _uniform2fv.call(this, location ? location._ : 0, v);
+  if(v instanceof Float32Array) {
+    return _uniform2fv.call(this, location ? location._ : 0, v);
+  }
+  return _uniform2f.call(this, location ? location._ : 0, +v[0], +v[1]);
 }
 
 var _uniform2i = gl.uniform2i;
@@ -906,7 +914,7 @@ gl.uniform2i = function uniform2i(location, x, y) {
   if (!(arguments.length === 3 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof x === "number" && typeof y === "number")) {
     throw new TypeError('Expected uniform2i(WebGLUniformLocation location, number x, number y)');
   }
-  return _uniform2i.call(this, location ? location._ : 0, x, y);
+  return _uniform2i.call(this, location ? location._ : 0, x|0, y|0);
 }
 
 var _uniform2iv = gl.uniform2iv;
@@ -914,7 +922,10 @@ gl.uniform2iv = function uniform2iv(location, v) {
   if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof v === "object")) {
     throw new TypeError('Expected uniform2iv(WebGLUniformLocation location, Int32Array v)');
   }
-  return _uniform2iv.call(this, location ? location._ : 0, v);
+  if(v instanceof Int32Array) {
+    return _uniform2iv.call(this, location ? location._ : 0, v);
+  }
+  return _uniform2i.call(this, location ? location._ : 0, v[0]|0, v[1]|0);
 }
 
 var _uniform3f = gl.uniform3f;
@@ -930,7 +941,10 @@ gl.uniform3fv = function uniform3fv(location, v) {
   if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof v === "object")) {
     throw new TypeError('Expected uniform3fv(WebGLUniformLocation location, FloatArray v)');
   }
-  return _uniform3fv.call(this, location ? location._ : 0, v);
+  if(v instanceof Float32Array) {
+    return _uniform3fv.call(this, location ? location._ : 0, v);
+  }
+  return _uniform3f.call(this, location ? location._ : 0, +v[0], +v[1], +v[2]);
 }
 
 var _uniform3i = gl.uniform3i;
@@ -942,11 +956,14 @@ gl.uniform3i = function uniform3i(location, x, y, z) {
 }
 
 var _uniform3iv = gl.uniform3iv;
-gl.uniform3iv = function uniform3iv(location, x) {
-  if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof x === "object")) {
+gl.uniform3iv = function uniform3iv(location, v) {
+  if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof v === "object" && v.length === 4)) {
     throw new TypeError('Expected uniform3iv(WebGLUniformLocation location, Int32Array x)');
   }
-  return _uniform3iv.call(this, location ? location._ : 0, x);
+  if(x instanceof Int32Array) {
+    return _uniform3iv.call(this, location ? location._ : 0, v);
+  }
+  return _uniform3i.call(this, location ? location._ : 0, v[0]|0, v[1]|0, v[2]|0);
 }
 
 var _uniform4f = gl.uniform4f;
@@ -959,10 +976,13 @@ gl.uniform4f = function uniform4f(location, x, y, z, w) {
 
 var _uniform4fv = gl.uniform4fv;
 gl.uniform4fv = function uniform4fv(location, v) {
-  if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof v === "object")) {
+  if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof v === "object" && v.length === 4)) {
     throw new TypeError('Expected uniform4fv(WebGLUniformLocation location, FloatArray v)');
   }
-  return _uniform4fv.call(this, location ? location._ : 0, v);
+  if(v instanceof Float32Array) {
+    return _uniform4fv.call(this, location ? location._ : 0, v);
+  }
+  return _uniform4f.call(this, location ? location._ : 0, +v[0], +v[1], +v[2], +v[3]);
 }
 
 var _uniform4i = gl.uniform4i;
@@ -974,33 +994,45 @@ gl.uniform4i = function uniform4i(location, x, y, z, w) {
 }
 
 var _uniform4iv = gl.uniform4iv;
-gl.uniform4iv = function uniform4iv(location, x) {
-  if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof x === "object")) {
-    throw new TypeError('Expected uniform4iv(WebGLUniformLocation location, Int32Array x)');
+gl.uniform4iv = function uniform4iv(location, v) {
+  if (!(arguments.length === 2 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof v === "object" && v.length === 4)) {
+    throw new TypeError('Expected uniform4iv(WebGLUniformLocation location, Int32Array v)');
   }
-  return _uniform4iv.call(this, location ? location._ : 0, x);
+  if(x instanceof Int32Array) {
+    return _uniform4iv.call(this, location ? location._ : 0, x);
+  }
+  return _uniform4i.call(this, location ? location._ : 0, x[0]|0, x[1]|0, x[2]|0, x[3]|0);
 }
 
 var _uniformMatrix2fv = gl.uniformMatrix2fv;
 gl.uniformMatrix2fv = function uniformMatrix2fv(location, transpose, value) {
-  if (!(arguments.length === 3 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof transpose === "boolean" && typeof value === "object")) {
+  if (!(arguments.length === 3 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof transpose === "boolean" && typeof value === "object" && value.length === 4)) {
     throw new TypeError('Expected uniformMatrix2fv(WebGLUniformLocation location, boolean transpose, FloatArray value)');
+  }
+  if(!(value instanceof Float32Array)) {
+    value = new Float32Array(value);
   }
   return _uniformMatrix2fv.call(this, location ? location._ : 0, transpose, value);
 }
 
 var _uniformMatrix3fv = gl.uniformMatrix3fv;
 gl.uniformMatrix3fv = function uniformMatrix3fv(location, transpose, value) {
-  if (!(arguments.length === 3 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof transpose === "boolean" && typeof value === "object")) {
+  if (!(arguments.length === 3 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof transpose === "boolean" && typeof value === "object" && value.length === 9)) {
     throw new TypeError('Expected uniformMatrix3fv(WebGLUniformLocation location, boolean transpose, FloatArray value)');
+  }
+  if(!(value instanceof Float32Array)) {
+    value = new Float32Array(value);
   }
   return _uniformMatrix3fv.call(this, location ? location._ : 0, transpose, value);
 }
 
 var _uniformMatrix4fv = gl.uniformMatrix4fv;
 gl.uniformMatrix4fv = function uniformMatrix4fv(location, transpose, value) {
-  if (!(arguments.length === 3 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof transpose === "boolean" && typeof value === "object")) {
+  if (!(arguments.length === 3 && (location === null || location instanceof gl.WebGLUniformLocation) && typeof transpose === "boolean" && typeof value === "object" && value.length === 16)) {
     throw new TypeError('Expected uniformMatrix4fv(WebGLUniformLocation location, boolean transpose, FloatArray value)');
+  }
+  if(!(value instanceof Float32Array)) {
+    value = new Float32Array(value);
   }
   return _uniformMatrix4fv.call(this, location ? location._ : 0, transpose, value);
 }
