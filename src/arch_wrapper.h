@@ -9,9 +9,9 @@
 
     #if defined (__APPLE__) || defined(MACOSX)
 
-        #include <GL/glew.h>
         #include <OpenGL/OpenGL.h>
-        
+        #include <OpenGL/gl.h>
+
         #define USE_CGL                           1
         #define GL_CONTEXT_TYPE                   CGLContextObj
 

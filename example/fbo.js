@@ -14,8 +14,9 @@ gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
 gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
 
 //Clear screen to red
-gl.clearColor(1.0, 1.0, 1.0, 1.0);
-gl.clear(gl.COLOR_BUFFER_BIT);
+//gl.clearColor(1.0, 1.0, 1.0, 1.0);
+//gl.colorMask(true, true, true, true);
+//gl.clear(gl.COLOR_BUFFER_BIT);
 
 //Write output
 var pixels = new Uint8Array(width * height * 3);

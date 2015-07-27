@@ -5,7 +5,6 @@
 #include "webgl.h"
 #include <node.h>
 #include <node_buffer.h>
-#include <GL/glew.h>
 
 #ifdef _WIN32
   #define  strcasestr(s, t) strstr(strupr(s), strupr(t))
@@ -155,10 +154,19 @@ WebGLRenderingContext::WebGLRenderingContext(
       return;
     }
 
+    /*
     if(glewInit() != GLEW_OK) {
       state = GLCONTEXT_STATE_ERROR;
       return;
     }
+    */
+
+    glClearColor(1, 1, 1, 1);
+    glClear(GL_COLOR_BUFFER_BIT);
+    char PIXELS[16];
+    PIXELS[0] = PIXELS[1] = PIXELS[2] = PIXELS[3] = 0;
+    glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, PIXELS);
+    fprintf(stderr, "%d %d %d %d\n", PIXELS[0], PIXELS[1], PIXELS[2], PIXELS[3]);
 
   #endif
 
@@ -1245,7 +1253,7 @@ GL_METHOD(DepthRange) {
   GLclampf zNear = (float) args[0]->NumberValue();
   GLclampf zFar = (float) args[1]->NumberValue();
 
-  glDepthRangef(zNear, zFar);
+  glDepthRange(zNear, zFar);
   NanReturnValue(NanUndefined());
 }
 
