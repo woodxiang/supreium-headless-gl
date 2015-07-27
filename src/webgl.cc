@@ -6,9 +6,7 @@
 #include <node.h>
 #include <node_buffer.h>
 
-#ifdef _WIN32
-  #define  strcasestr(s, t) strstr(strupr(s), strupr(t))
-#endif
+#include <GLES/gl.h>
 
 using namespace node;
 using namespace v8;
@@ -1907,30 +1905,20 @@ GL_METHOD(GetVertexAttrib) {
 
 GL_METHOD(GetSupportedExtensions) {
   GL_BOILERPLATE;
-
   char *extensions=(char*) glGetString(GL_EXTENSIONS);
-
   NanReturnValue(JS_STR(extensions));
 }
 
-// TODO GetExtension(name) return the extension name if found, should be an object...
 GL_METHOD(GetExtension) {
   GL_BOILERPLATE;
 
-  NanAsciiString name(args[0]);
-  char *sname=*name;
-  char *extensions=(char*) glGetString(GL_EXTENSIONS);
+  //TODO
 
-  char *ext=strcasestr(extensions, sname);
-
-  if(!ext) NanReturnValue(NanUndefined());
-  NanReturnValue(JS_STR(ext, (int)::strlen(sname)));
+  NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(CheckFramebufferStatus) {
   GL_BOILERPLATE;
-
   GLenum target=args[0]->Int32Value();
-
   NanReturnValue(JS_INT((int)glCheckFramebufferStatus(target)));
 }

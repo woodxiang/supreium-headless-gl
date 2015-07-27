@@ -1,20 +1,10 @@
-/*
- * webgl.h
- *
- *  Created on: Dec 13, 2011
- *      Author: ngk437
- */
-
 #ifndef WEBGL_H_
 #define WEBGL_H_
 
 #include <algorithm>
 #include <vector>
 #include <utility>
-#include "common.h"
-
-using namespace node;
-using namespace v8;
+#include "nan.h"
 
 enum GLObjectType {
   GLOBJECT_TYPE_DELETED,
@@ -257,4 +247,4 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   static NAN_METHOD(GetUniform);
 };
 
-#endif /* WEBGL_H_ */
+#endif

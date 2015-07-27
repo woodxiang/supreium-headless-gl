@@ -3,15 +3,23 @@
     'platform': '<(OS)',
   },
   'conditions': [
-    # Replace gyp platform with node platform, blech
     ['platform == "mac"', {'variables': {'platform': 'darwin'}}],
     ['platform == "win"', {'variables': {'platform': 'win32'}}]
+  ],
+  'includes': [
+    'angle/build/common.gypi',
+    'angle/build/common_defines.gypi',
   ],
   'targets': [
     {
       'target_name': 'webgl',
       'defines': [
-        'VERSION=0.4.3'
+        'VERSION=1.0.0'
+      ],
+      'dependencies':
+      [
+        'angle/src/angle.gyp:libEGL',
+        'angle/src/angle.gyp:libGLESv2'
       ],
       'sources': [
           'src/bindings.cc',
@@ -19,7 +27,8 @@
       ],
       'include_dirs': [
         "<!(node -e \"require('nan')\")",
-        '<(module_root_dir)/deps/include'
+        '<(module_root_dir)/deps/include',
+        "angle/include"
       ],
       'library_dirs': [
         '<(module_root_dir)/deps/<(platform)'
@@ -30,7 +39,9 @@
             'include_dirs': ['/usr/local/include'],
             'library_dirs': ['/usr/local/lib']
         }],
-        ['OS=="linux"', {'libraries': ['-lGLEW', '-lGL']}],
+        ['OS=="linux"', {
+            'libraries': ['-lGLEW', '-lGL']
+        }],
         ['OS=="win"',
           {
             'include_dirs': [
@@ -40,8 +51,6 @@
               './deps/glew/windows/lib/<(target_arch)'
               ],
             'libraries': [
-              'glew32.lib',
-              'opengl32.lib'
               ],
             'defines' : [
               'WIN32_LEAN_AND_MEAN',
