@@ -3,32 +3,20 @@
 #include <iostream>
 
 #include "webgl.h"
-#include <node.h>
-#include <node_buffer.h>
-
-#include <GLES/gl.h>
-
-using namespace node;
-using namespace v8;
-using namespace std;
 
 WebGLRenderingContext* WebGLRenderingContext::ACTIVE = NULL;
 WebGLRenderingContext* WebGLRenderingContext::CONTEXT_LIST_HEAD = NULL;
-
-v8::Handle<v8::Value> ThrowError(const char* msg) {
-  return NanThrowError(NanNew<String>(msg));
-}
 
 #define GL_METHOD(method_name)    NAN_METHOD(WebGLRenderingContext:: method_name)
 
 #define GL_BOILERPLATE  \
   NanScope();\
   if(args.This()->InternalFieldCount() <= 0) { \
-    return ThrowError("Invalid WebGL Object"); \
+    return NanThrowError("Invalid WebGL Object"); \
   } \
   WebGLRenderingContext* inst = node::ObjectWrap::Unwrap<WebGLRenderingContext>(args.This()); \
   if(!(inst && inst->setActive())) { \
-    return ThrowError("Invalid GL context"); \
+    return NanThrowError("Invalid GL context"); \
   }
 
 // A 32-bit and 64-bit compatible way of converting a pointer to a GLuint.
@@ -53,35 +41,34 @@ static int SizeOfArrayElementForType(v8::ExternalArrayType type) {
   }
 }
 
-inline void *getImageData(Local<Value> arg) {
+inline void *getImageData(v8::Local<v8::Value> arg) {
   void *pixels = NULL;
   if (!arg->IsNull()) {
-    Local<Object> obj = Local<Object>::Cast(arg);
-    if (!obj->IsObject())
-      NanThrowError("Bad texture argument");
-
+    v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(arg);
+    if (!obj->IsObject()) {
+      return NULL;
+    }
     pixels = obj->GetIndexedPropertiesExternalArrayData();
   }
   return pixels;
 }
 
 template<typename Type>
-inline Type* getArrayData(Local<Value> arg, int* num = NULL) {
+inline Type* getArrayData(v8::Local<v8::Value> arg, int* num = NULL) {
   Type *data=NULL;
   if(num) *num=0;
 
   if(!arg->IsNull()) {
     if(arg->IsArray()) {
-      Local<Array> arr = Local<Array>::Cast(arg);
+      v8::Local<v8::Array> arr = v8::Local<v8::Array>::Cast(arg);
       if(num) *num=arr->Length();
       data = reinterpret_cast<Type*>(arr->GetIndexedPropertiesExternalArrayData());
-    }
-    else if(arg->IsObject()) {
+    } else if(arg->IsObject()) {
       if(num) *num = arg->ToObject()->GetIndexedPropertiesExternalArrayDataLength();
       data = reinterpret_cast<Type*>(arg->ToObject()->GetIndexedPropertiesExternalArrayData());
+    } else {
+      return NULL;
     }
-    else
-      NanThrowError("Bad array argument");
   }
 
   return data;
@@ -103,70 +90,69 @@ WebGLRenderingContext::WebGLRenderingContext(
   next(NULL),
   prev(NULL) {
 
-//TODO: Add linux and windows support here
 
-  #ifdef USE_CGL
+  //Get display
+  display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+  if(display == EGL_NO_DISPLAY) {
+    state = GLCONTEXT_STATE_ERROR;
+    return;
+  }
 
-    CGLPixelFormatAttribute attribs[256];
-    int ptr = 0;
+  //Initialize EGL
+  if(!eglInitialize(display, NULL, NULL)) {
+    state = GLCONTEXT_STATE_ERROR;
+    return;
+  }
 
-    attribs[ptr++] = kCGLPFAColorSize;
-    attribs[ptr++] = (CGLPixelFormatAttribute)24;
-    attribs[ptr++] = kCGLPFAAlphaSize;
-    attribs[ptr++] = (CGLPixelFormatAttribute)(alpha ? 8 : 0);
-    attribs[ptr++] = kCGLPFADepthSize;
-    attribs[ptr++] = (CGLPixelFormatAttribute)(depth ? 16: 0);
-    attribs[ptr++] = kCGLPFAStencilSize;
-    attribs[ptr++] = (CGLPixelFormatAttribute)(stencil ? 8 : 0);
+  //Set up configuration
+  std::vector<EGLint> attrib_list;
+  EGLConfig config;
+  EGLint num_config;
 
-    if(preferLowPowerToHighPerformance) {
-      attribs[ptr++] = kCGLPFAMinimumPolicy;
-    } else {
-      attribs[ptr++] = kCGLPFAMaximumPolicy;
-    }
+  #define PUSH_ATTRIB(x, v) \
+    attrib_list.push_back(x);\
+    attrib_list.push_back(v);
 
-    //TODO: Handle antialiasing
+  PUSH_ATTRIB(EGL_CONFORMANT, EGL_OPENGL_ES2_BIT);
+  PUSH_ATTRIB(EGL_RED_SIZE, 8);
+  PUSH_ATTRIB(EGL_GREEN_SIZE, 8);
+  PUSH_ATTRIB(EGL_BLUE_SIZE, 8);
+  if(alpha) {
+    PUSH_ATTRIB(EGL_ALPHA_SIZE, 8);
+  }
+  if(depth) {
+    PUSH_ATTRIB(EGL_DEPTH_SIZE, 16);
+  }
+  if(stencil) {
+    PUSH_ATTRIB(EGL_STENCIL_SIZE, 8);
+  }
+  attrib_list.push_back(EGL_NONE);
 
-    //TODO: preserve drawing buffer support?
+  #undef PUSH_ATTRIB
 
-    //End of attributes
-    attribs[ptr++] = (CGLPixelFormatAttribute)0;
+  if(!eglChooseConfig(
+      display,
+      &attrib_list[0],
+      &config,
+      1,
+      &num_config)) {
+    state = GLCONTEXT_STATE_ERROR;
+    return;
+  }
 
-    //Create pixel format from attributes
-    CGLPixelFormatObj pix;
-    GLint npix = 0;
-    if(CGLChoosePixelFormat( attribs, &pix, &npix ) != kCGLNoError) {
-      state = GLCONTEXT_STATE_ERROR;
-      return;
-    }
+  //Create context
+  context = eglCreateContext(display, config, EGL_NO_CONTEXT, NULL);
+  if(context == EGL_NO_CONTEXT) {
+    state = GLCONTEXT_STATE_ERROR;
+    return;
+  }
 
-    //Create context
-    if(CGLCreateContext( pix, NULL, &context ) != kCGLNoError) {
-      state = GLCONTEXT_STATE_ERROR;
-      return;
-    }
+  //Set active
+  if(!eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context)) {
+    state = GLCONTEXT_STATE_ERROR;
+    return;
+  }
 
-    //Set context as active
-    if(CGLSetCurrentContext( context ) != kCGLNoError) {
-      state = GLCONTEXT_STATE_ERROR;
-      return;
-    }
-
-    /*
-    if(glewInit() != GLEW_OK) {
-      state = GLCONTEXT_STATE_ERROR;
-      return;
-    }
-    */
-
-    glClearColor(1, 1, 1, 1);
-    glClear(GL_COLOR_BUFFER_BIT);
-    char PIXELS[16];
-    PIXELS[0] = PIXELS[1] = PIXELS[2] = PIXELS[3] = 0;
-    glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, PIXELS);
-    fprintf(stderr, "%d %d %d %d\n", PIXELS[0], PIXELS[1], PIXELS[2], PIXELS[3]);
-
-  #endif
 
   //Success
   state = GLCONTEXT_STATE_OK;
@@ -181,14 +167,11 @@ bool WebGLRenderingContext::setActive() {
   if(this == ACTIVE) {
     return true;
   }
-  bool result = false;
-  #ifdef USE_CGL
-    result = CGLSetCurrentContext(context) == kCGLNoError;
-  #endif
-  if(result) {
-    ACTIVE = this;
+  if(!eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context)) {
+    return false;
   }
-  return result;
+  ACTIVE = this;
+  return true;
 }
 
 void WebGLRenderingContext::dispose() {
@@ -196,6 +179,7 @@ void WebGLRenderingContext::dispose() {
   unregisterContext();
 
   if(!setActive()) {
+    state = GLCONTEXT_STATE_ERROR;
     return;
   }
 
@@ -232,9 +216,11 @@ void WebGLRenderingContext::dispose() {
   objects.clear();
 
   //Destroy context
-  #ifdef USE_CGL
-    CGLDestroyContext(context);
-  #endif
+  eglDestroyContext(display, context);
+  eglTerminate(display);
+
+  //Unlink from active
+  ACTIVE = NULL;
 }
 
 WebGLRenderingContext::~WebGLRenderingContext() {
@@ -263,11 +249,11 @@ GL_METHOD(New) {
     args[9]->BooleanValue()  //fail if crap
   );
   if(instance->state != GLCONTEXT_STATE_OK){
-    return ThrowError("Error creating WebGLContext");
+    return NanThrowError("Error creating WebGLContext");
   }
 
   instance->Wrap(args.This());
-  return args.This();
+  NanReturnValue(args.This());
 }
 
 GL_METHOD(Destroy) {
@@ -475,7 +461,7 @@ GL_METHOD(BindAttribLocation) {
 
   int program = args[0]->Int32Value();
   int index = args[1]->Int32Value();
-  String::Utf8Value name(args[2]);
+  v8::String::Utf8Value name(args[2]);
 
   glBindAttribLocation(program, index, *name);
 
@@ -485,8 +471,7 @@ GL_METHOD(BindAttribLocation) {
 
 GL_METHOD(GetError) {
   GL_BOILERPLATE;
-
-  NanReturnValue(NanNew<Number>(glGetError()));
+  NanReturnValue(NanNew<v8::Number>(glGetError()));
 }
 
 
@@ -512,7 +497,7 @@ GL_METHOD(UniformMatrix2fv) {
   GLfloat* data=getArrayData<GLfloat>(args[2],&count);
 
   if (count < 4) {
-    NanThrowError("Not enough data for UniformMatrix2fv");
+    return NanThrowError("Not enough data for UniformMatrix2fv");
   }
 
   glUniformMatrix2fv(location, count / 4, transpose, data);
@@ -529,7 +514,7 @@ GL_METHOD(UniformMatrix3fv) {
   GLfloat* data=getArrayData<GLfloat>(args[2],&count);
 
   if (count < 9) {
-    NanThrowError("Not enough data for UniformMatrix3fv");
+    return NanThrowError("Not enough data for UniformMatrix3fv");
   }
 
   glUniformMatrix3fv(location, count / 9, transpose, data);
@@ -546,7 +531,7 @@ GL_METHOD(UniformMatrix4fv) {
   GLfloat* data=getArrayData<GLfloat>(args[2],&count);
 
   if (count < 16) {
-    NanThrowError("Not enough data for UniformMatrix4fv");
+    return NanThrowError("Not enough data for UniformMatrix4fv");
   }
 
   glUniformMatrix4fv(location, count / 16, transpose, data);
@@ -567,9 +552,9 @@ GL_METHOD(GetAttribLocation) {
   GL_BOILERPLATE;
 
   int program = args[0]->Int32Value();
-  String::Utf8Value name(args[1]);
+  v8::String::Utf8Value name(args[1]);
 
-  NanReturnValue(NanNew<Number>(glGetAttribLocation(program, *name)));
+  NanReturnValue(NanNew<v8::Number>(glGetAttribLocation(program, *name)));
 }
 
 
@@ -603,7 +588,7 @@ GL_METHOD(CreateShader) {
   cout<<"createShader "<<shader<<endl;
   #endif
   inst->registerGLObj(GLOBJECT_TYPE_SHADER, shader);
-  NanReturnValue(NanNew<Number>(shader));
+  NanReturnValue(NanNew<v8::Number>(shader));
 }
 
 
@@ -611,7 +596,7 @@ GL_METHOD(ShaderSource) {
   GL_BOILERPLATE;
 
   int id = args[0]->Int32Value();
-  String::Utf8Value code(args[1]);
+  v8::String::Utf8Value code(args[1]);
 
   const char* codes[1];
   codes[0] = *code;
@@ -650,16 +635,16 @@ GL_METHOD(GetShaderParameter) {
   case GL_DELETE_STATUS:
   case GL_COMPILE_STATUS:
     glGetShaderiv(shader, pname, &value);
-    NanReturnValue(JS_BOOL(static_cast<bool>(value!=0)));
+    NanReturnValue(NanNew<v8::Boolean>(static_cast<bool>(value!=0)));
   case GL_SHADER_TYPE:
     glGetShaderiv(shader, pname, &value);
-    NanReturnValue(JS_FLOAT(static_cast<unsigned long>(value)));
+    NanReturnValue(NanNew<v8::Number>(static_cast<unsigned long>(value)));
   case GL_INFO_LOG_LENGTH:
   case GL_SHADER_SOURCE_LENGTH:
     glGetShaderiv(shader, pname, &value);
-    NanReturnValue(JS_FLOAT(static_cast<long>(value)));
+    NanReturnValue(NanNew<v8::Number>(static_cast<long>(value)));
   default:
-    NanThrowTypeError("GetShaderParameter: Invalid Enum");
+    return NanThrowTypeError("GetShaderParameter: Invalid Enum");
   }
   NanReturnUndefined();
 }
@@ -672,7 +657,7 @@ GL_METHOD(GetShaderInfoLog) {
   char Error[1024];
   glGetShaderInfoLog(id, 1024, &Len, Error);
 
-  NanReturnValue(NanNew<String>(Error));
+  NanReturnValue(NanNew<v8::String>(Error));
 }
 
 
@@ -684,7 +669,7 @@ GL_METHOD(CreateProgram) {
   cout<<"createProgram "<<program<<endl;
   #endif
   inst->registerGLObj(GLOBJECT_TYPE_PROGRAM, program);
-  NanReturnValue(NanNew<Number>(program));
+  NanReturnValue(NanNew<v8::Number>(program));
 }
 
 
@@ -721,14 +706,14 @@ GL_METHOD(GetProgramParameter) {
   case GL_LINK_STATUS:
   case GL_VALIDATE_STATUS:
     glGetProgramiv(program, pname, &value);
-    NanReturnValue(JS_BOOL(static_cast<bool>(value!=0)));
+    NanReturnValue(NanNew<v8::Boolean>(static_cast<bool>(value!=0)));
   case GL_ATTACHED_SHADERS:
   case GL_ACTIVE_ATTRIBUTES:
   case GL_ACTIVE_UNIFORMS:
     glGetProgramiv(program, pname, &value);
-    NanReturnValue(JS_FLOAT(static_cast<long>(value)));
+    NanReturnValue(NanNew<v8::Number>(static_cast<long>(value)));
   default:
-    NanThrowTypeError("GetProgramParameter: Invalid Enum");
+    return NanThrowTypeError("GetProgramParameter: Invalid Enum");
   }
   NanReturnUndefined();
 }
@@ -740,7 +725,7 @@ GL_METHOD(GetUniformLocation) {
   int program = args[0]->Int32Value();
   NanAsciiString name(args[1]);
 
-  NanReturnValue(JS_INT(glGetUniformLocation(program, *name)));
+  NanReturnValue(NanNew<v8::Integer>(glGetUniformLocation(program, *name)));
 }
 
 
@@ -751,7 +736,6 @@ GL_METHOD(ClearColor) {
   float green = (float) args[1]->NumberValue();
   float blue  = (float) args[2]->NumberValue();
   float alpha = (float) args[3]->NumberValue();
-
   glClearColor(red, green, blue, alpha);
 
   NanReturnValue(NanUndefined());
@@ -762,8 +746,7 @@ GL_METHOD(ClearDepth) {
   GL_BOILERPLATE;
 
   float depth = (float) args[0]->NumberValue();
-
-  glClearDepth(depth);
+  glClearDepthf(depth);
 
   NanReturnValue(NanUndefined());
 }
@@ -789,7 +772,7 @@ GL_METHOD(CreateTexture) {
   GLuint texture;
   glGenTextures(1, &texture);
   inst->registerGLObj(GLOBJECT_TYPE_TEXTURE, texture);
-  NanReturnValue(NanNew<Number>(texture));
+  NanReturnValue(NanNew<v8::Number>(texture));
 }
 
 
@@ -883,7 +866,7 @@ GL_METHOD(CreateBuffer) {
   cout<<"createBuffer "<<buffer<<endl;
   #endif
   inst->registerGLObj(GLOBJECT_TYPE_BUFFER, buffer);
-  NanReturnValue(NanNew<Number>(buffer));
+  NanReturnValue(NanNew<v8::Number>(buffer));
 }
 
 GL_METHOD(BindBuffer) {
@@ -903,7 +886,7 @@ GL_METHOD(CreateFramebuffer) {
   GLuint buffer;
   glGenFramebuffers(1, &buffer);
   inst->registerGLObj(GLOBJECT_TYPE_FRAMEBUFFER, buffer);
-  NanReturnValue(NanNew<Number>(0));
+  NanReturnValue(NanNew<v8::Number>(0));
 }
 
 
@@ -939,7 +922,7 @@ GL_METHOD(BufferData) {
 
   int target = args[0]->Int32Value();
   if(args[1]->IsObject()) {
-    Local<Object> obj = Local<Object>::Cast(args[1]);
+    v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(args[1]);
     GLenum usage = args[2]->Int32Value();
 
     int element_size = SizeOfArrayElementForType(obj->GetIndexedPropertiesExternalArrayDataType());
@@ -961,7 +944,7 @@ GL_METHOD(BufferSubData) {
 
   int target = args[0]->Int32Value();
   int offset = args[1]->Int32Value();
-  Local<Object> obj = Local<Object>::Cast(args[2]);
+  v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(args[2]);
 
   int element_size = SizeOfArrayElementForType( obj->GetIndexedPropertiesExternalArrayDataType());
   int size = obj->GetIndexedPropertiesExternalArrayDataLength() * element_size;
@@ -1213,7 +1196,6 @@ GL_METHOD(CopyTexImage2D) {
 
 GL_METHOD(CopyTexSubImage2D) {
   GL_BOILERPLATE;
-
   GLenum target = args[0]->Int32Value();
   GLint level = args[1]->Int32Value();
   GLint xoffset = args[2]->Int32Value();
@@ -1222,104 +1204,83 @@ GL_METHOD(CopyTexSubImage2D) {
   GLint y = args[5]->Int32Value();
   GLsizei width = args[6]->Int32Value();
   GLsizei height = args[7]->Int32Value();
-
   glCopyTexSubImage2D( target, level, xoffset, yoffset, x, y, width, height);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(CullFace) {
   GL_BOILERPLATE;
-
   GLenum mode = args[0]->Int32Value();
-
   glCullFace(mode);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(DepthMask) {
   GL_BOILERPLATE;
-
   GLboolean flag = args[0]->BooleanValue();
-
   glDepthMask(flag);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(DepthRange) {
   GL_BOILERPLATE;
-
   GLclampf zNear = (float) args[0]->NumberValue();
   GLclampf zFar = (float) args[1]->NumberValue();
-
-  glDepthRange(zNear, zFar);
+  glDepthRangef(zNear, zFar);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(DisableVertexAttribArray) {
   GL_BOILERPLATE;
-
   GLuint index = args[0]->Int32Value();
-
   glDisableVertexAttribArray(index);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(Hint) {
   GL_BOILERPLATE;
-
   GLenum target = args[0]->Int32Value();
   GLenum mode = args[1]->Int32Value();
-
   glHint(target, mode);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(IsEnabled) {
   GL_BOILERPLATE;
-
   GLenum cap = args[0]->Int32Value();
-
   bool ret=glIsEnabled(cap)!=0;
-  NanReturnValue(JS_BOOL(ret));
+  NanReturnValue(NanNew<v8::Boolean>(ret));
 }
 
 GL_METHOD(LineWidth) {
   GL_BOILERPLATE;
-
   GLfloat width = (float) args[0]->NumberValue();
-
   glLineWidth(width);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(PolygonOffset) {
   GL_BOILERPLATE;
-
   GLfloat factor = (float) args[0]->NumberValue();
   GLfloat units = (float) args[1]->NumberValue();
-
   glPolygonOffset(factor, units);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(SampleCoverage) {
   GL_BOILERPLATE;
-
   GLclampf value = (float) args[0]->NumberValue();
   GLboolean invert = args[1]->BooleanValue();
-
   glSampleCoverage(value, invert);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(Scissor) {
   GL_BOILERPLATE;
-
   GLint x = args[0]->Int32Value();
   GLint y = args[1]->Int32Value();
   GLsizei width = args[2]->Int32Value();
   GLsizei height = args[3]->Int32Value();
-
   glScissor(x, y, width, height);
   NanReturnValue(NanUndefined());
 }
@@ -1337,241 +1298,193 @@ GL_METHOD(StencilFunc) {
 
 GL_METHOD(StencilFuncSeparate) {
   GL_BOILERPLATE;
-
   GLenum face = args[0]->Int32Value();
   GLenum func = args[1]->Int32Value();
   GLint ref = args[2]->Int32Value();
   GLuint mask = args[3]->Int32Value();
-
   glStencilFuncSeparate(face, func, ref, mask);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(StencilMask) {
   GL_BOILERPLATE;
-
   GLuint mask = args[0]->Uint32Value();
-
   glStencilMask(mask);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(StencilMaskSeparate) {
   GL_BOILERPLATE;
-
   GLenum face = args[0]->Int32Value();
   GLuint mask = args[1]->Uint32Value();
-
   glStencilMaskSeparate(face, mask);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(StencilOp) {
   GL_BOILERPLATE;
-
   GLenum fail = args[0]->Int32Value();
   GLenum zfail = args[1]->Int32Value();
   GLenum zpass = args[2]->Int32Value();
-
   glStencilOp(fail, zfail, zpass);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(StencilOpSeparate) {
   GL_BOILERPLATE;
-
   GLenum face = args[0]->Int32Value();
   GLenum fail = args[1]->Int32Value();
   GLenum zfail = args[2]->Int32Value();
   GLenum zpass = args[3]->Int32Value();
-
   glStencilOpSeparate(face, fail, zfail, zpass);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(BindRenderbuffer) {
   GL_BOILERPLATE;
-
   GLenum target = args[0]->Int32Value();
   GLuint buffer = args[1]->IsNull() ? 0 : args[1]->Int32Value();
-
   glBindRenderbuffer(target, buffer);
-
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(CreateRenderbuffer) {
   GL_BOILERPLATE;
-
   GLuint renderbuffers;
   glGenRenderbuffers(1,&renderbuffers);
-  #ifdef LOGGING
-  cout<<"createRenderBuffer "<<renderbuffers<<endl;
-  #endif
   inst->registerGLObj(GLOBJECT_TYPE_RENDERBUFFER, renderbuffers);
-  NanReturnValue(NanNew<Number>(renderbuffers));
+  NanReturnValue(NanNew<v8::Number>(renderbuffers));
 }
 
 GL_METHOD(DeleteBuffer) {
   GL_BOILERPLATE;
-
   GLuint buffer = args[0]->Uint32Value();
-
   glDeleteBuffers(1,&buffer);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(DeleteFramebuffer) {
   GL_BOILERPLATE;
-
   GLuint buffer = args[0]->Uint32Value();
-
   glDeleteFramebuffers(1,&buffer);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(DeleteProgram) {
   GL_BOILERPLATE;
-
   GLuint program = args[0]->Uint32Value();
-
   glDeleteProgram(program);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(DeleteRenderbuffer) {
   GL_BOILERPLATE;
-
   GLuint renderbuffer = args[0]->Uint32Value();
-
   glDeleteRenderbuffers(1, &renderbuffer);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(DeleteShader) {
   GL_BOILERPLATE;
-
   GLuint shader = args[0]->Uint32Value();
-
   glDeleteShader(shader);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(DeleteTexture) {
   GL_BOILERPLATE;
-
   GLuint texture = args[0]->Uint32Value();
-
   glDeleteTextures(1,&texture);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(DetachShader) {
   GL_BOILERPLATE;
-
   GLuint program = args[0]->Uint32Value();
   GLuint shader = args[1]->Uint32Value();
-
   glDetachShader(program, shader);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(FramebufferRenderbuffer) {
   GL_BOILERPLATE;
-
   GLenum target = args[0]->Int32Value();
   GLenum attachment = args[1]->Int32Value();
   GLenum renderbuffertarget = args[2]->Int32Value();
   GLuint renderbuffer = args[3]->Uint32Value();
-
   glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(GetVertexAttribOffset) {
   GL_BOILERPLATE;
-
   GLuint index = args[0]->Uint32Value();
   GLenum pname = args[1]->Int32Value();
   void *ret=NULL;
-
   glGetVertexAttribPointerv(index, pname, &ret);
-  NanReturnValue(JS_INT(ToGLuint(ret)));
+  NanReturnValue(NanNew<v8::Integer>(ToGLuint(ret)));
 }
 
 GL_METHOD(IsBuffer) {
   GL_BOILERPLATE;
-  NanReturnValue(JS_BOOL(glIsBuffer(args[0]->Uint32Value())!=0));
+  NanReturnValue(NanNew<v8::Boolean>(glIsBuffer(args[0]->Uint32Value())!=0));
 }
 
 GL_METHOD(IsFramebuffer) {
   GL_BOILERPLATE;
-  NanReturnValue(JS_BOOL(glIsFramebuffer(args[0]->Uint32Value())!=0));
+  NanReturnValue(NanNew<v8::Boolean>(glIsFramebuffer(args[0]->Uint32Value())!=0));
 }
 
 GL_METHOD(IsProgram) {
   GL_BOILERPLATE;
-
-  NanReturnValue(JS_BOOL(glIsProgram(args[0]->Uint32Value())!=0));
+  NanReturnValue(NanNew<v8::Boolean>(glIsProgram(args[0]->Uint32Value())!=0));
 }
 
 GL_METHOD(IsRenderbuffer) {
   GL_BOILERPLATE;
-
-  NanReturnValue(JS_BOOL(glIsRenderbuffer( args[0]->Uint32Value())!=0));
+  NanReturnValue(NanNew<v8::Boolean>(glIsRenderbuffer( args[0]->Uint32Value())!=0));
 }
 
 GL_METHOD(IsShader) {
   GL_BOILERPLATE;
-
-  NanReturnValue(JS_BOOL(glIsShader(args[0]->Uint32Value())!=0));
+  NanReturnValue(NanNew<v8::Boolean>(glIsShader(args[0]->Uint32Value())!=0));
 }
 
 GL_METHOD(IsTexture) {
   GL_BOILERPLATE;
-
-  NanReturnValue(JS_BOOL(glIsTexture(args[0]->Uint32Value())!=0));
+  NanReturnValue(NanNew<v8::Boolean>(glIsTexture(args[0]->Uint32Value())!=0));
 }
 
 GL_METHOD(RenderbufferStorage) {
   GL_BOILERPLATE;
-
   GLenum target = args[0]->Int32Value();
   GLenum internalformat = args[1]->Int32Value();
   GLsizei width = args[2]->Uint32Value();
   GLsizei height = args[3]->Uint32Value();
-
   glRenderbufferStorage(target, internalformat, width, height);
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(GetShaderSource) {
   GL_BOILERPLATE;
-
   int shader = args[0]->Int32Value();
-
   GLint len;
   glGetShaderiv(shader, GL_SHADER_SOURCE_LENGTH, &len);
   GLchar *source=new GLchar[len];
   glGetShaderSource(shader, len, NULL, source);
-
-  Local<String> str = NanNew<String>(source);
+  v8::Local<v8::String> str = NanNew<v8::String>(source);
   delete source;
-
   NanReturnValue(str);
 }
 
 GL_METHOD(ValidateProgram) {
   GL_BOILERPLATE;
-
   glValidateProgram(args[0]->Int32Value());
-
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(TexSubImage2D) {
   GL_BOILERPLATE;
-
   GLenum target = args[0]->Int32Value();
   GLint level = args[1]->Int32Value();
   GLint xoffset = args[2]->Int32Value();
@@ -1581,15 +1494,15 @@ GL_METHOD(TexSubImage2D) {
   GLenum format = args[6]->Int32Value();
   GLenum type = args[7]->Int32Value();
   void *pixels=getImageData(args[8]);
-
+  if(!pixels) {
+    return NanThrowError("Invalid image data");
+  }
   glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
-
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(ReadPixels) {
   GL_BOILERPLATE;
-
   GLint x        = args[0]->Int32Value();
   GLint y        = args[1]->Int32Value();
   GLsizei width  = args[2]->Int32Value();
@@ -1597,61 +1510,53 @@ GL_METHOD(ReadPixels) {
   GLenum format  = args[4]->Int32Value();
   GLenum type    = args[5]->Int32Value();
   void *pixels   = getImageData(args[6]);
-
+  if(!pixels) {
+    return NanThrowError("Invalid image data");
+  }
   glReadPixels(x, y, width, height, format, type, pixels);
-
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(GetTexParameter) {
   GL_BOILERPLATE;
-
   GLenum target = args[0]->Int32Value();
   GLenum pname = args[1]->Int32Value();
-
   GLint param_value=0;
   glGetTexParameteriv(target, pname, &param_value);
-
-  NanReturnValue(NanNew<Number>(param_value));
+  NanReturnValue(NanNew<v8::Number>(param_value));
 }
 
 GL_METHOD(GetActiveAttrib) {
   GL_BOILERPLATE;
-
   GLuint program = args[0]->Int32Value();
   GLuint index = args[1]->Int32Value();
-
+  //TODO: Check max attribute size length here
   char name[1024];
   GLsizei length=0;
   GLenum type;
   GLsizei size;
   glGetActiveAttrib(program, index, 1024, &length, &size, &type, name);
-
-  Local<Array> activeInfo = NanNew<Array>(3);
-  activeInfo->Set(JS_STR("size"), JS_INT(size));
-  activeInfo->Set(JS_STR("type"), JS_INT((int)type));
-  activeInfo->Set(JS_STR("name"), JS_STR(name));
-
+  v8::Local<v8::Array> activeInfo = NanNew<v8::Array>(3);
+  activeInfo->Set(NanNew<v8::String>("size"), NanNew<v8::Integer>(size));
+  activeInfo->Set(NanNew<v8::String>("type"), NanNew<v8::Integer>((int)type));
+  activeInfo->Set(NanNew<v8::String>("name"), NanNew<v8::String>(name));
   NanReturnValue(activeInfo);
 }
 
 GL_METHOD(GetActiveUniform) {
   GL_BOILERPLATE;
-
   GLuint program = args[0]->Int32Value();
   GLuint index = args[1]->Int32Value();
-
+  //TODO: Check max attribute length
   char name[1024];
   GLsizei length=0;
   GLenum type;
   GLsizei size;
   glGetActiveUniform(program, index, 1024, &length, &size, &type, name);
-
-  Local<Array> activeInfo = NanNew<Array>(3);
-  activeInfo->Set(JS_STR("size"), JS_INT(size));
-  activeInfo->Set(JS_STR("type"), JS_INT((int)type));
-  activeInfo->Set(JS_STR("name"), JS_STR(name));
-
+  v8::Local<v8::Array> activeInfo = NanNew<v8::Array>(3);
+  activeInfo->Set(NanNew<v8::String>("size"), NanNew<v8::Integer>(size));
+  activeInfo->Set(NanNew<v8::String>("type"), NanNew<v8::Integer>((int)type));
+  activeInfo->Set(NanNew<v8::String>("name"), NanNew<v8::String>(name));
   NanReturnValue(activeInfo);
 }
 
@@ -1664,16 +1569,15 @@ GL_METHOD(GetAttachedShaders) {
   GLsizei count;
   glGetAttachedShaders(program, 1024, &count, shaders);
 
-  Local<Array> shadersArr = NanNew<Array>(count);
+  v8::Local<v8::Array> shadersArr = NanNew<v8::Array>(count);
   for(int i=0;i<count;i++)
-    shadersArr->Set(i, JS_INT((int)shaders[i]));
+    shadersArr->Set(i, NanNew<v8::Integer>((int)shaders[i]));
 
   NanReturnValue(shadersArr);
 }
 
 GL_METHOD(GetParameter) {
   GL_BOILERPLATE;
-
   GLenum name = args[0]->Int32Value();
 
   switch(name) {
@@ -1692,7 +1596,7 @@ GL_METHOD(GetParameter) {
     // return a boolean
     GLboolean params;
     ::glGetBooleanv(name, &params);
-    NanReturnValue(JS_BOOL(params!=0));
+    NanReturnValue(NanNew<v8::Boolean>(params!=0));
   }
   case GL_DEPTH_CLEAR_VALUE:
   case GL_LINE_WIDTH:
@@ -1703,7 +1607,7 @@ GL_METHOD(GetParameter) {
     // return a float
     GLfloat params;
     ::glGetFloatv(name, &params);
-    NanReturnValue(JS_FLOAT(params));
+    NanReturnValue(NanNew<v8::Number>(params));
   }
   case GL_RENDERER:
   case GL_SHADING_LANGUAGE_VERSION:
@@ -1714,7 +1618,7 @@ GL_METHOD(GetParameter) {
     // return a string
     char *params=(char*) ::glGetString(name);
     if(params)
-      NanReturnValue(JS_STR(params));
+      NanReturnValue(NanNew<v8::String>(params));
     NanReturnUndefined();
   }
   case GL_MAX_VIEWPORT_DIMS:
@@ -1723,9 +1627,9 @@ GL_METHOD(GetParameter) {
     GLint params[2];
     ::glGetIntegerv(name, params);
 
-    Local<Array> arr=NanNew<Array>(2);
-    arr->Set(0,JS_INT(params[0]));
-    arr->Set(1,JS_INT(params[1]));
+    v8::Local<v8::Array> arr=NanNew<v8::Array>(2);
+    arr->Set(0,NanNew<v8::Integer>(params[0]));
+    arr->Set(1,NanNew<v8::Integer>(params[1]));
     NanReturnValue(arr);
   }
   case GL_SCISSOR_BOX:
@@ -1735,11 +1639,11 @@ GL_METHOD(GetParameter) {
     GLint params[4];
     ::glGetIntegerv(name, params);
 
-    Local<Array> arr=NanNew<Array>(4);
-    arr->Set(0,JS_INT(params[0]));
-    arr->Set(1,JS_INT(params[1]));
-    arr->Set(2,JS_INT(params[2]));
-    arr->Set(3,JS_INT(params[3]));
+    v8::Local<v8::Array> arr=NanNew<v8::Array>(4);
+    arr->Set(0,NanNew<v8::Integer>(params[0]));
+    arr->Set(1,NanNew<v8::Integer>(params[1]));
+    arr->Set(2,NanNew<v8::Integer>(params[2]));
+    arr->Set(3,NanNew<v8::Integer>(params[3]));
     NanReturnValue(arr);
   }
   case GL_ALIASED_LINE_WIDTH_RANGE:
@@ -1749,9 +1653,9 @@ GL_METHOD(GetParameter) {
     // return a float[2]
     GLfloat params[2];
     ::glGetFloatv(name, params);
-    Local<Array> arr=NanNew<Array>(2);
-    arr->Set(0,JS_FLOAT(params[0]));
-    arr->Set(1,JS_FLOAT(params[1]));
+    v8::Local<v8::Array> arr=NanNew<v8::Array>(2);
+    arr->Set(0,NanNew<v8::Number>(params[0]));
+    arr->Set(1,NanNew<v8::Number>(params[1]));
     NanReturnValue(arr);
   }
   case GL_BLEND_COLOR:
@@ -1760,11 +1664,11 @@ GL_METHOD(GetParameter) {
     // return a float[4]
     GLfloat params[4];
     ::glGetFloatv(name, params);
-    Local<Array> arr=NanNew<Array>(4);
-    arr->Set(0,JS_FLOAT(params[0]));
-    arr->Set(1,JS_FLOAT(params[1]));
-    arr->Set(2,JS_FLOAT(params[2]));
-    arr->Set(3,JS_FLOAT(params[3]));
+    v8::Local<v8::Array> arr=NanNew<v8::Array>(4);
+    arr->Set(0,NanNew<v8::Number>(params[0]));
+    arr->Set(1,NanNew<v8::Number>(params[1]));
+    arr->Set(2,NanNew<v8::Number>(params[2]));
+    arr->Set(3,NanNew<v8::Number>(params[3]));
     NanReturnValue(arr);
   }
   case GL_COLOR_WRITEMASK:
@@ -1772,11 +1676,11 @@ GL_METHOD(GetParameter) {
     // return a boolean[4]
     GLboolean params[4];
     ::glGetBooleanv(name, params);
-    Local<Array> arr=NanNew<Array>(4);
-    arr->Set(0,JS_BOOL(params[0]==1));
-    arr->Set(1,JS_BOOL(params[1]==1));
-    arr->Set(2,JS_BOOL(params[2]==1));
-    arr->Set(3,JS_BOOL(params[3]==1));
+    v8::Local<v8::Array> arr=NanNew<v8::Array>(4);
+    arr->Set(0,NanNew<v8::Boolean>(params[0]==1));
+    arr->Set(1,NanNew<v8::Boolean>(params[1]==1));
+    arr->Set(2,NanNew<v8::Boolean>(params[2]==1));
+    arr->Set(3,NanNew<v8::Boolean>(params[3]==1));
     NanReturnValue(arr);
   }
   case GL_ARRAY_BUFFER_BINDING:
@@ -1789,13 +1693,13 @@ GL_METHOD(GetParameter) {
   {
     GLint params;
     ::glGetIntegerv(name, &params);
-    NanReturnValue(JS_INT(params));
+    NanReturnValue(NanNew<v8::Integer>(params));
   }
   default: {
     // return a long
     GLint params;
     ::glGetIntegerv(name, &params);
-    NanReturnValue(JS_INT(params));
+    NanReturnValue(NanNew<v8::Integer>(params));
   }
   }
 
@@ -1810,7 +1714,7 @@ GL_METHOD(GetBufferParameter) {
 
   GLint params;
   glGetBufferParameteriv(target,pname,&params);
-  NanReturnValue(JS_INT(params));
+  NanReturnValue(NanNew<v8::Integer>(params));
 }
 
 GL_METHOD(GetFramebufferAttachmentParameter) {
@@ -1822,7 +1726,7 @@ GL_METHOD(GetFramebufferAttachmentParameter) {
 
   GLint params;
   glGetFramebufferAttachmentParameteriv(target,attachment, pname,&params);
-  NanReturnValue(JS_INT(params));
+  NanReturnValue(NanNew<v8::Integer>(params));
 }
 
 GL_METHOD(GetProgramInfoLog) {
@@ -1833,7 +1737,7 @@ GL_METHOD(GetProgramInfoLog) {
   char Error[1024];
   glGetProgramInfoLog(program, 1024, &Len, Error);
 
-  NanReturnValue(NanNew<String>(Error));
+  NanReturnValue(NanNew<v8::String>(Error));
 }
 
 GL_METHOD(GetRenderbufferParameter) {
@@ -1844,7 +1748,7 @@ GL_METHOD(GetRenderbufferParameter) {
   int value = 0;
   glGetRenderbufferParameteriv(target,pname,&value);
 
-  NanReturnValue(JS_INT(value));
+  NanReturnValue(NanNew<v8::Integer>(value));
 }
 
 GL_METHOD(GetUniform) {
@@ -1858,9 +1762,9 @@ GL_METHOD(GetUniform) {
 
   glGetUniformfv(program, location, data);
 
-  Local<Array> arr=NanNew<Array>(16);
+  v8::Local<v8::Array> arr=NanNew<v8::Array>(16);
   for(int i=0;i<16;i++)
-    arr->Set(i,JS_FLOAT(data[i]));
+    arr->Set(i,NanNew<v8::Number>(data[i]));
 
   NanReturnValue(arr);
 }
@@ -1877,36 +1781,35 @@ GL_METHOD(GetVertexAttrib) {
   case GL_VERTEX_ATTRIB_ARRAY_ENABLED:
   case GL_VERTEX_ATTRIB_ARRAY_NORMALIZED:
     glGetVertexAttribiv(index,pname,&value);
-    NanReturnValue(JS_BOOL(value!=0));
+    NanReturnValue(NanNew<v8::Boolean>(value!=0));
   case GL_VERTEX_ATTRIB_ARRAY_SIZE:
   case GL_VERTEX_ATTRIB_ARRAY_STRIDE:
   case GL_VERTEX_ATTRIB_ARRAY_TYPE:
     glGetVertexAttribiv(index,pname,&value);
-    NanReturnValue(JS_INT(value));
+    NanReturnValue(NanNew<v8::Integer>(value));
   case GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING:
     glGetVertexAttribiv(index,pname,&value);
-    NanReturnValue(JS_INT(value));
+    NanReturnValue(NanNew<v8::Integer>(value));
   case GL_CURRENT_VERTEX_ATTRIB: {
     float vextex_attribs[4];
     glGetVertexAttribfv(index,pname,vextex_attribs);
-    Local<Array> arr=NanNew<Array>(4);
-    arr->Set(0,JS_FLOAT(vextex_attribs[0]));
-    arr->Set(1,JS_FLOAT(vextex_attribs[1]));
-    arr->Set(2,JS_FLOAT(vextex_attribs[2]));
-    arr->Set(3,JS_FLOAT(vextex_attribs[3]));
+    v8::Local<v8::Array> arr=NanNew<v8::Array>(4);
+    arr->Set(0,NanNew<v8::Number>(vextex_attribs[0]));
+    arr->Set(1,NanNew<v8::Number>(vextex_attribs[1]));
+    arr->Set(2,NanNew<v8::Number>(vextex_attribs[2]));
+    arr->Set(3,NanNew<v8::Number>(vextex_attribs[3]));
     NanReturnValue(arr);
   }
   default:
-    NanThrowError("GetVertexAttrib: Invalid Enum");
+    return NanThrowError("GetVertexAttrib: Invalid Enum");
   }
-
   NanReturnValue(NanUndefined());
 }
 
 GL_METHOD(GetSupportedExtensions) {
   GL_BOILERPLATE;
   char *extensions=(char*) glGetString(GL_EXTENSIONS);
-  NanReturnValue(JS_STR(extensions));
+  NanReturnValue(NanNew<v8::String>(extensions));
 }
 
 GL_METHOD(GetExtension) {
@@ -1920,5 +1823,5 @@ GL_METHOD(GetExtension) {
 GL_METHOD(CheckFramebufferStatus) {
   GL_BOILERPLATE;
   GLenum target=args[0]->Int32Value();
-  NanReturnValue(JS_INT((int)glCheckFramebufferStatus(target)));
+  NanReturnValue(NanNew<v8::Integer>((int)glCheckFramebufferStatus(target)));
 }

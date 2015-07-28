@@ -6,10 +6,6 @@
     ['platform == "mac"', {'variables': {'platform': 'darwin'}}],
     ['platform == "win"', {'variables': {'platform': 'win32'}}]
   ],
-  'includes': [
-    'angle/build/common.gypi',
-    'angle/build/common_defines.gypi',
-  ],
   'targets': [
     {
       'target_name': 'webgl',
@@ -35,12 +31,8 @@
       ],
       'conditions': [
         ['OS=="mac"', {
-            'libraries': ['-lGLEW', '-framework OpenGL'],
-            'include_dirs': ['/usr/local/include'],
-            'library_dirs': ['/usr/local/lib']
         }],
         ['OS=="linux"', {
-            'libraries': ['-lGLEW', '-lGL']
         }],
         ['OS=="win"',
           {

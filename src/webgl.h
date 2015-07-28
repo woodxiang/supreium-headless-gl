@@ -4,7 +4,13 @@
 #include <algorithm>
 #include <vector>
 #include <utility>
+
+#include <node.h>
 #include "nan.h"
+#include <v8.h>
+
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
 
 enum GLObjectType {
   GLOBJECT_TYPE_DELETED,
@@ -28,7 +34,8 @@ typedef std::pair<GLuint, GLObjectType> GLObjectReference;
 struct WebGLRenderingContext : public node::ObjectWrap {
 
   //The underlying OpenGL context
-  GL_CONTEXT_TYPE context;
+  EGLContext context;
+  EGLDisplay display;
   GLContextState  state;
 
   //A list of object references, need do destroy them at program exit
@@ -213,7 +220,6 @@ struct WebGLRenderingContext : public node::ObjectWrap {
 
   static NAN_METHOD(GetVertexAttribOffset);
   static NAN_METHOD(DisableVertexAttribArray);
-
 
   static NAN_METHOD(IsBuffer);
   static NAN_METHOD(IsFramebuffer);

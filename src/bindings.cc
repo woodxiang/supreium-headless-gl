@@ -5,29 +5,34 @@
  *      Author: ngk437
  */
 
-
-#include "webgl.h"
 #include <cstdlib>
+#include "webgl.h"
 
 v8::Persistent<v8::FunctionTemplate> WEBGL_TEMPLATE;
 
 #define JS_GL_METHOD(webgl_name, method_name) \
   webgl_template->PrototypeTemplate()->Set(\
-    NanNew<String>(webgl_name),\
+    NanNew<v8::String>(webgl_name),\
     NanNew<v8::FunctionTemplate>(\
       WebGLRenderingContext:: method_name)->GetFunction())
-#define JS_GL_CONSTANT(name) webgl_template->PrototypeTemplate()->Set(JS_STR( #name ), JS_INT(GL_ ## name))
+
+#define JS_CONSTANT(x, v) \
+  webgl_template->PrototypeTemplate()->Set(\
+    NanNew<v8::String>(#x), NanNew<v8::Integer>(v))
+
+#define JS_GL_CONSTANT(name) JS_CONSTANT(name, GL_ ## name)
 
 extern "C" {
-void init(Handle<Object> target)
+void init(v8::Handle<v8::Object> exports)
 {
   atexit(WebGLRenderingContext::disposeAll);
 
   //Create the WebGL template
-  v8::Local<v8::FunctionTemplate> webgl_template = NanNew<FunctionTemplate>(WebGLRenderingContext::New);
+  v8::Local<v8::FunctionTemplate> webgl_template =
+    NanNew<v8::FunctionTemplate>(WebGLRenderingContext::New);
 
   webgl_template->InstanceTemplate()->SetInternalFieldCount(1);
-  webgl_template->SetClassName(JS_STR("WebGLRenderingContext"));
+  webgl_template->SetClassName(NanNew<v8::String>("WebGLRenderingContext"));
 
   //Add methods
   JS_GL_METHOD("uniform1f", Uniform1f);
@@ -531,35 +536,19 @@ void init(Handle<Object> target)
   JS_GL_CONSTANT(VERTEX_ATTRIB_ARRAY_POINTER);
   JS_GL_CONSTANT(VERTEX_ATTRIB_ARRAY_BUFFER_BINDING);
 
-  /* Read Format */
-#ifndef __APPLE__
-  JS_GL_CONSTANT(IMPLEMENTATION_COLOR_READ_TYPE);
-  JS_GL_CONSTANT(IMPLEMENTATION_COLOR_READ_FORMAT);
-#endif
 
   /* Shader Source */
   JS_GL_CONSTANT(COMPILE_STATUS);
   JS_GL_CONSTANT(INFO_LOG_LENGTH);
   JS_GL_CONSTANT(SHADER_SOURCE_LENGTH);
-#ifndef __APPLE__
   JS_GL_CONSTANT(SHADER_COMPILER);
-#endif
 
-  /* Shader Binary */
-#ifndef __APPLE__
-  JS_GL_CONSTANT(SHADER_BINARY_FORMATS);
-  JS_GL_CONSTANT(NUM_SHADER_BINARY_FORMATS);
-#endif
-
-  /* Shader Precision-Specified Types */
-#ifndef __APPLE__
   JS_GL_CONSTANT(LOW_FLOAT);
   JS_GL_CONSTANT(MEDIUM_FLOAT);
   JS_GL_CONSTANT(HIGH_FLOAT);
   JS_GL_CONSTANT(LOW_INT);
   JS_GL_CONSTANT(MEDIUM_INT);
   JS_GL_CONSTANT(HIGH_INT);
-#endif
 
   /* Framebuffer Object. */
   JS_GL_CONSTANT(FRAMEBUFFER);
@@ -567,14 +556,7 @@ void init(Handle<Object> target)
 
   JS_GL_CONSTANT(RGBA4);
   JS_GL_CONSTANT(RGB5_A1);
-#ifndef __APPLE__
-  //JS_GL_CONSTANT(RGB565);
-#endif
   JS_GL_CONSTANT(DEPTH_COMPONENT16);
-  JS_GL_CONSTANT(STENCIL_INDEX);
-  JS_GL_CONSTANT(STENCIL_INDEX8);
-  JS_GL_CONSTANT(DEPTH_STENCIL);
-  JS_GL_CONSTANT(DEPTH24_STENCIL8);
 
   JS_GL_CONSTANT(RENDERBUFFER_WIDTH);
   JS_GL_CONSTANT(RENDERBUFFER_HEIGHT);
@@ -594,7 +576,6 @@ void init(Handle<Object> target)
   JS_GL_CONSTANT(COLOR_ATTACHMENT0);
   JS_GL_CONSTANT(DEPTH_ATTACHMENT);
   JS_GL_CONSTANT(STENCIL_ATTACHMENT);
-  JS_GL_CONSTANT(DEPTH_STENCIL_ATTACHMENT);
 
   JS_GL_CONSTANT(NONE);
 
@@ -610,15 +591,17 @@ void init(Handle<Object> target)
   JS_GL_CONSTANT(INVALID_FRAMEBUFFER_OPERATION);
 
   /* WebGL-specific enums */
-  webgl_template->PrototypeTemplate()->Set(JS_STR( "UNPACK_FLIP_Y_WEBGL" ), JS_INT(0x9240));
-  webgl_template->PrototypeTemplate()->Set(JS_STR( "UNPACK_PREMULTIPLY_ALPHA_WEBGL" ), JS_INT(0x9241));
-  webgl_template->PrototypeTemplate()->Set(JS_STR( "CONTEXT_LOST_WEBGL" ), JS_INT(0x9242));
-  webgl_template->PrototypeTemplate()->Set(JS_STR( "UNPACK_COLORSPACE_CONVERSION_WEBGL" ), JS_INT(0x9243));
-  webgl_template->PrototypeTemplate()->Set(JS_STR( "BROWSER_DEFAULT_WEBGL" ), JS_INT(0x9244));
+  JS_CONSTANT(UNPACK_FLIP_Y_WEBGL, 0x9240);
+  JS_CONSTANT(UNPACK_PREMULTIPLY_ALPHA_WEBGL, 0x9241);
+  JS_CONSTANT(CONTEXT_LOST_WEBGL, 0x9242);
+  JS_CONSTANT(UNPACK_COLORSPACE_CONVERSION_WEBGL, 0x9243);
+  JS_CONSTANT(BROWSER_DEFAULT_WEBGL, 0x9244);
 
   //Export function
   NanAssignPersistent(WEBGL_TEMPLATE, webgl_template);
-  target->Set(JS_STR("WebGLRenderingContext"), WEBGL_TEMPLATE->GetFunction());
+  exports->Set(
+    NanNew<v8::String>("WebGLRenderingContext"),
+    webgl_template->GetFunction());
 }
 
 NODE_MODULE(webgl, init)
