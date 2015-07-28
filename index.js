@@ -1,6 +1,6 @@
 'use strict'
 
-var WebGLContext = require('./webgl.js');
+var WebGLRenderingContext = require('./webgl.js')
 
 function flag(options, name, dflt) {
   if(!options || !(typeof options === 'object') || !(name in options)) {
@@ -10,7 +10,7 @@ function flag(options, name, dflt) {
 }
 
 function createContext(width, height, options) {
-    var context = new WebGLContext(
+    var context = new WebGLRenderingContext(
       width,
       height,
       flag(options, 'alpha', true),
