@@ -31,6 +31,11 @@
       ],
       'conditions': [
         ['OS=="mac"', {
+            'libraries': [
+                '-framework QuartzCore',
+                '-framework CoreGraphics',
+                '-framework Quartz'
+            ],
         }],
         ['OS=="linux"', {
         }],

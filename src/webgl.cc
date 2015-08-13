@@ -90,6 +90,8 @@ WebGLRenderingContext::WebGLRenderingContext(
   next(NULL),
   prev(NULL) {
 
+  printf("starting webgl\n");
+
 
   //Get display
   display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
@@ -98,11 +100,17 @@ WebGLRenderingContext::WebGLRenderingContext(
     return;
   }
 
+  printf("1\n");
+
+
   //Initialize EGL
   if(!eglInitialize(display, NULL, NULL)) {
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
+
+  printf("2\n");
+
 
   //Set up configuration
   std::vector<EGLint> attrib_list;
@@ -113,6 +121,7 @@ WebGLRenderingContext::WebGLRenderingContext(
     attrib_list.push_back(x);\
     attrib_list.push_back(v);
 
+  PUSH_ATTRIB(EGL_SURFACE_TYPE, EGL_PBUFFER_BIT);
   PUSH_ATTRIB(EGL_CONFORMANT, EGL_OPENGL_ES2_BIT);
   PUSH_ATTRIB(EGL_RED_SIZE, 8);
   PUSH_ATTRIB(EGL_GREEN_SIZE, 8);
@@ -126,6 +135,7 @@ WebGLRenderingContext::WebGLRenderingContext(
   if(stencil) {
     PUSH_ATTRIB(EGL_STENCIL_SIZE, 8);
   }
+
   attrib_list.push_back(EGL_NONE);
 
   #undef PUSH_ATTRIB
@@ -140,19 +150,42 @@ WebGLRenderingContext::WebGLRenderingContext(
     return;
   }
 
+  printf("3\n");
+
+
   //Create context
-  context = eglCreateContext(display, config, EGL_NO_CONTEXT, NULL);
+  EGLint contextAttribs[] = {
+    EGL_CONTEXT_CLIENT_VERSION, 2,
+    EGL_NONE
+  };
+  context = eglCreateContext(display, config, EGL_NO_CONTEXT, contextAttribs);
   if(context == EGL_NO_CONTEXT) {
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
 
-  //Set active
-  if(!eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context)) {
+  printf("4\n");
+
+  EGLint surfaceAttribs[] = {
+      EGL_WIDTH,  (EGLint)width,
+      EGL_HEIGHT, (EGLint)height,
+      EGL_NONE
+  };
+  surface = eglCreatePbufferSurface(display, config, surfaceAttribs);
+  if(surface == EGL_NO_SURFACE) {
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
 
+  printf("5\n");
+
+  //Set active
+  if(!eglMakeCurrent(display, surface, surface, context)) {
+    state = GLCONTEXT_STATE_ERROR;
+    return;
+  }
+
+  printf("6\n");
 
   //Success
   state = GLCONTEXT_STATE_OK;
@@ -167,7 +200,7 @@ bool WebGLRenderingContext::setActive() {
   if(this == ACTIVE) {
     return true;
   }
-  if(!eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context)) {
+  if(!eglMakeCurrent(display, surface, surface, context)) {
     return false;
   }
   ACTIVE = this;
@@ -217,6 +250,7 @@ void WebGLRenderingContext::dispose() {
 
   //Destroy context
   eglDestroyContext(display, context);
+  eglDestroySurface(display, surface);
   eglTerminate(display);
 
   //Unlink from active

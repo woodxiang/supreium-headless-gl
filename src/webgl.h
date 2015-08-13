@@ -36,6 +36,7 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   //The underlying OpenGL context
   EGLContext context;
   EGLDisplay display;
+  EGLSurface surface;
   GLContextState  state;
 
   //A list of object references, need do destroy them at program exit
