@@ -1,9 +1,9 @@
 var tape = require('tape')
 var runConformance = require('gl-conformance')
-var createContext = require('../index')
+var createContext = require('../../index')
 
 //Inject WebGL types into global namespaces, required by some conformance tests
-WebGLRenderingContext = require('../webgl')
+WebGLRenderingContext      = require('../../webgl')
 WebGLBuffer                = WebGLRenderingContext.WebGLBuffer
 WebGLFramebuffer           = WebGLRenderingContext.WebGLFramebuffer
 WebGLProgram               = WebGLRenderingContext.WebGLProgram
