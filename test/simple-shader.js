@@ -6,8 +6,8 @@ var drawTriangle = require('./draw-triangle')
 var makeShader = require('./make-shader')
 
 tape('simple-shader', function(t) {
-  var width = 10
-  var height = 10
+  var width = 50
+  var height = 50
   var gl = createContext(width, height)
 
   var vertex_src = [
