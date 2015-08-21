@@ -8,6 +8,7 @@ var tex = gl.createTexture();
 gl.bindTexture(gl.TEXTURE_2D, tex)
 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
+
 //Create frame buffer
 var fbo = gl.createFramebuffer();
 gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
@@ -22,8 +23,8 @@ gl.clear(gl.COLOR_BUFFER_BIT);
 var pixels = new Uint8Array(width * height * 4);
 gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 process.stdout.write(["P3\n# gl.ppm\n", width, " ", height, "\n255\n"].join(""));
-for(var i=0; i<pixels.length; ++i) {
-//    process.stdout.write(pixels[i] + " ");
+for(var i=0; i<pixels.length; i+=3) {
+    process.stdout.write(pixels[i] + " " + pixels[i+1] + " " + pixels[i+2] + " ");
 }
 
 gl.destroy();

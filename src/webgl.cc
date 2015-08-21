@@ -90,9 +90,6 @@ WebGLRenderingContext::WebGLRenderingContext(
   next(NULL),
   prev(NULL) {
 
-  printf("starting webgl\n");
-
-
   //Get display
   display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
   if(display == EGL_NO_DISPLAY) {
@@ -100,17 +97,11 @@ WebGLRenderingContext::WebGLRenderingContext(
     return;
   }
 
-  printf("1\n");
-
-
   //Initialize EGL
   if(!eglInitialize(display, NULL, NULL)) {
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
-
-  printf("2\n");
-
 
   //Set up configuration
   std::vector<EGLint> attrib_list;
@@ -150,9 +141,6 @@ WebGLRenderingContext::WebGLRenderingContext(
     return;
   }
 
-  printf("3\n");
-
-
   //Create context
   EGLint contextAttribs[] = {
     EGL_CONTEXT_CLIENT_VERSION, 2,
@@ -163,8 +151,6 @@ WebGLRenderingContext::WebGLRenderingContext(
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
-
-  printf("4\n");
 
   EGLint surfaceAttribs[] = {
       EGL_WIDTH,  (EGLint)width,
@@ -177,15 +163,11 @@ WebGLRenderingContext::WebGLRenderingContext(
     return;
   }
 
-  printf("5\n");
-
   //Set active
   if(!eglMakeCurrent(display, surface, surface, context)) {
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
-
-  printf("6\n");
 
   //Success
   state = GLCONTEXT_STATE_OK;
@@ -220,10 +202,9 @@ void WebGLRenderingContext::dispose() {
   state = GLCONTEXT_STATE_DESTROY;
 
   //Destroy all object references
-  compactGLObj();
-  for(size_t i=0; i<objects.size(); ++i) {
-    GLuint obj = objects[i].first;
-    switch(objects[i].second) {
+  for(std::map< std::pair<GLuint, GLObjectType>, bool >::iterator iter=objects.begin(); iter!=objects.end(); ++iter) {
+    GLuint obj = iter->first.first;
+    switch(iter->first.second) {
       case GLOBJECT_TYPE_PROGRAM:
         glDeleteProgram(obj);
         break;
@@ -246,7 +227,6 @@ void WebGLRenderingContext::dispose() {
         break;
     }
   }
-  objects.clear();
 
   //Destroy context
   eglDestroyContext(display, context);
@@ -1032,7 +1012,6 @@ GL_METHOD(VertexAttribPointer) {
   int stride = args[4]->Int32Value();
   long offset = args[5]->Int32Value();
 
-  //    printf("VertexAttribPointer %d %d %d %d %d %d\n", indx, size, type, normalized, stride, offset);
   glVertexAttribPointer(indx, size, type, normalized, stride, (const GLvoid *)offset);
 
   NanReturnValue(NanUndefined());
@@ -1393,6 +1372,7 @@ GL_METHOD(CreateRenderbuffer) {
 GL_METHOD(DeleteBuffer) {
   GL_BOILERPLATE;
   GLuint buffer = args[0]->Uint32Value();
+  inst->unregisterGLObj(GLOBJECT_TYPE_BUFFER, buffer);
   glDeleteBuffers(1,&buffer);
   NanReturnValue(NanUndefined());
 }
@@ -1400,6 +1380,7 @@ GL_METHOD(DeleteBuffer) {
 GL_METHOD(DeleteFramebuffer) {
   GL_BOILERPLATE;
   GLuint buffer = args[0]->Uint32Value();
+  inst->unregisterGLObj(GLOBJECT_TYPE_FRAMEBUFFER, buffer);
   glDeleteFramebuffers(1,&buffer);
   NanReturnValue(NanUndefined());
 }
@@ -1407,6 +1388,7 @@ GL_METHOD(DeleteFramebuffer) {
 GL_METHOD(DeleteProgram) {
   GL_BOILERPLATE;
   GLuint program = args[0]->Uint32Value();
+  inst->unregisterGLObj(GLOBJECT_TYPE_PROGRAM, program);
   glDeleteProgram(program);
   NanReturnValue(NanUndefined());
 }
@@ -1414,6 +1396,7 @@ GL_METHOD(DeleteProgram) {
 GL_METHOD(DeleteRenderbuffer) {
   GL_BOILERPLATE;
   GLuint renderbuffer = args[0]->Uint32Value();
+  inst->unregisterGLObj(GLOBJECT_TYPE_RENDERBUFFER, renderbuffer);
   glDeleteRenderbuffers(1, &renderbuffer);
   NanReturnValue(NanUndefined());
 }
@@ -1421,6 +1404,7 @@ GL_METHOD(DeleteRenderbuffer) {
 GL_METHOD(DeleteShader) {
   GL_BOILERPLATE;
   GLuint shader = args[0]->Uint32Value();
+  inst->unregisterGLObj(GLOBJECT_TYPE_SHADER, shader);
   glDeleteShader(shader);
   NanReturnValue(NanUndefined());
 }
@@ -1428,6 +1412,7 @@ GL_METHOD(DeleteShader) {
 GL_METHOD(DeleteTexture) {
   GL_BOILERPLATE;
   GLuint texture = args[0]->Uint32Value();
+  inst->unregisterGLObj(GLOBJECT_TYPE_TEXTURE, texture);
   glDeleteTextures(1,&texture);
   NanReturnValue(NanUndefined());
 }

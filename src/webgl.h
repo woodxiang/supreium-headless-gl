@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <map>
 #include <utility>
 
 #include <node.h>
@@ -13,7 +14,6 @@
 #include <GLES2/gl2.h>
 
 enum GLObjectType {
-  GLOBJECT_TYPE_DELETED,
   GLOBJECT_TYPE_BUFFER,
   GLOBJECT_TYPE_FRAMEBUFFER,
   GLOBJECT_TYPE_PROGRAM,
@@ -40,24 +40,12 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   GLContextState  state;
 
   //A list of object references, need do destroy them at program exit
-  std::vector< std::pair<GLuint, GLObjectType> > objects;
+  std::map< std::pair<GLuint, GLObjectType>, bool > objects;
   void registerGLObj(GLObjectType type, GLuint obj) {
-    objects.push_back(std::make_pair(obj, type));
+    objects[std::make_pair(obj, type)] = true;
   }
-  void unregisterGLObj(GLuint obj) {
-    objects.push_back(std::make_pair(obj, GLOBJECT_TYPE_DELETED));
-  }
-  void compactGLObj() {
-    std::sort(objects.begin(), objects.end());
-    size_t ptr=1;
-    for(size_t i=1; i<objects.size(); ++i) {
-      if(objects[i-1].first == objects[i].first) {
-        ptr -= 1;
-        continue;
-      }
-      objects[ptr++] = objects[i];
-    }
-    objects.resize(ptr);
+  void unregisterGLObj(GLObjectType type, GLuint obj) {
+    objects.erase(std::make_pair(obj, type));
   }
 
   //Context list
