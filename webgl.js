@@ -1,6 +1,13 @@
 "use strict";
 
-var gl = module.exports = require('bindings')('webgl').WebGLRenderingContext;
+var nativeGL = require('bindings')('webgl')
+
+var gl = module.exports = nativeGL.WebGLRenderingContext
+
+//Hook clean up
+process.on('exit', nativeGL.cleanup)
+process.on('SIGINT', nativeGL.cleanup)
+process.on('uncaughtException', nativeGL.cleanup)
 
 gl.WebGLProgram=function (_)      { this._ = _; }
 gl.WebGLShader=function (_)       { this._ = _; }

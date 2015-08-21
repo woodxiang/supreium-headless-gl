@@ -92,7 +92,7 @@ struct WebGLRenderingContext : public node::ObjectWrap {
 
   //Destructors
   void dispose();
-  static void disposeAll();
+  static NAN_METHOD(DisposeAll);
 
   static NAN_METHOD(New);
   static NAN_METHOD(Destroy);

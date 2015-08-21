@@ -190,6 +190,7 @@ bool WebGLRenderingContext::setActive() {
 }
 
 void WebGLRenderingContext::dispose() {
+
   //Unregister context
   unregisterContext();
 
@@ -241,10 +242,14 @@ WebGLRenderingContext::~WebGLRenderingContext() {
   dispose();
 }
 
-void WebGLRenderingContext::disposeAll() {
+GL_METHOD(DisposeAll) {
+  NanScope();
+
   while(CONTEXT_LIST_HEAD) {
     CONTEXT_LIST_HEAD->dispose();
   }
+
+  NanReturnUndefined();
 }
 
 GL_METHOD(New) {

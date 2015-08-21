@@ -25,8 +25,6 @@ v8::Persistent<v8::FunctionTemplate> WEBGL_TEMPLATE;
 extern "C" {
 void init(v8::Handle<v8::Object> exports)
 {
-  atexit(WebGLRenderingContext::disposeAll);
-
   //Create the WebGL template
   v8::Local<v8::FunctionTemplate> webgl_template =
     NanNew<v8::FunctionTemplate>(WebGLRenderingContext::New);
@@ -602,6 +600,11 @@ void init(v8::Handle<v8::Object> exports)
   exports->Set(
     NanNew<v8::String>("WebGLRenderingContext"),
     webgl_template->GetFunction());
+
+  exports->Set(
+    NanNew<v8::String>("cleanup"),
+    NanNew<v8::FunctionTemplate>(
+      WebGLRenderingContext::DisposeAll)->GetFunction());
 }
 
 NODE_MODULE(webgl, init)
