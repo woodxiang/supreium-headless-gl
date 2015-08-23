@@ -1,9 +1,9 @@
 'use strict'
 
-var tape = require('tape')
+var tape          = require('tape')
 var createContext = require('../index')
-var drawTriangle = require('./util/draw-triangle')
-var makeShader = require('./util/make-program')
+var drawTriangle  = require('./util/draw-triangle')
+var makeShader    = require('./util/make-program')
 
 tape('simple-shader', function(t) {
   var width = 50
@@ -34,6 +34,6 @@ tape('simple-shader', function(t) {
     t.equals(pixels[i+2], 0,    'blue')
     t.equals(pixels[i+3], 255,  'alpha')
   }
-  
+
   t.end()
 })

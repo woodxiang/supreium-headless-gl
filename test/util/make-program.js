@@ -1,5 +1,7 @@
 'use strict'
 
+var compileShader = require('./make-shader')
+
 module.exports = function setupShader(gl, VERT_SRC, FRAG_SRC) {
   var fragShader = compileShader(gl, gl.FRAGMENT_SHADER, FRAG_SRC)
   var vertShader = compileShader(gl, gl.VERTEX_SHADER, VERT_SRC)
