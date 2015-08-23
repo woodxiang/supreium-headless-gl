@@ -10,7 +10,7 @@ function flag(options, name, dflt) {
 }
 
 function createContext(width, height, options) {
-    var context = new WebGLRenderingContext(
+    var gl = new WebGLRenderingContext(
       width,
       height,
       flag(options, 'alpha', true),
@@ -21,9 +21,20 @@ function createContext(width, height, options) {
       flag(options, 'preserveDrawingBuffer', false),
       flag(options, 'preferLowPowerToHighPerformance', false),
       flag(options, 'failIfMajorPerformanceCaveat', false))
-    context.drawingBufferWidth = width
-    context.drawingBufferHeight = height
-    return context
+    gl.drawingBufferWidth = width
+    gl.drawingBufferHeight = height
+
+    var numAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS)
+    for(var i=0; i<numAttribs; ++i) {
+      gl.disableVertexAttribArray(i)
+      gl.vertexAttrib4f(i, 0, 0, 0, 1)
+    }
+
+    gl.disable(gl.DEPTH_TEST)
+    gl.clearColor(0, 0, 0, 0)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    return gl
 }
 
 module.exports = createContext
