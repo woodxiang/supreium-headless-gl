@@ -23,12 +23,10 @@ void main() {\n\
   gl_FragColor = v_color;\n\
 }\n"
 
-tape('simple-shader', function(t) {
+tape('isolated attrib case', function(t) {
   var width = 50
   var height = 50
   var gl = createContext(width, height)
-
-
 
   var numVertexAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS)
   for (var ii = 0; ii < numVertexAttribs; ++ii) {
