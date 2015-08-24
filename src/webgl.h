@@ -97,7 +97,7 @@ struct WebGLRenderingContext : public node::ObjectWrap {
 
   //Buffer state
   GLuint activeArrayBuffer, activeElementArrayBuffer;
-  
+
   //Destructors
   void dispose();
 

@@ -146,18 +146,17 @@ gl.blendFuncSeparate = function blendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstA
 
 var _bufferData = gl.bufferData;
 gl.bufferData = function bufferData(target, data, usage) {
-  if(!(
-      arguments.length === 3 &&
-      typeof target === "number" &&
-      (typeof data === "object" || typeof data === "number") &&
-      typeof usage === "number")) {
-    throw new TypeError('Expected bufferData(number target, ArrayBuffer data, number usage) or bufferData(number target, number size, number usage)')
-  }
+  target = target | 0
+  usage  = usage  | 0
   if(typeof data === 'object') {
-    if(data !== null && data.buffer) {
+    if(data === null) {
+      setError(this, gl.INVALID_VALUE)
+    } else if(data.buffer) {
       return _bufferData.call(this, target, new Uint8Array(data.buffer), usage)
+    } else if(data instanceof ArrayBuffer) {
+      return _bufferData.call(this, target, new Uint8Array(data), usage)
     } else {
-      return _bufferData.call(this, target, 0, usage)
+      setError(this, gl.INVALID_VALUE)
     }
   } else {
     return _bufferData.call(this, target, data|0, usage)
@@ -166,12 +165,15 @@ gl.bufferData = function bufferData(target, data, usage) {
 
 var _bufferSubData = gl.bufferSubData;
 gl.bufferSubData = function bufferSubData(target, offset, data) {
-  if (!(arguments.length === 3 &&
-    typeof target === "number" && typeof offset === "number" &&
-    data !== null && typeof data === "object" && data.buffer)) {
-    throw new TypeError('Expected bufferSubData(number target, number offset, ArrayBuffer data)')
+  target = target | 0
+  offset = offset | 0
+  if(data != null && typeof data === 'object') {
+    if(data.buffer) {
+      return _bufferSubData.call(this, target, offset, new Uint8Array(data.buffer))
+    } else if(data instanceof ArrayBuffer) {
+      return _bufferSubData.call(this, target, offset, new Uint8Array(data))
+    }
   }
-  return _bufferSubData.call(this, target, offset, new Uint8Array(data.buffer))
 }
 
 var _checkFramebufferStatus = gl.checkFramebufferStatus;
