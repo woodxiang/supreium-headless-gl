@@ -1,3 +1,3 @@
 require('./util/conformance')(function(str) {
-  return str === 'attribs_gl-disabled-vertex-attrib'
+  return str === 'attribs_gl-vertex-attrib'
 })

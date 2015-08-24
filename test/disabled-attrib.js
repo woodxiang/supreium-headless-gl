@@ -35,8 +35,6 @@ tape('simple-shader', function(t) {
       var colorLocation = (ii + 1) % numVertexAttribs
       var positionLocation = colorLocation ? 0 : 1
 
-      console.log('running test:', colorLocation, positionLocation)
-
       gl.destroy()
       gl = createContext(width, height)
 
