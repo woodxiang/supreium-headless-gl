@@ -30,9 +30,12 @@ function createContext(width, height, options) {
       gl.vertexAttrib4f(i, 0, 0, 0, 1)
     }
 
+    gl.bindBuffer(gl.ARRAY_BUFFER, null)
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)
+
     gl.disable(gl.DEPTH_TEST)
     gl.clearColor(0, 0, 0, 0)
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT)
 
     return gl
 }

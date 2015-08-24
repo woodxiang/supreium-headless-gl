@@ -1151,10 +1151,16 @@ gl.vertexAttrib4fv = function vertexAttrib4fv(indx, values) {
 
 var _vertexAttribPointer = gl.vertexAttribPointer;
 gl.vertexAttribPointer = function vertexAttribPointer(indx, size, type, normalized, stride, offset) {
-  if (!(arguments.length === 6 && typeof indx === "number" && typeof size === "number" && typeof type === "number" && (typeof normalized === "boolean" || typeof normalized === "number") && typeof stride === "number" && typeof offset === "number")) {
-    throw new TypeError('Expected vertexAttribPointer(number indx, number size, number type, boolean normalized, number stride, number offset)');
+  if (arguments.length !== 6) {
+    throw new TypeError('Expected vertexAttribPointer(number indx, number size, number type, boolean normalized, number stride, number offset)')
   }
-  return _vertexAttribPointer.call(this, indx, size, type, normalized, stride, offset);
+  return _vertexAttribPointer.call(this,
+    indx|0,
+    size|0,
+    type|0,
+    !!normalized,
+    stride|0,
+    offset|0)
 }
 
 var _viewport = gl.viewport;

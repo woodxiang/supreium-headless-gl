@@ -90,6 +90,14 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   static WebGLRenderingContext* ACTIVE;
   bool setActive();
 
+  //Error handling
+  GLenum lastError;
+  void setError(GLenum error);
+
+  //Buffer state
+  GLuint activeArrayBuffer, activeElementArrayBuffer;
+
+
   //Destructors
   void dispose();
   static NAN_METHOD(DisposeAll);

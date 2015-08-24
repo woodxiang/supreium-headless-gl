@@ -88,7 +88,10 @@ WebGLRenderingContext::WebGLRenderingContext(
 
   state(GLCONTEXT_STATE_INIT),
   next(NULL),
-  prev(NULL) {
+  prev(NULL),
+  lastError(GL_NO_ERROR),
+  activeArrayBuffer(0),
+  activeElementArrayBuffer(0) {
 
   //Get display
   display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
@@ -187,6 +190,16 @@ bool WebGLRenderingContext::setActive() {
   }
   ACTIVE = this;
   return true;
+}
+
+void WebGLRenderingContext::setError(GLenum error) {
+  if(error == GL_NO_ERROR || lastError != GL_NO_ERROR) {
+    return;
+  }
+  GLenum prevError = glGetError();
+  if(prevError == GL_NO_ERROR) {
+    lastError = error;
+  }
 }
 
 void WebGLRenderingContext::dispose() {
@@ -490,7 +503,14 @@ GL_METHOD(BindAttribLocation) {
 
 GL_METHOD(GetError) {
   GL_BOILERPLATE;
-  NanReturnValue(NanNew<v8::Number>(glGetError()));
+
+  GLenum error = glGetError();
+  if(inst->lastError != GL_NO_ERROR) {
+    error = inst->lastError;
+  }
+  inst->lastError = GL_NO_ERROR;
+
+  NanReturnValue(NanNew<v8::Number>(error));
 }
 
 
@@ -895,6 +915,12 @@ GL_METHOD(BindBuffer) {
   int buffer = args[1]->Uint32Value();
   glBindBuffer(target,buffer);
 
+  if(target == GL_ARRAY_BUFFER) {
+    inst->activeArrayBuffer = buffer;
+  } else if(target == GL_ELEMENT_ARRAY_BUFFER) {
+    inst->activeElementArrayBuffer = buffer;
+  }
+
   NanReturnValue(NanUndefined());
 }
 
@@ -940,20 +966,22 @@ GL_METHOD(BufferData) {
   GL_BOILERPLATE;
 
   int target = args[0]->Int32Value();
+  GLenum usage = args[2]->Int32Value();
+
   if(args[1]->IsObject()) {
     v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(args[1]);
-    GLenum usage = args[2]->Int32Value();
 
-    int element_size = SizeOfArrayElementForType(obj->GetIndexedPropertiesExternalArrayDataType());
+    int element_size = SizeOfArrayElementForType(
+      obj->GetIndexedPropertiesExternalArrayDataType());
     GLsizeiptr size = obj->GetIndexedPropertiesExternalArrayDataLength() * element_size;
     void* data = obj->GetIndexedPropertiesExternalArrayData();
+
     glBufferData(target, size, data, usage);
-  }
-  else if(args[1]->IsNumber()) {
+  } else if(args[1]->IsNumber()) {
     GLsizeiptr size = args[1]->Uint32Value();
-    GLenum usage = args[2]->Int32Value();
     glBufferData(target, size, NULL, usage);
   }
+
   NanReturnValue(NanUndefined());
 }
 
@@ -1006,18 +1034,54 @@ GL_METHOD(EnableVertexAttribArray) {
   NanReturnValue(NanUndefined());
 }
 
+int getGLTypeSize(GLenum type) {
+  switch(type) {
+    case GL_UNSIGNED_BYTE:
+    case GL_BYTE:
+      return 1;
+    case GL_SHORT:
+    case GL_UNSIGNED_SHORT:
+      return 2;
+    case GL_INT:
+    case GL_UNSIGNED_INT:
+    case GL_FLOAT:
+      return 4;
+  }
+  return 0xffffffff;
+}
 
 GL_METHOD(VertexAttribPointer) {
   GL_BOILERPLATE;
 
-  int indx = args[0]->Int32Value();
-  int size = args[1]->Int32Value();
-  int type = args[2]->Int32Value();
-  int normalized = args[3]->BooleanValue();
-  int stride = args[4]->Int32Value();
-  long offset = args[5]->Int32Value();
+  if(inst->activeArrayBuffer == 0) {
+    inst->setError(GL_INVALID_OPERATION);
+  } else {
+    int indx = args[0]->Int32Value();
+    int size = args[1]->Int32Value();
+    int type = args[2]->Int32Value();
+    int normalized = args[3]->BooleanValue();
+    int stride = args[4]->Int32Value();
+    long offset = args[5]->Int32Value();
 
-  glVertexAttribPointer(indx, size, type, normalized, stride, (const GLvoid *)offset);
+    int typeSize = getGLTypeSize((GLenum)type);
+
+    if(type == GL_FIXED) {
+      inst->setError(GL_INVALID_ENUM);
+    } else if((stride % typeSize) ||
+              (offset % typeSize)) {
+      inst->setError(GL_INVALID_OPERATION);
+    } else if(stride > 255) {
+      inst->setError(GL_INVALID_VALUE);
+    } else {
+      glVertexAttribPointer(
+        indx,
+        size,
+        type,
+        normalized,
+        stride,
+        (const GLvoid *)offset);
+    }
+  }
 
   NanReturnValue(NanUndefined());
 }
