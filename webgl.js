@@ -406,10 +406,10 @@ gl.enable = function enable(cap) {
 
 var _enableVertexAttribArray = gl.enableVertexAttribArray;
 gl.enableVertexAttribArray = function enableVertexAttribArray(index) {
-  if (!(arguments.length === 1 && typeof index === "number")) {
+  if (!(arguments.length === 1)) {
     throw new TypeError('Expected enableVertexAttribArray(number index)');
   }
-  return _enableVertexAttribArray.call(this, index);
+  return _enableVertexAttribArray.call(this, index|0);
 }
 
 var _finish = gl.finish;
