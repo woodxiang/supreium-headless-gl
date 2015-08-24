@@ -20,6 +20,12 @@ v8::Persistent<v8::FunctionTemplate> WEBGL_TEMPLATE;
   webgl_template->PrototypeTemplate()->Set(\
     NanNew<v8::String>(#x), NanNew<v8::Integer>(v))
 
+/*
+#define JS_GL_STR_CONSTANT(name) \
+  webgl_template->PrototypeTemplate()->Set(\
+    NanNew<v8::String>(#name), NanNew<v8::String>(GL_ ## name))
+*/
+
 #define JS_GL_CONSTANT(name) JS_CONSTANT(name, GL_ ## name)
 
 extern "C" {
@@ -165,6 +171,18 @@ void init(v8::Handle<v8::Object> exports)
   JS_GL_METHOD("destroy", Destroy);
 
   // OpenGL ES 2.1 constants
+
+  JS_GL_CONSTANT(MAX_VERTEX_UNIFORM_VECTORS);
+  JS_GL_CONSTANT(MAX_VARYING_VECTORS);
+  JS_GL_CONSTANT(MAX_FRAGMENT_UNIFORM_VECTORS);
+  JS_GL_CONSTANT(RGB565);
+  JS_GL_CONSTANT(STENCIL_INDEX8);
+  JS_GL_CONSTANT(FRAMEBUFFER_INCOMPLETE_DIMENSIONS);
+
+  JS_CONSTANT(STENCIL_INDEX, 0x1901);
+  JS_GL_CONSTANT(DEPTH_STENCIL);
+  JS_GL_CONSTANT(DEPTH_STENCIL_ATTACHMENT);
+
 
   /* ClearBufferMask */
   JS_GL_CONSTANT(DEPTH_BUFFER_BIT);
@@ -345,7 +363,6 @@ void init(v8::Handle<v8::Object> exports)
   /*      GL_TEXTURE_WRAP_S */
   /*      GL_TEXTURE_WRAP_T */
 
-  JS_GL_CONSTANT(NUM_COMPRESSED_TEXTURE_FORMATS);
   JS_GL_CONSTANT(COMPRESSED_TEXTURE_FORMATS);
 
   /* HintMode */
@@ -392,9 +409,7 @@ void init(v8::Handle<v8::Object> exports)
   JS_GL_CONSTANT(VALIDATE_STATUS);
   JS_GL_CONSTANT(ATTACHED_SHADERS);
   JS_GL_CONSTANT(ACTIVE_UNIFORMS);
-  JS_GL_CONSTANT(ACTIVE_UNIFORM_MAX_LENGTH);
   JS_GL_CONSTANT(ACTIVE_ATTRIBUTES);
-  JS_GL_CONSTANT(ACTIVE_ATTRIBUTE_MAX_LENGTH);
   JS_GL_CONSTANT(SHADING_LANGUAGE_VERSION);
   JS_GL_CONSTANT(CURRENT_PROGRAM);
 
@@ -422,7 +437,6 @@ void init(v8::Handle<v8::Object> exports)
   JS_GL_CONSTANT(VENDOR);
   JS_GL_CONSTANT(RENDERER);
   JS_GL_CONSTANT(VERSION);
-  JS_GL_CONSTANT(EXTENSIONS);
 
   /* TextureMagFilter */
   JS_GL_CONSTANT(NEAREST);

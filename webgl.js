@@ -550,23 +550,26 @@ gl.getActiveUniform = function getActiveUniform(program, index) {
   return new gl.WebGLActiveInfo(_getActiveUniform.call(this, program ? program._ : 0, index));
 }
 
-var _getAttachedShaders = gl.getAttachedShaders;
+var _getAttachedShaders = gl.getAttachedShaders
 gl.getAttachedShaders = function getAttachedShaders(program) {
-  if (!(arguments.length === 1 && (program === null || program instanceof gl.WebGLProgram))) {
-    throw new TypeError('Expected getAttachedShaders(WebGLProgram program)');
+  if (!(arguments.length === 1 &&
+      (program === null || program instanceof gl.WebGLProgram))) {
+    throw new TypeError('Expected getAttachedShaders(WebGLProgram program)')
   }
-  return _getAttachedShaders.call(this, program ? program._ : 0);
+  return _getAttachedShaders.call(this, program ? program._ : 0)
 }
 
-var _getAttribLocation = gl.getAttribLocation;
+var _getAttribLocation = gl.getAttribLocation
 gl.getAttribLocation = function getAttribLocation(program, name) {
-  if (!(arguments.length === 2 && (program === null || program instanceof gl.WebGLProgram) && typeof name === "string")) {
-    throw new TypeError('Expected getAttribLocation(WebGLProgram program, string name)');
+  if (!(arguments.length === 2 &&
+      (program === null || program instanceof gl.WebGLProgram) &&
+      typeof name === "string")) {
+    throw new TypeError('Expected getAttribLocation(WebGLProgram program, string name)')
   }
-  return _getAttribLocation.call(this, program ? program._ : 0, name);
+  return _getAttribLocation.call(this, program ? program._ : 0, name)
 }
 
-var _getParameter = gl.getParameter;
+var _getParameter = gl.getParameter
 gl.getParameter = function getParameter(pname) {
   pname |= 0
   switch(pname) {
@@ -590,7 +593,8 @@ gl.getParameter = function getParameter(pname) {
 
 var _getBufferParameter = gl.getBufferParameter;
 gl.getBufferParameter = function getBufferParameter(target, pname) {
-  if (!(arguments.length === 2 && typeof target === "number" && typeof pname === "number")) {
+  if (!(arguments.length === 2 &&
+      typeof target === "number" && typeof pname === "number")) {
     throw new TypeError('Expected getBufferParameter(number target, number pname)');
   }
   return _getBufferParameter.call(this, target, pname);

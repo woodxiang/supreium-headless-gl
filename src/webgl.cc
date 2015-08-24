@@ -146,7 +146,7 @@ WebGLRenderingContext::WebGLRenderingContext(
 
   //Create context
   EGLint contextAttribs[] = {
-    EGL_CONTEXT_CLIENT_VERSION, 2,
+    EGL_CONTEXT_CLIENT_VERSION, 3,
     EGL_NONE
   };
   context = eglCreateContext(display, config, EGL_NO_CONTEXT, contextAttribs);
@@ -1693,6 +1693,7 @@ GL_METHOD(GetBufferParameter) {
 
   GLint params;
   glGetBufferParameteriv(target,pname,&params);
+
   NanReturnValue(NanNew<v8::Integer>(params));
 }
 
