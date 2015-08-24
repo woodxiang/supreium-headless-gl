@@ -96,6 +96,7 @@ struct WebGLRenderingContext : public node::ObjectWrap {
 
   //Buffer state
   GLuint activeArrayBuffer, activeElementArrayBuffer;
+  std::map<GLuint, GLenum> bufferBindingState;
 
 
   //Destructors

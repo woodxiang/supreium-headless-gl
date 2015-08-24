@@ -901,24 +901,38 @@ GL_METHOD(CreateBuffer) {
 
   GLuint buffer;
   glGenBuffers(1, &buffer);
-  #ifdef LOGGING
-  cout<<"createBuffer "<<buffer<<endl;
-  #endif
   inst->registerGLObj(GLOBJECT_TYPE_BUFFER, buffer);
+
+
   NanReturnValue(NanNew<v8::Number>(buffer));
 }
 
 GL_METHOD(BindBuffer) {
   GL_BOILERPLATE;
 
-  int target = args[0]->Int32Value();
-  int buffer = args[1]->Uint32Value();
-  glBindBuffer(target,buffer);
+  GLenum target = (GLenum)args[0]->Int32Value();
+  GLuint buffer = (GLuint)args[1]->Uint32Value();
 
-  if(target == GL_ARRAY_BUFFER) {
-    inst->activeArrayBuffer = buffer;
-  } else if(target == GL_ELEMENT_ARRAY_BUFFER) {
-    inst->activeElementArrayBuffer = buffer;
+  bool error = false;
+
+  //WebGL requires we track buffer binding state
+  if(buffer != 0) {
+    std::map<GLuint,GLenum>::iterator ptr = inst->bufferBindingState.find(buffer);
+    if(ptr == inst->bufferBindingState.end()) {
+      inst->bufferBindingState[buffer] = target;
+    } else if(ptr->second != target) {
+      inst->setError(GL_INVALID_OPERATION);
+      error = true;
+    }
+  }
+
+  if(!error) {
+    if(target == GL_ARRAY_BUFFER) {
+      inst->activeArrayBuffer = buffer;
+    } else if(target == GL_ELEMENT_ARRAY_BUFFER) {
+      inst->activeElementArrayBuffer = buffer;
+    }
+    glBindBuffer(target,buffer);
   }
 
   NanReturnValue(NanUndefined());
@@ -1440,8 +1454,15 @@ GL_METHOD(CreateRenderbuffer) {
 
 GL_METHOD(DeleteBuffer) {
   GL_BOILERPLATE;
-  GLuint buffer = args[0]->Uint32Value();
+
+  GLuint buffer = (GLuint)args[0]->Uint32Value();
   inst->unregisterGLObj(GLOBJECT_TYPE_BUFFER, buffer);
+
+  std::map<GLuint,GLenum>::iterator ptr = inst->bufferBindingState.find(buffer);
+  if(ptr != inst->bufferBindingState.end()) {
+    inst->bufferBindingState.erase(ptr);
+  }
+
   glDeleteBuffers(1,&buffer);
   NanReturnValue(NanUndefined());
 }
