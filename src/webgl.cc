@@ -255,6 +255,13 @@ WebGLRenderingContext::~WebGLRenderingContext() {
   dispose();
 }
 
+GL_METHOD(SetError) {
+  GL_BOILERPLATE;
+  inst->setError(args[0]->Int32Value());
+  NanReturnUndefined();
+}
+
+
 GL_METHOD(DisposeAll) {
   NanScope();
 
@@ -386,96 +393,6 @@ GL_METHOD(Uniform4i) {
   NanReturnValue(NanUndefined());
 }
 
-GL_METHOD(Uniform1fv) {
-  GL_BOILERPLATE;
-
-  int location = args[0]->Int32Value();
-  int num=0;
-  GLfloat *ptr=getArrayData<GLfloat>(args[1],&num);
-  glUniform1fv(location, num, ptr);
-  NanReturnValue(NanUndefined());
-}
-
-GL_METHOD(Uniform2fv) {
-  GL_BOILERPLATE;
-
-  int location = args[0]->Int32Value();
-  int num=0;
-  GLfloat *ptr=getArrayData<GLfloat>(args[1],&num);
-  num /= 2;
-
-  glUniform2fv(location, num, ptr);
-  NanReturnValue(NanUndefined());
-}
-
-GL_METHOD(Uniform3fv) {
-  GL_BOILERPLATE;
-
-  int location = args[0]->Int32Value();
-  int num=0;
-  GLfloat *ptr=getArrayData<GLfloat>(args[1],&num);
-  num /= 3;
-
-  glUniform3fv(location, num, ptr);
-  NanReturnValue(NanUndefined());
-}
-
-GL_METHOD(Uniform4fv) {
-  GL_BOILERPLATE;
-
-  int location = args[0]->Int32Value();
-  int num=0;
-  GLfloat *ptr=getArrayData<GLfloat>(args[1],&num);
-  num /= 4;
-
-  glUniform4fv(location, num, ptr);
-  NanReturnValue(NanUndefined());
-}
-
-GL_METHOD(Uniform1iv) {
-  GL_BOILERPLATE;
-
-  int location = args[0]->Int32Value();
-  int num=0;
-  GLint *ptr=getArrayData<GLint>(args[1],&num);
-
-  glUniform1iv(location, num, ptr);
-  NanReturnValue(NanUndefined());
-}
-
-GL_METHOD(Uniform2iv) {
-  GL_BOILERPLATE;
-
-  int location = args[0]->Int32Value();
-  int num=0;
-  GLint *ptr=getArrayData<GLint>(args[1],&num);
-  num /= 2;
-
-  glUniform2iv(location, num, ptr);
-  NanReturnValue(NanUndefined());
-}
-
-GL_METHOD(Uniform3iv) {
-  GL_BOILERPLATE;
-
-  int location = args[0]->Int32Value();
-  int num=0;
-  GLint *ptr=getArrayData<GLint>(args[1],&num);
-  num /= 3;
-  glUniform3iv(location, num, ptr);
-  NanReturnValue(NanUndefined());
-}
-
-GL_METHOD(Uniform4iv) {
-  GL_BOILERPLATE;
-
-  int location = args[0]->Int32Value();
-  int num=0;
-  GLint *ptr=getArrayData<GLint>(args[1],&num);
-  num /= 4;
-  glUniform4iv(location, num, ptr);
-  NanReturnValue(NanUndefined());
-}
 
 GL_METHOD(PixelStorei) {
   GL_BOILERPLATE;
@@ -931,7 +848,13 @@ GL_METHOD(BindBuffer) {
       inst->activeArrayBuffer = buffer;
     } else if(target == GL_ELEMENT_ARRAY_BUFFER) {
       inst->activeElementArrayBuffer = buffer;
+    } else {
+      inst->setError(GL_INVALID_ENUM);
+      error = true;
     }
+  }
+
+  if(!error) {
     glBindBuffer(target,buffer);
   }
 
@@ -992,8 +915,12 @@ GL_METHOD(BufferData) {
 
     glBufferData(target, size, data, usage);
   } else if(args[1]->IsNumber()) {
-    GLsizeiptr size = args[1]->Uint32Value();
-    glBufferData(target, size, NULL, usage);
+    int size = args[1]->Int32Value();
+    if(size < 0) {
+      inst->setError(GL_INVALID_VALUE);
+    } else {
+      glBufferData(target, size, NULL, usage);
+    }
   }
 
   NanReturnValue(NanUndefined());
@@ -1176,46 +1103,6 @@ GL_METHOD(VertexAttrib4f) {
   float w = (float) args[4]->NumberValue();
 
   glVertexAttrib4f(indx, x, y, z, w);
-  NanReturnValue(NanUndefined());
-}
-
-GL_METHOD(VertexAttrib1fv) {
-  GL_BOILERPLATE;
-
-  int indx = args[0]->Int32Value();
-  GLfloat *data = getArrayData<GLfloat>(args[1]);
-  glVertexAttrib1fv(indx, data);
-
-  NanReturnValue(NanUndefined());
-}
-
-GL_METHOD(VertexAttrib2fv) {
-  GL_BOILERPLATE;
-
-  int indx = args[0]->Int32Value();
-  GLfloat *data = getArrayData<GLfloat>(args[1]);
-  glVertexAttrib2fv(indx, data);
-
-  NanReturnValue(NanUndefined());
-}
-
-GL_METHOD(VertexAttrib3fv) {
-  GL_BOILERPLATE;
-
-  int indx = args[0]->Int32Value();
-  GLfloat *data = getArrayData<GLfloat>(args[1]);
-  glVertexAttrib3fv(indx, data);
-
-  NanReturnValue(NanUndefined());
-}
-
-GL_METHOD(VertexAttrib4fv) {
-  GL_BOILERPLATE;
-
-  int indx = args[0]->Int32Value();
-  GLfloat *data = getArrayData<GLfloat>(args[1]);
-  glVertexAttrib4fv(indx, data);
-
   NanReturnValue(NanUndefined());
 }
 

@@ -19,6 +19,11 @@ gl.WebGLUniformLocation=function (_) { this._ = _; }
 
 ////////////////////////////////////////////////////////////////////////////////
 
+//Set error code on WebGL context
+function setError(context, error) {
+  nativeGL.setError.call(context, error|0)
+}
+
 var _getSupportedExtensions = gl.getSupportedExtensions;
 gl.getSupportedExtensions = function getSupportedExtensions() {
   return _getSupportedExtensions.call(this).split(" ");

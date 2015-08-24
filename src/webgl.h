@@ -93,14 +93,15 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   //Error handling
   GLenum lastError;
   void setError(GLenum error);
+  static NAN_METHOD(SetError);
 
   //Buffer state
   GLuint activeArrayBuffer, activeElementArrayBuffer;
   std::map<GLuint, GLenum> bufferBindingState;
 
-
   //Destructors
   void dispose();
+
   static NAN_METHOD(DisposeAll);
 
   static NAN_METHOD(New);
@@ -114,14 +115,6 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   static NAN_METHOD(Uniform2i);
   static NAN_METHOD(Uniform3i);
   static NAN_METHOD(Uniform4i);
-  static NAN_METHOD(Uniform1fv);
-  static NAN_METHOD(Uniform2fv);
-  static NAN_METHOD(Uniform3fv);
-  static NAN_METHOD(Uniform4fv);
-  static NAN_METHOD(Uniform1iv);
-  static NAN_METHOD(Uniform2iv);
-  static NAN_METHOD(Uniform3iv);
-  static NAN_METHOD(Uniform4iv);
 
   static NAN_METHOD(PixelStorei);
   static NAN_METHOD(BindAttribLocation);
@@ -175,11 +168,7 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   static NAN_METHOD(VertexAttrib2f);
   static NAN_METHOD(VertexAttrib3f);
   static NAN_METHOD(VertexAttrib4f);
-  static NAN_METHOD(VertexAttrib1fv);
-  static NAN_METHOD(VertexAttrib2fv);
-  static NAN_METHOD(VertexAttrib3fv);
-  static NAN_METHOD(VertexAttrib4fv);
-
+  
   static NAN_METHOD(BlendColor);
   static NAN_METHOD(BlendEquationSeparate);
   static NAN_METHOD(BlendFuncSeparate);

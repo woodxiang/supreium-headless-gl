@@ -41,14 +41,6 @@ void init(v8::Handle<v8::Object> exports)
   JS_GL_METHOD("uniform2i", Uniform2i);
   JS_GL_METHOD("uniform3i", Uniform3i);
   JS_GL_METHOD("uniform4i", Uniform4i);
-  JS_GL_METHOD("uniform1fv", Uniform1fv);
-  JS_GL_METHOD("uniform2fv", Uniform2fv);
-  JS_GL_METHOD("uniform3fv", Uniform3fv);
-  JS_GL_METHOD("uniform4fv", Uniform4fv);
-  JS_GL_METHOD("uniform1iv", Uniform1iv);
-  JS_GL_METHOD("uniform2iv", Uniform2iv);
-  JS_GL_METHOD("uniform3iv", Uniform3iv);
-  JS_GL_METHOD("uniform4iv", Uniform4iv);
   JS_GL_METHOD("pixelStorei", PixelStorei);
   JS_GL_METHOD("bindAttribLocation", BindAttribLocation);
   JS_GL_METHOD("getError", GetError);
@@ -104,10 +96,6 @@ void init(v8::Handle<v8::Object> exports)
   JS_GL_METHOD("vertexAttrib2f", VertexAttrib2f);
   JS_GL_METHOD("vertexAttrib3f", VertexAttrib3f);
   JS_GL_METHOD("vertexAttrib4f", VertexAttrib4f);
-  JS_GL_METHOD("vertexAttrib1fv", VertexAttrib1fv);
-  JS_GL_METHOD("vertexAttrib2fv", VertexAttrib2fv);
-  JS_GL_METHOD("vertexAttrib3fv", VertexAttrib3fv);
-  JS_GL_METHOD("vertexAttrib4fv", VertexAttrib4fv);
 
   JS_GL_METHOD("blendColor", BlendColor);
   JS_GL_METHOD("blendEquationSeparate", BlendEquationSeparate);
@@ -605,6 +593,11 @@ void init(v8::Handle<v8::Object> exports)
     NanNew<v8::String>("cleanup"),
     NanNew<v8::FunctionTemplate>(
       WebGLRenderingContext::DisposeAll)->GetFunction());
+
+  exports->Set(
+    NanNew<v8::String>("setError"),
+    NanNew<v8::FunctionTemplate>(
+      WebGLRenderingContext::SetError)->GetFunction());
 }
 
 NODE_MODULE(webgl, init)
