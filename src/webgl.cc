@@ -4,6 +4,8 @@
 
 #include "webgl.h"
 
+bool WebGLRenderingContext::HAS_DISPLAY = false;
+EGLDisplay WebGLRenderingContext::DISPLAY;
 WebGLRenderingContext* WebGLRenderingContext::ACTIVE = NULL;
 WebGLRenderingContext* WebGLRenderingContext::CONTEXT_LIST_HEAD = NULL;
 
@@ -94,16 +96,21 @@ WebGLRenderingContext::WebGLRenderingContext(
   activeElementArrayBuffer(0) {
 
   //Get display
-  display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-  if(display == EGL_NO_DISPLAY) {
-    state = GLCONTEXT_STATE_ERROR;
-    return;
-  }
+  if(!HAS_DISPLAY) {
+    DISPLAY = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    if(DISPLAY == EGL_NO_DISPLAY) {
+      state = GLCONTEXT_STATE_ERROR;
+      return;
+    }
 
-  //Initialize EGL
-  if(!eglInitialize(display, NULL, NULL)) {
-    state = GLCONTEXT_STATE_ERROR;
-    return;
+    //Initialize EGL
+    if(!eglInitialize(DISPLAY, NULL, NULL)) {
+      state = GLCONTEXT_STATE_ERROR;
+      return;
+    }
+
+    //Save display
+    HAS_DISPLAY = true;
   }
 
   //Set up configuration
@@ -135,7 +142,7 @@ WebGLRenderingContext::WebGLRenderingContext(
   #undef PUSH_ATTRIB
 
   if(!eglChooseConfig(
-      display,
+      DISPLAY,
       &attrib_list[0],
       &config,
       1,
@@ -149,7 +156,7 @@ WebGLRenderingContext::WebGLRenderingContext(
     EGL_CONTEXT_CLIENT_VERSION, 3,
     EGL_NONE
   };
-  context = eglCreateContext(display, config, EGL_NO_CONTEXT, contextAttribs);
+  context = eglCreateContext(DISPLAY, config, EGL_NO_CONTEXT, contextAttribs);
   if(context == EGL_NO_CONTEXT) {
     state = GLCONTEXT_STATE_ERROR;
     return;
@@ -160,14 +167,14 @@ WebGLRenderingContext::WebGLRenderingContext(
       EGL_HEIGHT, (EGLint)height,
       EGL_NONE
   };
-  surface = eglCreatePbufferSurface(display, config, surfaceAttribs);
+  surface = eglCreatePbufferSurface(DISPLAY, config, surfaceAttribs);
   if(surface == EGL_NO_SURFACE) {
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
 
   //Set active
-  if(!eglMakeCurrent(display, surface, surface, context)) {
+  if(!eglMakeCurrent(DISPLAY, surface, surface, context)) {
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
@@ -185,7 +192,7 @@ bool WebGLRenderingContext::setActive() {
   if(this == ACTIVE) {
     return true;
   }
-  if(!eglMakeCurrent(display, surface, surface, context)) {
+  if(!eglMakeCurrent(DISPLAY, surface, surface, context)) {
     return false;
   }
   ACTIVE = this;
@@ -243,9 +250,8 @@ void WebGLRenderingContext::dispose() {
   }
 
   //Destroy context
-  eglDestroyContext(display, context);
-  eglDestroySurface(display, surface);
-  eglTerminate(display);
+  eglDestroyContext(DISPLAY, context);
+  eglDestroySurface(DISPLAY, surface);
 
   //Unlink from active
   ACTIVE = NULL;
@@ -267,6 +273,11 @@ GL_METHOD(DisposeAll) {
 
   while(CONTEXT_LIST_HEAD) {
     CONTEXT_LIST_HEAD->dispose();
+  }
+
+  if(WebGLRenderingContext::HAS_DISPLAY) {
+    eglTerminate(WebGLRenderingContext::DISPLAY);
+    WebGLRenderingContext::HAS_DISPLAY = false;
   }
 
   NanReturnUndefined();

@@ -35,8 +35,10 @@ typedef std::pair<GLuint, GLObjectType> GLObjectReference;
 struct WebGLRenderingContext : public node::ObjectWrap {
 
   //The underlying OpenGL context
+  static bool HAS_DISPLAY;
+  static EGLDisplay DISPLAY;
+
   EGLContext context;
-  EGLDisplay display;
   EGLSurface surface;
   GLContextState  state;
 

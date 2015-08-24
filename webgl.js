@@ -52,7 +52,6 @@ function setError(context, error) {
 
 var _destroy = gl.destroy
 gl.destroy = function() {
-  console.log('destroying', this._)
   _destroy.call(this)
 }
 

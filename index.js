@@ -39,8 +39,6 @@ function createContext(width, height, options) {
 
     gl._ = CONTEXT_COUNTER++
 
-    console.log('constructing', gl._)
-
     gl._contextattributes = contextAttributes
 
     gl._programs      = {}
