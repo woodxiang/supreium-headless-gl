@@ -17,6 +17,8 @@ gl.WebGLTexture=function (_)      { this._ = _; }
 gl.WebGLActiveInfo=function (_)   { this._=_; this.size=_.size; this.type=_.type; this.name=_.name; }
 gl.WebGLUniformLocation=function (_) { this._ = _; }
 
+gl.VERSION = 0x1F02
+
 ////////////////////////////////////////////////////////////////////////////////
 
 //Set error code on WebGL context
