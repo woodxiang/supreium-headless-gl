@@ -150,10 +150,12 @@ gl.bufferData = function bufferData(target, data, usage) {
 
 var _bufferSubData = gl.bufferSubData;
 gl.bufferSubData = function bufferSubData(target, offset, data) {
-  if (!(arguments.length === 3 && typeof target === "number" && typeof offset === "number" && typeof data === "object")) {
-    throw new TypeError('Expected bufferSubData(number target, number offset, ArrayBuffer data)');
+  if (!(arguments.length === 3 &&
+    typeof target === "number" && typeof offset === "number" &&
+    data !== null && typeof data === "object" && data.buffer)) {
+    throw new TypeError('Expected bufferSubData(number target, number offset, ArrayBuffer data)')
   }
-  return _bufferSubData.call(this, target, offset, data);
+  return _bufferSubData.call(this, target, offset, new Uint8Array(data.buffer))
 }
 
 var _checkFramebufferStatus = gl.checkFramebufferStatus;
