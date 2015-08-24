@@ -253,103 +253,157 @@ gl.createBuffer = function createBuffer() {
   if (!(arguments.length === 0)) {
     throw new TypeError('Expected createBuffer()');
   }
-  return new gl.WebGLBuffer(_createBuffer.call(this));
+  var buffer_id = _createBuffer.call(this)
+  return this._buffers[buffer_id] = new gl.WebGLBuffer(buffer_id)
 }
 
-var _createFramebuffer = gl.createFramebuffer;
+var _createFramebuffer = gl.createFramebuffer
 gl.createFramebuffer = function () {
   if (!(arguments.length === 0)) {
-    throw new TypeError('Expected createFramebuffer()');
+    throw new TypeError('Expected createFramebuffer()')
   }
-  return new gl.WebGLFramebuffer(_createFramebuffer.call(this));
+  var fbo_id = _createFramebuffer.call(this)
+  return this._framebuffers[fbo_id] = new gl.WebGLFramebuffer(fbo_id)
 }
 
-var _createProgram = gl.createProgram;
+var _createProgram = gl.createProgram
 gl.createProgram = function createProgram() {
   if (!(arguments.length === 0)) {
-    throw new TypeError('Expected createProgram()');
+    throw new TypeError('Expected createProgram()')
   }
-  return new gl.WebGLProgram(_createProgram.call(this));
+  var prog_id = _createProgram.call(this)
+  return this._programs[prog_id] = new gl.WebGLProgram(prog_id)
 }
 
-var _createRenderbuffer = gl.createRenderbuffer;
+var _createRenderbuffer = gl.createRenderbuffer
 gl.createRenderbuffer = function createRenderbuffer() {
   if (!(arguments.length === 0)) {
-    throw new TypeError('Expected createRenderbuffer()');
+    throw new TypeError('Expected createRenderbuffer()')
   }
-  return new gl.WebGLRenderbuffer(_createRenderbuffer.call(this));
+  var renderbuffer_id = _createRenderbuffer.call(this)
+  return this._renderbuffers[renderbuffer_id] = new gl.WebGLRenderbuffer(renderbuffer_id)
 }
 
-var _createShader = gl.createShader;
+var _createShader = gl.createShader
 gl.createShader = function createShader(type) {
   if (!(arguments.length === 1 && typeof type === "number")) {
-    throw new TypeError('Expected createShader(number type)');
+    throw new TypeError('Expected createShader(number type)')
   }
-  return new gl.WebGLShader(_createShader.call(this, type));
+  var shader_id = _createShader.call(this, type)
+  return this._shaders[shader_id] = new gl.WebGLShader(shader_id)
 }
 
-var _createTexture = gl.createTexture;
+var _createTexture = gl.createTexture
 gl.createTexture = function createTexture() {
   if (!(arguments.length === 0)) {
-    throw new TypeError('Expected createTexture()');
+    throw new TypeError('Expected createTexture()')
   }
-  return new gl.WebGLTexture(_createTexture.call(this));
+  var texture_id = _createTexture.call(this)
+  return this._textures[texture_id] = new gl.WebGLTexture(texture_id)
 }
 
 var _cullFace = gl.cullFace;
 gl.cullFace = function cullFace(mode) {
   if (!(arguments.length === 1 && typeof mode === "number")) {
-    throw new TypeError('Expected cullFace(number mode)');
+    throw new TypeError('Expected cullFace(number mode)')
   }
-  return _cullFace.call(this, mode);
+  return _cullFace.call(this, mode|0)
 }
 
-var _deleteBuffer = gl.deleteBuffer;
+var _deleteBuffer = gl.deleteBuffer
 gl.deleteBuffer = function deleteBuffer(buffer) {
-  if (!(arguments.length === 1 && (buffer === null || buffer instanceof gl.WebGLBuffer))) {
-    throw new TypeError('Expected deleteBuffer(WebGLBuffer buffer)');
+  if (!(arguments.length === 1 &&
+      (buffer === null || buffer instanceof gl.WebGLBuffer))) {
+    throw new TypeError('Expected deleteBuffer(WebGLBuffer buffer)')
   }
-  return _deleteBuffer.call(this, buffer ? buffer._ : 0);
+  var id = buffer._
+  if(id in this._buffers) {
+    delete this._buffers[id]
+    buffer._ = 0
+    return _deleteBuffer.call(this, id)
+  } else {
+    setError(this, gl.INVALID_VALUE)
+  }
 }
 
-var _deleteFramebuffer = gl.deleteFramebuffer;
+var _deleteFramebuffer = gl.deleteFramebuffer
 gl.deleteFramebuffer = function deleteFramebuffer(framebuffer) {
-  if (!(arguments.length === 1 && (framebuffer === null || framebuffer instanceof gl.WebGLFramebuffer))) {
-    throw new TypeError('Expected deleteFramebuffer(WebGLFramebuffer framebuffer)');
+  if (!(arguments.length === 1 &&
+      (framebuffer === null || framebuffer instanceof gl.WebGLFramebuffer))) {
+    throw new TypeError('Expected deleteFramebuffer(WebGLFramebuffer framebuffer)')
   }
-  return _deleteFramebuffer.call(this, framebuffer ? framebuffer._ : 0);
+  var id = framebuffer._
+  if(id in this._framebuffers) {
+    delete this._framebuffers[id]
+    framebuffer._ = 0
+    return _deleteFramebuffer.call(this, id)
+  } else {
+    setError(this, gl.INVALID_VALUE)
+  }
 }
 
-var _deleteProgram = gl.deleteProgram;
+var _deleteProgram = gl.deleteProgram
 gl.deleteProgram = function deleteProgram(program) {
-  if (!(arguments.length === 1 && (program === null || program instanceof gl.WebGLProgram))) {
-    throw new TypeError('Expected deleteProgram(WebGLProgram program)');
+  if (!(arguments.length === 1 &&
+       (program === null || program instanceof gl.WebGLProgram))) {
+    throw new TypeError('Expected deleteProgram(WebGLProgram program)')
   }
-  return _deleteProgram.call(this, program ? program._ : 0);
+  var id = program._
+  if(id in this._programs) {
+    delete this._programs[id]
+    program._ = 0
+    return _deleteProgram.call(this, id)
+  } else {
+    setError(this, gl.INVALID_VALUE)
+  }
 }
 
-var _deleteRenderbuffer = gl.deleteRenderbuffer;
+var _deleteRenderbuffer = gl.deleteRenderbuffer
 gl.deleteRenderbuffer = function deleteRenderbuffer(renderbuffer) {
-  if (!(arguments.length === 1 && (renderbuffer === null || renderbuffer instanceof gl.WebGLRenderbuffer))) {
-    throw new TypeError('Expected deleteRenderbuffer(WebGLRenderbuffer renderbuffer)');
+  if (!(arguments.length === 1 &&
+    (renderbuffer === null || renderbuffer instanceof gl.WebGLRenderbuffer))) {
+    throw new TypeError('Expected deleteRenderbuffer(WebGLRenderbuffer renderbuffer)')
   }
-  return _deleteRenderbuffer.call(this, renderbuffer ? renderbuffer._ : 0);
+  var id = renderbuffer._
+  if(id in this._renderbuffers) {
+    delete this._renderbuffers[id]
+    renderbuffer._ = 0
+    return _deleteRenderbuffer.call(this, id)
+  } else {
+    setError(this, gl.INVALID_VALUE)
+  }
 }
 
-var _deleteShader = gl.deleteShader;
+var _deleteShader = gl.deleteShader
 gl.deleteShader = function deleteShader(shader) {
-  if (!(arguments.length === 1 && (shader === null || shader instanceof gl.WebGLShader))) {
-    throw new TypeError('Expected deleteShader(WebGLShader shader)');
+  if (!(arguments.length === 1 &&
+      (shader === null || shader instanceof gl.WebGLShader))) {
+    throw new TypeError('Expected deleteShader(WebGLShader shader)')
   }
-  return _deleteShader.call(this, shader ? shader._ : 0);
+  var id = shader._
+  if(id in this._shaders) {
+    delete this._shaders[id]
+    shader._ = 0
+    return _deleteShader.call(this, id)
+  } else {
+    setError(this, gl.INVALID_VALUE)
+  }
 }
 
-var _deleteTexture = gl.deleteTexture;
+var _deleteTexture = gl.deleteTexture
 gl.deleteTexture = function deleteTexture(texture) {
-  if (!(arguments.length === 1 && (texture === null || texture instanceof gl.WebGLTexture))) {
+  if (!(arguments.length === 1 &&
+      (texture === null || texture instanceof gl.WebGLTexture))) {
     throw new TypeError('Expected deleteTexture(WebGLTexture texture)');
   }
-  return _deleteTexture.call(this, texture ? texture._ : 0);
+  var id = texture._
+  if(id in this._textures) {
+    delete this._textures[id]
+    texture._ = 0
+    return _deleteTexture.call(this, id)
+  } else {
+    setError(this, gl.INVALID_VALUE)
+  }
 }
 
 var _depthFunc = gl.depthFunc;
@@ -514,10 +568,24 @@ gl.getAttribLocation = function getAttribLocation(program, name) {
 
 var _getParameter = gl.getParameter;
 gl.getParameter = function getParameter(pname) {
-  if (!(arguments.length === 1 && typeof pname === "number")) {
-    throw new TypeError('Expected getParameter(number pname)');
+  pname |= 0
+  switch(pname) {
+    case gl.ARRAY_BUFFER_BINDING:
+    case gl.ELEMENT_ARRAY_BUFFER:
+      return this._buffers[_getParameter.call(this, pname)] || null
+    case gl.CURRENT_PROGRAM:
+      return this._programs[_getParameter.call(this, pname)] || null
+    case gl.FRAMEBUFFER_BINDING:
+      return this._framebuffers[_getParameter.call(this, pname)] || null
+    case gl.RENDERBUFFER_BINDING:
+      return this._renderbuffers[_getParameter.call(this, pname)] || null
+    case gl.TEXTURE_BINDING_2D:
+      return this._textures[_getParameter.call(this, pname)] || null
+    case gl.TEXTURE_BINDING_CUBE:
+      return this._textures[_getParameter.call(this, pname)] || null
+    default:
+      return _getParameter.call(this, pname)
   }
-  return _getParameter.call(this, pname);
 }
 
 var _getBufferParameter = gl.getBufferParameter;
@@ -610,10 +678,13 @@ gl.getUniform = function getUniform(program, location) {
 
 var _getUniformLocation = gl.getUniformLocation;
 gl.getUniformLocation = function getUniformLocation(program, name) {
-  if (!(arguments.length === 2 && (program === null || program instanceof gl.WebGLProgram) && typeof name === "string")) {
-    throw new TypeError('Expected getUniformLocation(WebGLProgram program, string name)');
+  if (!(arguments.length === 2 &&
+    (program === null || program instanceof gl.WebGLProgram) &&
+    typeof name === "string")) {
+    throw new TypeError('Expected getUniformLocation(WebGLProgram program, string name)')
   }
-  return new gl.WebGLUniformLocation(_getUniformLocation.call(this, program ? program._ : 0, name));
+  return new gl.WebGLUniformLocation(
+    _getUniformLocation.call(this, program ? program._ : 0, name))
 }
 
 var _getVertexAttrib = gl.getVertexAttrib;

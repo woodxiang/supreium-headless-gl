@@ -24,6 +24,13 @@ function createContext(width, height, options) {
     gl.drawingBufferWidth = width
     gl.drawingBufferHeight = height
 
+    gl._programs      = {}
+    gl._shaders       = {}
+    gl._buffers       = {}
+    gl._textures      = {}
+    gl._framebuffers  = {}
+    gl._renderbuffers = {}
+
     var numAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS)
     for(var i=0; i<numAttribs; ++i) {
       gl.disableVertexAttribArray(i)
