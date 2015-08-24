@@ -3,16 +3,18 @@ var runConformance = require('gl-conformance')
 var createContext = require('../../index')
 
 //Inject WebGL types into global namespaces, required by some conformance tests
-WebGLRenderingContext      = require('../../webgl')
-WebGLBuffer                = WebGLRenderingContext.WebGLBuffer
-WebGLFramebuffer           = WebGLRenderingContext.WebGLFramebuffer
-WebGLProgram               = WebGLRenderingContext.WebGLProgram
-WebGLRenderbuffer          = WebGLRenderingContext.WebGLRenderbuffer
-WebGLShader                = WebGLRenderingContext.WebGLShader
-WebGLTexture               = WebGLRenderingContext.WebGLTexture
-WebGLUniformLocation       = WebGLRenderingContext.WebGLUniformLocation
-WebGLActiveInfo            = WebGLRenderingContext.WebGLActiveInfo
-WebGLShaderPrecisionFormat = WebGLRenderingContext.WebGLShaderPrecisionFormat
+var webgl = require('../../webgl')
+WebGLRenderingContext      = webgl.WebGLRenderingContext
+WebGLBuffer                = webgl.WebGLBuffer
+WebGLFramebuffer           = webgl.WebGLFramebuffer
+WebGLProgram               = webgl.WebGLProgram
+WebGLRenderbuffer          = webgl.WebGLRenderbuffer
+WebGLShader                = webgl.WebGLShader
+WebGLTexture               = webgl.WebGLTexture
+WebGLUniformLocation       = webgl.WebGLUniformLocation
+WebGLActiveInfo            = webgl.WebGLActiveInfo
+WebGLShaderPrecisionFormat = webgl.WebGLShaderPrecisionFormat
+WebGLContextAttributes     = webgl.WebGLContextAttributes
 
 module.exports = function(filter) {
   return runConformance({

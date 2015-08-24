@@ -1,6 +1,8 @@
 'use strict'
 
-var WebGLRenderingContext = require('./webgl.js')
+var webgl = require('./webgl')
+
+var CONTEXT_COUNTER = 0
 
 function flag(options, name, dflt) {
   if(!options || !(typeof options === 'object') || !(name in options)) {
@@ -10,9 +12,7 @@ function flag(options, name, dflt) {
 }
 
 function createContext(width, height, options) {
-    var gl = new WebGLRenderingContext(
-      width,
-      height,
+    var contextAttributes = new webgl.WebGLContextAttributes(
       flag(options, 'alpha', true),
       flag(options, 'depth', true),
       flag(options, 'stencil', false),
@@ -21,8 +21,27 @@ function createContext(width, height, options) {
       flag(options, 'preserveDrawingBuffer', false),
       flag(options, 'preferLowPowerToHighPerformance', false),
       flag(options, 'failIfMajorPerformanceCaveat', false))
+
+    var gl = new webgl.WebGLRenderingContext(
+      width,
+      height,
+      contextAttributes.alpha,
+      contextAttributes.depth,
+      contextAttributes.stencil,
+      contextAttributes.antialias,
+      contextAttributes.premultipliedAlpha,
+      contextAttributes.preserveDrawingBuffer,
+      contextAttributes.preferLowPowerToHighPerformance,
+      contextAttributes.failIfMajorPerformanceCaveat)
+
     gl.drawingBufferWidth = width
     gl.drawingBufferHeight = height
+
+    gl._ = CONTEXT_COUNTER++
+
+    console.log('constructing', gl._)
+
+    gl._contextattributes = contextAttributes
 
     gl._programs      = {}
     gl._shaders       = {}
