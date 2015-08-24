@@ -97,8 +97,7 @@ struct WebGLRenderingContext : public node::ObjectWrap {
 
   //Buffer state
   GLuint activeArrayBuffer, activeElementArrayBuffer;
-  std::map<GLuint, GLenum> bufferBindingState;
-
+  
   //Destructors
   void dispose();
 
@@ -168,7 +167,7 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   static NAN_METHOD(VertexAttrib2f);
   static NAN_METHOD(VertexAttrib3f);
   static NAN_METHOD(VertexAttrib4f);
-  
+
   static NAN_METHOD(BlendColor);
   static NAN_METHOD(BlendEquationSeparate);
   static NAN_METHOD(BlendFuncSeparate);

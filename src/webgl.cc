@@ -257,7 +257,7 @@ WebGLRenderingContext::~WebGLRenderingContext() {
 
 GL_METHOD(SetError) {
   GL_BOILERPLATE;
-  inst->setError(args[0]->Int32Value());
+  inst->setError((GLenum)args[0]->Int32Value());
   NanReturnUndefined();
 }
 
@@ -354,7 +354,7 @@ GL_METHOD(Uniform1i) {
   int x = args[1]->Int32Value();
 
   glUniform1i(location, x);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(Uniform2i) {
@@ -365,7 +365,7 @@ GL_METHOD(Uniform2i) {
   int y = args[2]->Int32Value();
 
   glUniform2i(location, x, y);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(Uniform3i) {
@@ -377,7 +377,8 @@ GL_METHOD(Uniform3i) {
   int z = args[3]->Int32Value();
 
   glUniform3i(location, x, y, z);
-  NanReturnValue(NanUndefined());
+
+  NanReturnUndefined();
 }
 
 GL_METHOD(Uniform4i) {
@@ -390,7 +391,8 @@ GL_METHOD(Uniform4i) {
   int w = args[4]->Int32Value();
 
   glUniform4i(location, x, y, z, w);
-  NanReturnValue(NanUndefined());
+
+  NanReturnUndefined();
 }
 
 
@@ -402,7 +404,7 @@ GL_METHOD(PixelStorei) {
 
   glPixelStorei(pname,param);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(BindAttribLocation) {
@@ -414,7 +416,7 @@ GL_METHOD(BindAttribLocation) {
 
   glBindAttribLocation(program, index, *name);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -434,13 +436,13 @@ GL_METHOD(GetError) {
 GL_METHOD(DrawArrays) {
   GL_BOILERPLATE;
 
-  int mode = args[0]->Int32Value();
+  int mode  = args[0]->Int32Value();
   int first = args[1]->Int32Value();
   int count = args[2]->Int32Value();
 
   glDrawArrays(mode, first, count);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(UniformMatrix2fv) {
@@ -833,30 +835,16 @@ GL_METHOD(BindBuffer) {
   bool error = false;
 
   //WebGL requires we track buffer binding state
-  if(buffer != 0) {
-    std::map<GLuint,GLenum>::iterator ptr = inst->bufferBindingState.find(buffer);
-    if(ptr == inst->bufferBindingState.end()) {
-      inst->bufferBindingState[buffer] = target;
-    } else if(ptr->second != target) {
-      inst->setError(GL_INVALID_OPERATION);
-      error = true;
-    }
+  if(target == GL_ARRAY_BUFFER) {
+    inst->activeArrayBuffer = buffer;
+  } else if(target == GL_ELEMENT_ARRAY_BUFFER) {
+    inst->activeElementArrayBuffer = buffer;
+  } else {
+    inst->setError(GL_INVALID_ENUM);
+    error = true;
   }
 
-  if(!error) {
-    if(target == GL_ARRAY_BUFFER) {
-      inst->activeArrayBuffer = buffer;
-    } else if(target == GL_ELEMENT_ARRAY_BUFFER) {
-      inst->activeElementArrayBuffer = buffer;
-    } else {
-      inst->setError(GL_INVALID_ENUM);
-      error = true;
-    }
-  }
-
-  if(!error) {
-    glBindBuffer(target,buffer);
-  }
+  glBindBuffer(target,buffer);
 
   NanReturnValue(NanUndefined());
 }
@@ -1344,11 +1332,6 @@ GL_METHOD(DeleteBuffer) {
 
   GLuint buffer = (GLuint)args[0]->Uint32Value();
   inst->unregisterGLObj(GLOBJECT_TYPE_BUFFER, buffer);
-
-  std::map<GLuint,GLenum>::iterator ptr = inst->bufferBindingState.find(buffer);
-  if(ptr != inst->bufferBindingState.end()) {
-    inst->bufferBindingState.erase(ptr);
-  }
 
   glDeleteBuffers(1,&buffer);
   NanReturnValue(NanUndefined());

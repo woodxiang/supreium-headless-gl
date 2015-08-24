@@ -10,7 +10,7 @@ process.on('exit', nativeGL.cleanup)
 var gl = nativeGL.WebGLRenderingContext.prototype
 gl.WebGLProgram=function (_)      { this._ = _; }
 gl.WebGLShader=function (_)       { this._ = _; }
-gl.WebGLBuffer=function (_)       { this._ = _; }
+gl.WebGLBuffer=function (_)       { this._ = _; this._binding=0; }
 gl.WebGLFramebuffer=function (_)  { this._ = _; }
 gl.WebGLRenderbuffer=function (_) { this._ = _; }
 gl.WebGLTexture=function (_)      { this._ = _; }
@@ -63,10 +63,21 @@ gl.bindAttribLocation = function bindAttribLocation(program, index, name) {
 
 var _bindBuffer = gl.bindBuffer;
 gl.bindBuffer = function bindBuffer(target, buffer) {
-  if (!(arguments.length === 2 && typeof target === "number" && (buffer === null || buffer instanceof gl.WebGLBuffer))) {
-    throw new TypeError('Expected bindBuffer(number target, WebGLBuffer buffer)');
+  if (!(arguments.length === 2 &&
+    (buffer === null || buffer instanceof gl.WebGLBuffer))) {
+    throw new TypeError('Expected bindBuffer(number target, WebGLBuffer buffer)')
   }
-  return _bindBuffer.call(this, target, buffer ? buffer._ : 0);
+  target = target|0
+  if(buffer) {
+    if(buffer._binding && buffer._binding != target) {
+      setError(this, gl.INVALID_OPERATION)
+    } else {
+      buffer._binding = target
+      return _bindBuffer.call(this, target, buffer._)
+    }
+  } else {
+    return _bindBuffer.call(this, target, 0)
+  }
 }
 
 var _bindFramebuffer = gl.bindFramebuffer;
