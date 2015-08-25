@@ -1,7 +1,7 @@
-# headless-gl
-`headless-gl` lets you create a WebGL context in node.js without making a window or loading a full browser environment.
+# gl
+`gl` lets you create a WebGL context in node.js without making a window or loading a full browser environment.
 
-It aspires to be fully conformant with the WebGL 1.0 specification.
+It aspires to be fully conformant to the WebGL 1.0.2 specification.
 
 ## Example
 
@@ -9,7 +9,7 @@ It aspires to be fully conformant with the WebGL 1.0 specification.
 //Create context
 var width   = 64
 var height  = 64
-var gl = require("gl")(width, height)
+var gl = require('gl')(width, height)
 
 //Clear screen to red
 gl.clearColor(1, 0, 0, 1)
@@ -18,18 +18,19 @@ gl.clear(gl.COLOR_BUFFER_BIT)
 //Write output as a PPM formatted image
 var pixels = new Uint8Array(width * height * 4)
 gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
-process.stdout.write(["P3\n# gl.ppm\n", width, " ", height, "\n255\n"].join(""))
+process.stdout.write(['P3\n# gl.ppm\n', width, " ", height, '\n255\n'].join(''))
 for(var i=0; i<pixels.length; i += 4) {
   for(var j=0; j<3; ++j) {
-    process.stdout.write(pixels[i + j] + " ")
+    process.stdout.write(pixels[i + j] + ' ')
   }
 }
 ```
 
 ## Install
-Because `headless-gl` uses native code, it is a bit more involved to set up than a typical JavaScript npm module.  Before you can use it, you will need to ensure that your system has the correct dependencies installed.
+Because `gl` uses native code, it is a bit more involved to set up than a typical JavaScript npm module.  Before you can use it, you will need to ensure that your system has the correct dependencies installed.
 
 ### System dependencies
+For general information on building native modules, see the [`node-gyp`](https://github.com/nodejs/node-gyp) documentation. System specific build instructions are as follows:
 
 #### Mac OS X
 
@@ -49,6 +50,13 @@ Because `headless-gl` uses native code, it is a bit more involved to set up than
 * Microsoft Visual Studio
 
 ### npm
+Once your system is set up, installing the `headless-gl` module is pretty easy to do with [npm](http://docs.npmjs.org).  Just run the following command:
+
+```
+npm i gl
+```
+
+And you are good to go!
 
 ## API
 
@@ -80,17 +88,16 @@ Destroys the WebGL context immediately, reclaiming all resources
 
 **Note** For long running jobs, garbage collection of contexts is often not fast enough.  To prevent the system from becoming overloaded with unused contexts, you can force the system to reclaim a WebGL context immediately by calling `.destroy()`.
 
-## Building locally
-
 ## More information
 
 ### Changes from version 1.0.0
 
 * Improved conformance
-* ANGLE
+* Works on node 0.12
+* Now using ANGLE instead of direct OpenGL 3
+* Windows and Linux support
 * No default context
-* .destroy
-* .resize
+* Added `.destroy()` and `.resize()` methods
 
 ### Why use this thing instead of `node-webgl`?
 
@@ -103,6 +110,19 @@ It depends on what you are trying to do.  [node-webgl](https://github.com/mikese
 ### How are `<image>` and `<video>` elements implemented?
 
 They aren't for now.  If you want to upload data to a texture, you will need to unpack the pixels into a `Uint8Array` and stick on the GPU yourself.
+
+### What extensions are supported?
+
+None at the moment
+
+### How is the development environment set up?
+
+* Init ANGLE submodule
+* `npm` stuff
+* `node-gyp` building
+* Fast rebuild
+
+TODO
 
 ## License
 
