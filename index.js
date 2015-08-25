@@ -22,6 +22,10 @@ function createContext(width, height, options) {
       flag(options, 'preferLowPowerToHighPerformance', false),
       flag(options, 'failIfMajorPerformanceCaveat', false))
 
+    //Can only use premultipliedAlpha if alpha is set
+    contextAttributes.premultipliedAlpha =
+      contextAttributes.premultipliedAlpha && contextAttributes.alpha
+
     var gl = new webgl.WebGLRenderingContext(
       width,
       height,

@@ -147,8 +147,8 @@ gl.attachShader = function attachShader(program, shader) {
      shader instanceof WebGLShader) {
     return _attachShader.call(
       this,
-      program._,
-      shader._)
+      program._|0,
+      shader._|0)
   }
   setError(this, gl.INVALID_VALUE)
 }
@@ -158,7 +158,7 @@ gl.bindAttribLocation = function bindAttribLocation(program, index, name) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _bindAttribLocation.call(
       this,
-      program._,
+      program._|0,
       index|0,
       name+'')
   }
@@ -374,12 +374,21 @@ gl.copyTexSubImage2D = function copyTexSubImage2D(
     height|0)
 }
 
+var _cullFace = gl.cullFace;
+gl.cullFace = function cullFace(mode) {
+  return _cullFace.call(this, mode|0)
+}
+
 //Object constructor methods
 function createObject(method, wrapper, refset) {
   var native = gl[method]
-  gl[method] = function() {
-    var id = native.call(this)
-    return this[refset][id] = new wrapper(id)
+  gl[method] = function(type) {
+    var id = native.call(this, type)
+    if(id <= 0) {
+      return null
+    } else {
+      return this[refset][id] = new wrapper(id, this)
+    }
   }
 }
 createObject('createBuffer', WebGLBuffer, '_buffers')
@@ -388,12 +397,6 @@ createObject('createProgram', WebGLProgram, '_programs')
 createObject('createRenderbuffer', WebGLRenderbuffer, '_renderbuffers')
 createObject('createShader', WebGLShader, '_shaders')
 createObject('createTexture', WebGLTexture, '_textures')
-
-
-var _cullFace = gl.cullFace;
-gl.cullFace = function cullFace(mode) {
-  return _cullFace.call(this, mode|0)
-}
 
 //Generic object deletion method
 function deleteObject(name, type, refset) {
@@ -626,7 +629,7 @@ gl.getProgramParameter = function getProgramParameter(program, pname) {
 
 var _getProgramInfoLog = gl.getProgramInfoLog
 gl.getProgramInfoLog = function getProgramInfoLog(program) {
-  if(checkWrapprer(this, program, WebGLProgram)) {
+  if(checkWrapper(this, program, WebGLProgram)) {
     return _getProgramInfoLog.call(this, program._|0)
   }
   setError(this, gl.INVALID_VALUE)
@@ -736,7 +739,7 @@ gl.lineWidth = function lineWidth(width) {
 
 var _linkProgram = gl.linkProgram
 gl.linkProgram = function linkProgram(program) {
-  if(!checkWrapper(this, program, WebGLProgram)) {
+  if(checkWrapper(this, program, WebGLProgram)) {
     return _linkProgram.call(this, program._|0)
   }
   setError(this, gl.INVALID_VALUE)
@@ -880,7 +883,36 @@ gl.texSubImage2D = function texSubImage2D(
 
 //Generate uniform binding code
 function makeUniforms() {
+  function makeMatrix(i) {
+    var func = 'uniformMatrix' + i + 'fv'
+    var native = gl[func]
+
+    gl[func] = function(location, transpose, v) {
+      if(checkLocation(this, location) &&
+         typeof v === 'object' &&
+         v !== null &&
+         v.length === i*i) {
+           if(v instanceof Float32Array) {
+             return native.call(this,
+               location._|0,
+               !!transpose,
+               new Float32Array(v.buffer))
+           } else {
+             return native.call(this,
+               location._|0,
+               !!transpose,
+               new Float32Array(v))
+           }
+      }
+      setError(this, gl.INVALID_VALUE)
+    }
+  }
+
   for(var n=1; n<=4; ++n) {
+    if(n > 1) {
+      makeMatrix(n)
+    }
+
     ['i', 'f'].forEach(function(type) {
       var i = n
       var func = 'uniform' + i + type
@@ -892,6 +924,7 @@ function makeUniforms() {
         }
         setError(this, gl.INVALID_VALUE)
       }
+
       gl[func + 'v'] = function(location, v) {
         if(checkLocation(this, location) &&
            typeof v === 'object' &&
@@ -907,32 +940,6 @@ function makeUniforms() {
         setError(this, gl.INVALID_VALUE)
       }
     })
-
-    if(n > 1) {
-      (function(i) {
-        var func = 'uniformMatrix' + i + 'fv'
-        var native = gl[func]
-        gl[func] = function(location, transpose, v) {
-          if(checkLocation(this, location) &&
-             typeof v === 'object' &&
-             v !== null &&
-             v.length === i*i) {
-               if(v instanceof Float32Array) {
-                 return native.call(this,
-                   location._|0,
-                   !!transpose,
-                   new Float32Array(v.buffer))
-               } else {
-                 return native.call(this,
-                   location._|0,
-                   !!transpose,
-                   new Float32Array(v))
-               }
-          }
-          setError(this, gl.INVALID_VALUE)
-        }
-      })(n)
-    }
   }
 }
 makeUniforms()

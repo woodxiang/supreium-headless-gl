@@ -131,7 +131,7 @@ WebGLRenderingContext::WebGLRenderingContext(
     PUSH_ATTRIB(EGL_ALPHA_SIZE, 8);
   }
   if(depth) {
-    PUSH_ATTRIB(EGL_DEPTH_SIZE, 16);
+    PUSH_ATTRIB(EGL_DEPTH_SIZE, 24);
   }
   if(stencil) {
     PUSH_ATTRIB(EGL_STENCIL_SIZE, 8);
@@ -421,8 +421,8 @@ GL_METHOD(PixelStorei) {
 GL_METHOD(BindAttribLocation) {
   GL_BOILERPLATE;
 
-  int program = args[0]->Int32Value();
-  int index = args[1]->Int32Value();
+  GLint program = args[0]->Int32Value();
+  GLint index   = args[1]->Int32Value();
   v8::String::Utf8Value name(args[2]);
 
   glBindAttribLocation(program, index, *name);
@@ -663,16 +663,16 @@ GL_METHOD(LinkProgram) {
 GL_METHOD(GetProgramParameter) {
   GL_BOILERPLATE;
 
-  int program = args[0]->Int32Value();
-  int pname = args[1]->Int32Value();
+  GLint program = args[0]->Int32Value();
+  GLenum pname  = (GLenum)(args[1]->Int32Value());
 
-  int value = 0;
+  GLint value = 0;
   switch (pname) {
   case GL_DELETE_STATUS:
   case GL_LINK_STATUS:
   case GL_VALIDATE_STATUS:
     glGetProgramiv(program, pname, &value);
-    NanReturnValue(NanNew<v8::Boolean>(static_cast<bool>(value!=0)));
+    NanReturnValue(NanNew<v8::Boolean>(value != 0));
 
   case GL_ATTACHED_SHADERS:
   case GL_ACTIVE_ATTRIBUTES:
@@ -1404,7 +1404,6 @@ GL_METHOD(FramebufferRenderbuffer) {
   GLenum attachment         = args[1]->Int32Value();
   GLenum renderbuffertarget = args[2]->Int32Value();
   GLuint renderbuffer       = args[3]->Uint32Value();
-  printf("%d, %d, %d, %u\n", target, attachment, renderbuffertarget, renderbuffer);
   glFramebufferRenderbuffer(
     target,
     attachment,
