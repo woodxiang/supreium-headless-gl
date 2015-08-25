@@ -11,8 +11,9 @@ process.on('exit', nativeGL.cleanup)
 exports.WebGLRenderingContext = nativeGL.WebGLRenderingContext
 
 function WebGLProgram(_, ctx) {
-  this._    = _
-  this._ctx = ctx
+  this._          = _
+  this._ctx       = ctx
+  this._linkCount = 0
 }
 exports.WebGLProgram = WebGLProgram
 
@@ -59,7 +60,9 @@ function WebGLActiveInfo(_) {
 exports.WebGLActiveInfo = WebGLActiveInfo
 
 function WebGLUniformLocation(_, _prog) {
-  this._ = _
+  this._          = _
+  this._program   = _prog
+  this._linkCount = _prog._linkCount
 }
 exports.WebGLUniformLocation = WebGLUniformLocation
 
@@ -87,9 +90,6 @@ exports.WebGLContextAttributes = WebGLContextAttributes
 var gl = nativeGL.WebGLRenderingContext.prototype
 gl.VERSION = 0x1F02
 
-////////////////////////////////////////////////////////////////////////////////
-
-//Set error code on WebGL context
 function setError(context, error) {
   nativeGL.setError.call(context, error|0)
 }
@@ -108,9 +108,28 @@ function checkUniform(program, location) {
          location._prog === program
 }
 
-function checkLocation(location) {
-  return location instanceof WebGLUniformLocation
+function checkLocation(context, location) {
+  if(!(location instanceof WebGLUniformLocation)) {
+    setError(context, gl.INVALID_VALUE)
+    return false
+  } else if(location._program._ctx !== context ||
+    location._linkCount !== location._program._linkCount) {
+    setError(context, gl.INVALID_OPERATION)
+    return false
+  }
+  return true
 }
+
+function checkLocationActive(context, location) {
+  if(!checkLocation(context, location)) {
+    return false
+  } else if(location._program !== context._activeProgram) {
+    setError(context, gl.INVALID_OPERATION)
+    return false
+  }
+  return true
+}
+
 
 function checkWrapper(context, object, wrapper) {
   if(!checkValid(object, wrapper)) {
@@ -123,7 +142,6 @@ function checkWrapper(context, object, wrapper) {
   return true
 }
 
-//Resize surface
 var _resize = gl.resize
 gl.resize = function(width, height) {
   width = width | 0
@@ -138,7 +156,6 @@ gl.resize = function(width, height) {
   }
 }
 
-//Destroy WebGL context
 var _destroy = gl.destroy
 gl.destroy = function() {
   _destroy.call(this)
@@ -398,13 +415,17 @@ createObject('createShader', WebGLShader, '_shaders')
 createObject('createTexture', WebGLTexture, '_textures')
 
 //Generic object deletion method
-function deleteObject(name, type, refset) {
+function deleteObject(name, type, refset, binding_slots) {
   var native = gl[name]
   gl[name] = function(object) {
-    if(checkOwns(this, object) &&
-       object instanceof type) {
+    if(checkOwns(this, object) && object instanceof type) {
       var id = object._
       if(id in this[refset]) {
+        for(var i=0; i<binding_slots.length; ++i) {
+          if(this[binding_slots[i]] === object) {
+            this[binding_slots[i]] = null
+          }
+        }
         delete this[refset][id]
         object._ = 0
         return native.call(this, id)
@@ -414,12 +435,12 @@ function deleteObject(name, type, refset) {
   }
 }
 
-deleteObject('deleteBuffer', WebGLBuffer, '_buffers')
-deleteObject('deleteFramebuffer', WebGLFramebuffer, '_framebuffers')
-deleteObject('deleteProgram', WebGLProgram, '_programs')
-deleteObject('deleteRenderbuffer', WebGLRenderbuffer, '_renderbuffers')
-deleteObject('deleteShader', WebGLShader, '_shaders')
-deleteObject('deleteTexture', WebGLTexture, '_textures')
+deleteObject('deleteBuffer', WebGLBuffer, '_buffers', ['_activeArrayBuffer', '_activeElementArrayBuffer'])
+deleteObject('deleteFramebuffer', WebGLFramebuffer, '_framebuffers', [ '_activeFramebuffer' ])
+deleteObject('deleteProgram', WebGLProgram, '_programs', ['_activeProgram'])
+deleteObject('deleteRenderbuffer', WebGLRenderbuffer, '_renderbuffers', ['_activeRenderbuffer'])
+deleteObject('deleteShader', WebGLShader, '_shaders', [])
+deleteObject('deleteTexture', WebGLTexture, '_textures', [])
 
 var _depthFunc = gl.depthFunc
 gl.depthFunc = function depthFunc(func) {
@@ -729,6 +750,7 @@ gl.lineWidth = function lineWidth(width) {
 var _linkProgram = gl.linkProgram
 gl.linkProgram = function linkProgram(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
+    program._linkCount += 1
     return _linkProgram.call(this, program._|0)
   }
 }
@@ -745,7 +767,6 @@ gl.polygonOffset = function polygonOffset(factor, units) {
 
 var _readPixels = gl.readPixels
 gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
-  this.drawingBufferWidth, this.drawingBufferHeight)
   width = width|0
   height = height|0
   if(format === gl.RGB ||
@@ -903,23 +924,25 @@ function makeUniforms() {
     var native = gl[func]
 
     gl[func] = function(location, transpose, v) {
-      if(checkLocation(this, location) &&
-         typeof v === 'object' &&
+      if(!checkLocationActive(this, location)) {
+        return
+      }
+      if(typeof v === 'object' &&
          v !== null &&
          v.length === i*i) {
-           if(v instanceof Float32Array) {
-             return native.call(this,
-               location._|0,
-               !!transpose,
-               new Float32Array(v.buffer))
-           } else {
-             return native.call(this,
-               location._|0,
-               !!transpose,
-               new Float32Array(v))
-           }
+         if(v instanceof Float32Array) {
+           return native.call(this,
+             location._|0,
+             !!transpose,
+             new Float32Array(v.buffer))
+         } else {
+           return native.call(this,
+             location._|0,
+             !!transpose,
+             new Float32Array(v))
+         }
       }
-      setError(this, gl.INVALID_OPERATION)
+      setError(this, gl.INVALID_VALUE)
     }
   }
 
@@ -934,15 +957,16 @@ function makeUniforms() {
       var native = gl[func]
 
       gl[func] = function(location, x, y, z, w) {
-        if(checkLocation(this, location)) {
+        if(checkLocationActive(this, location)) {
           return native.call(this, location._|0, x, y, z, w)
         }
-        setError(this, gl.INVALID_OPERATION)
       }
 
       gl[func + 'v'] = function(location, v) {
-        if(checkLocation(this, location) &&
-           typeof v === 'object' &&
+        if(!checkLocationActive(this, location)) {
+          return
+        }
+        if(typeof v === 'object' &&
            v !== null &&
            v.length === i) {
           switch(i) {
@@ -952,7 +976,7 @@ function makeUniforms() {
             case 4: return native.call(this, location._|0, v[0], v[1], v[2], v[3])
           }
         }
-        setError(this, gl.INVALID_OPERATION)
+        setError(this, gl.INVALID_VALUE)
       }
     })
   }
@@ -961,7 +985,11 @@ makeUniforms()
 
 var _useProgram = gl.useProgram
 gl.useProgram = function useProgram(program) {
-  if(checkWrapper(this, program, WebGLProgram)) {
+  if(program === null) {
+    this._activeProgram = null
+    return _useProgram.call(this, 0)
+  } else if(checkWrapper(this, program, WebGLProgram)) {
+    this._activeProgram = program
     return _useProgram.call(this, program._|0)
   }
 }
