@@ -14,12 +14,14 @@ function WebGLProgram(_, ctx) {
   this._          = _
   this._ctx       = ctx
   this._linkCount = 0
+  this._pendingDelete = false
 }
 exports.WebGLProgram = WebGLProgram
 
 function WebGLShader(_, ctx) {
   this._    = _
   this._ctx = ctx
+  this._pendingDelete = false
 }
 exports.WebGLShader = WebGLShader
 
@@ -27,6 +29,7 @@ function WebGLBuffer(_, ctx) {
   this._        = _
   this._ctx     = ctx
   this._binding = 0
+  this._pendingDelete = false
 }
 exports.WebGLBuffer = WebGLBuffer
 
@@ -34,6 +37,7 @@ function WebGLFramebuffer(_, ctx) {
   this._        = _
   this._ctx     = ctx
   this._binding = 0
+  this._pendingDelete = false
 }
 exports.WebGLFramebuffer = WebGLFramebuffer
 
@@ -41,6 +45,7 @@ function WebGLRenderbuffer(_, ctx) {
   this._        = _
   this._ctx     = ctx
   this._binding = 0
+  this._pendingDelete = false
 }
 exports.WebGLRenderbuffer = WebGLRenderbuffer
 
@@ -48,6 +53,7 @@ function WebGLTexture(_, ctx) {
   this._        = _
   this._ctx     = ctx
   this._binding = 0
+  this._pendingDelete = false
 }
 exports.WebGLTexture = WebGLTexture
 
@@ -121,7 +127,10 @@ function checkLocation(context, location) {
 }
 
 function checkLocationActive(context, location) {
-  if(!checkLocation(context, location)) {
+  if(location === null) {
+    setError(context, gl.INVALID_OPERATION)
+    return false
+  } else if(!checkLocation(context, location)) {
     return false
   } else if(location._program !== context._activeProgram) {
     setError(context, gl.INVALID_OPERATION)
@@ -420,12 +429,13 @@ function deleteObject(name, type, refset, binding_slots) {
   gl[name] = function(object) {
     if(checkOwns(this, object) && object instanceof type) {
       var id = object._
-      if(id in this[refset]) {
-        for(var i=0; i<binding_slots.length; ++i) {
-          if(this[binding_slots[i]] === object) {
-            this[binding_slots[i]] = null
-          }
+      for(var i=0; i<binding_slots.length; ++i) {
+        if(this[binding_slots[i]] === object) {
+          object._pendingDelete = true
+          return native.call(this, id)
         }
+      }
+      if(id in this[refset]) {
         delete this[refset][id]
         object._ = 0
         return native.call(this, id)
@@ -574,7 +584,14 @@ gl.getActiveUniform = function getActiveUniform(program, index) {
 var _getAttachedShaders = gl.getAttachedShaders
 gl.getAttachedShaders = function getAttachedShaders(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
-    return _getAttachedShaders.call(this, program._|0)
+    var shaderArray = _getAttachedShaders.call(this, program._|0)
+    if(shaderArray) {
+      var unboxedShaders = new Array(shaderArray.length)
+      for(var i=0; i<shaderArray.length; ++i) {
+        unboxedShaders[i] = this._shaders[shaderArray[i]]
+      }
+      return unboxedShaders
+    }
   }
   return null
 }
@@ -983,12 +1000,25 @@ function makeUniforms() {
 }
 makeUniforms()
 
+function checkProgramDelete(context, program) {
+  var active = context._activeProgram
+  if(active && active._pendingDelete && active !== program) {
+    var id = active._
+    if(id in context._programs) {
+      delete context._programs[id]
+      active._ = 0
+    }
+  }
+}
+
 var _useProgram = gl.useProgram
 gl.useProgram = function useProgram(program) {
   if(program === null) {
+    checkProgramDelete(this, program)
     this._activeProgram = null
     return _useProgram.call(this, 0)
   } else if(checkWrapper(this, program, WebGLProgram)) {
+    checkProgramDelete(this, program)
     this._activeProgram = program
     return _useProgram.call(this, program._|0)
   }

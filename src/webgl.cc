@@ -639,14 +639,10 @@ GL_METHOD(GetShaderParameter) {
     case GL_SHADER_TYPE:
       glGetShaderiv(shader, pname, &value);
       NanReturnValue(NanNew<v8::Integer>(value));
-    case GL_INFO_LOG_LENGTH:
-    case GL_SHADER_SOURCE_LENGTH:
-      glGetShaderiv(shader, pname, &value);
-      NanReturnValue(NanNew<v8::Integer>(value));
     default:
       inst->setError(GL_INVALID_ENUM);
   }
-  NanReturnUndefined();
+  NanReturnNull();
 }
 
 GL_METHOD(GetShaderInfoLog) {
@@ -715,7 +711,7 @@ GL_METHOD(GetProgramParameter) {
     default:
       inst->setError(GL_INVALID_ENUM);
   }
-  NanReturnUndefined();
+  NanReturnNull();
 }
 
 
