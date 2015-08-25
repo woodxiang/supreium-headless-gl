@@ -12,6 +12,9 @@ function flag(options, name, dflt) {
 }
 
 function createContext(width, height, options) {
+
+    console.log(width, height)
+
     var contextAttributes = new webgl.WebGLContextAttributes(
       flag(options, 'alpha', true),
       flag(options, 'depth', true),

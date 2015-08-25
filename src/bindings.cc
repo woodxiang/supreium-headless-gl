@@ -39,6 +39,8 @@ void init(v8::Handle<v8::Object> exports)
   webgl_template->SetClassName(NanNew<v8::String>("WebGLRenderingContext"));
 
   //Add methods
+  JS_GL_METHOD("resize", Resize);
+
   JS_GL_METHOD("uniform1f", Uniform1f);
   JS_GL_METHOD("uniform2f", Uniform2f);
   JS_GL_METHOD("uniform3f", Uniform3f);
@@ -539,7 +541,7 @@ void init(v8::Handle<v8::Object> exports)
 
   /* Shader Source */
   JS_GL_CONSTANT(COMPILE_STATUS);
-  
+
   JS_GL_CONSTANT(LOW_FLOAT);
   JS_GL_CONSTANT(MEDIUM_FLOAT);
   JS_GL_CONSTANT(HIGH_FLOAT);

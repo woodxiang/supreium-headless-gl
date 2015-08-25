@@ -112,11 +112,28 @@ function checkLocation(location) {
 }
 
 
+
 //Set error code on WebGL context
 function setError(context, error) {
   nativeGL.setError.call(context, error|0)
 }
 
+//Resize surface
+var _resize = gl.resize
+gl.resize = function(width, height) {
+  width = width | 0
+  height = height | 0
+  if(width < 0 || height < 0) {
+    throw new Error("Invalid surface dimensions")
+  } else if(width  !== this.drawingBufferWidth ||
+            height !== this.drawingBufferHeight) {
+    _resize.call(this, width, height)
+    this.drawingBufferWidth  = width
+    this.drawingBufferHeight = height
+  }
+}
+
+//Destroy WebGL context
 var _destroy = gl.destroy
 gl.destroy = function() {
   _destroy.call(this)
@@ -737,6 +754,7 @@ gl.polygonOffset = function polygonOffset(factor, units) {
 
 var _readPixels = gl.readPixels
 gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
+  console.log('reading pixels', x, y, width, height, format, type, this.drawingBufferWidth, this.drawingBufferHeight)
   width = width|0
   height = height|0
   if(width < 0 || height < 0) {
@@ -748,8 +766,8 @@ gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
         this,
         x|0,
         y|0,
-        width|0,
-        height|0,
+        width,
+        height,
         format|0,
         type|0,
         new Uint8Array(pixels.buffer))

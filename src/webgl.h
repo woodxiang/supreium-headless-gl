@@ -35,10 +35,11 @@ typedef std::pair<GLuint, GLObjectType> GLObjectReference;
 struct WebGLRenderingContext : public node::ObjectWrap {
 
   //The underlying OpenGL context
-  static bool HAS_DISPLAY;
+  static bool       HAS_DISPLAY;
   static EGLDisplay DISPLAY;
 
   EGLContext context;
+  EGLConfig  config;
   EGLSurface surface;
   GLContextState  state;
 
@@ -102,7 +103,10 @@ struct WebGLRenderingContext : public node::ObjectWrap {
 
   //Buffer state
   GLuint activeArrayBuffer, activeElementArrayBuffer;
-  
+
+  //Display resizing
+  static NAN_METHOD(Resize);
+
   //Destructors
   void dispose();
 

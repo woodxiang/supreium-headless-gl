@@ -115,15 +115,13 @@ WebGLRenderingContext::WebGLRenderingContext(
 
   //Set up configuration
   std::vector<EGLint> attrib_list;
-  EGLConfig config;
-  EGLint num_config;
 
   #define PUSH_ATTRIB(x, v) \
     attrib_list.push_back(x);\
     attrib_list.push_back(v);
 
   PUSH_ATTRIB(EGL_SURFACE_TYPE, EGL_PBUFFER_BIT);
-  PUSH_ATTRIB(EGL_CONFORMANT, EGL_OPENGL_ES2_BIT);
+  //PUSH_ATTRIB(EGL_CONFORMANT, EGL_OPENGL_ES2_BIT);
   PUSH_ATTRIB(EGL_RED_SIZE, 8);
   PUSH_ATTRIB(EGL_GREEN_SIZE, 8);
   PUSH_ATTRIB(EGL_BLUE_SIZE, 8);
@@ -133,7 +131,7 @@ WebGLRenderingContext::WebGLRenderingContext(
     PUSH_ATTRIB(EGL_ALPHA_SIZE, 0);
   }
   if(depth) {
-    PUSH_ATTRIB(EGL_DEPTH_SIZE, 24);
+    PUSH_ATTRIB(EGL_DEPTH_SIZE, 16);
   } else {
     PUSH_ATTRIB(EGL_DEPTH_SIZE, 0);
   }
@@ -147,12 +145,14 @@ WebGLRenderingContext::WebGLRenderingContext(
 
   #undef PUSH_ATTRIB
 
+  EGLint num_config;
   if(!eglChooseConfig(
       DISPLAY,
       &attrib_list[0],
       &config,
       1,
-      &num_config)) {
+      &num_config) ||
+      num_config != 1) {
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
@@ -199,6 +199,7 @@ bool WebGLRenderingContext::setActive() {
     return true;
   }
   if(!eglMakeCurrent(DISPLAY, surface, surface, context)) {
+    state = GLCONTEXT_STATE_ERROR;
     return false;
   }
   ACTIVE = this;
@@ -270,6 +271,40 @@ WebGLRenderingContext::~WebGLRenderingContext() {
 GL_METHOD(SetError) {
   GL_BOILERPLATE;
   inst->setError((GLenum)args[0]->Int32Value());
+  NanReturnUndefined();
+}
+
+//Resize surface
+GL_METHOD(Resize) {
+  GL_BOILERPLATE;
+
+  EGLint width  = (EGLint)args[0]->Int32Value();
+  EGLint height = (EGLint)args[1]->Int32Value();
+
+  EGLint surfaceAttribs[] = {
+      EGL_WIDTH,  (EGLint)width,
+      EGL_HEIGHT, (EGLint)height,
+      EGL_NONE
+  };
+
+  EGLSurface nextSurface = eglCreatePbufferSurface(
+    DISPLAY,
+    inst->config,
+    surfaceAttribs);
+  if(nextSurface == EGL_NO_SURFACE) {
+    inst->state = GLCONTEXT_STATE_ERROR;
+    NanThrowError("Invalid surface dimensions");
+  } else {
+    if(!eglMakeCurrent(DISPLAY, nextSurface, nextSurface, inst->context)) {
+      inst->state = GLCONTEXT_STATE_ERROR;
+      NanThrowError("Error resizing surface");
+    } else {
+      EGLSurface prevSurface = inst->surface;
+      inst->surface = nextSurface;
+      eglDestroySurface(DISPLAY, prevSurface);
+    }
+  }
+
   NanReturnUndefined();
 }
 
