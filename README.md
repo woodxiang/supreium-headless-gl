@@ -90,11 +90,13 @@ Destroys the WebGL context immediately, reclaiming all resources
 
 ## More information
 
-### Changes from version 1.0.0
+### Improvements from version 1.0.0
 
-* Improved conformance
+The previous version of `gl` (aka `headless-gl`) was pretty much a terrible hack. Thanks to the support of @mapbox and @google's ANGLE project, `gl` is now actually kind of good!  The following things are now way better in version >=2.0.0:
+
+* Vastly improved conformance
+* Khronos ARB test suite integration via `gl-conformance`
 * Works on node 0.12
-* Now using ANGLE instead of direct OpenGL 3
 * Windows and Linux support
 * No default context
 * Added `.destroy()` and `.resize()` methods
