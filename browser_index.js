@@ -19,6 +19,14 @@ function createContext(width, height, options) {
             return gl
         }
     } catch (e) {}
+
+    //Patch in headless-gl extra methods
+    gl.resize = function(w, h) {
+      canvas.width  = w
+      canvas.height = h
+    }
+    gl.destroy = function() {}
+
     return null
 }
 
