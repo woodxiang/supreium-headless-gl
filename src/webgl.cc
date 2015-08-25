@@ -472,10 +472,6 @@ GL_METHOD(UniformMatrix2fv) {
   GLsizei count=0;
   GLfloat* data=getArrayData<GLfloat>(args[2],&count);
 
-  if (count < 4) {
-    return NanThrowError("Not enough data for UniformMatrix2fv");
-  }
-
   glUniformMatrix2fv(location, count / 4, transpose, data);
 
   NanReturnValue(NanUndefined());
@@ -489,10 +485,6 @@ GL_METHOD(UniformMatrix3fv) {
   GLsizei count=0;
   GLfloat* data=getArrayData<GLfloat>(args[2],&count);
 
-  if (count < 9) {
-    return NanThrowError("Not enough data for UniformMatrix3fv");
-  }
-
   glUniformMatrix3fv(location, count / 9, transpose, data);
 
   NanReturnValue(NanUndefined());
@@ -505,10 +497,6 @@ GL_METHOD(UniformMatrix4fv) {
   GLboolean transpose = args[1]->BooleanValue();
   GLsizei count=0;
   GLfloat* data=getArrayData<GLfloat>(args[2],&count);
-
-  if (count < 16) {
-    return NanThrowError("Not enough data for UniformMatrix4fv");
-  }
 
   glUniformMatrix4fv(location, count / 16, transpose, data);
 
@@ -606,19 +594,19 @@ GL_METHOD(GetShaderParameter) {
   int pname = args[1]->Int32Value();
   int value = 0;
   switch (pname) {
-  case GL_DELETE_STATUS:
-  case GL_COMPILE_STATUS:
-    glGetShaderiv(shader, pname, &value);
-    NanReturnValue(NanNew<v8::Boolean>(static_cast<bool>(value!=0)));
-  case GL_SHADER_TYPE:
-    glGetShaderiv(shader, pname, &value);
-    NanReturnValue(NanNew<v8::Integer>(value));
-  case GL_INFO_LOG_LENGTH:
-  case GL_SHADER_SOURCE_LENGTH:
-    glGetShaderiv(shader, pname, &value);
-    NanReturnValue(NanNew<v8::Integer>(value));
-  default:
-    return NanThrowTypeError("GetShaderParameter: Invalid Enum");
+    case GL_DELETE_STATUS:
+    case GL_COMPILE_STATUS:
+      glGetShaderiv(shader, pname, &value);
+      NanReturnValue(NanNew<v8::Boolean>(static_cast<bool>(value!=0)));
+    case GL_SHADER_TYPE:
+      glGetShaderiv(shader, pname, &value);
+      NanReturnValue(NanNew<v8::Integer>(value));
+    case GL_INFO_LOG_LENGTH:
+    case GL_SHADER_SOURCE_LENGTH:
+      glGetShaderiv(shader, pname, &value);
+      NanReturnValue(NanNew<v8::Integer>(value));
+    default:
+      inst->setError(GL_INVALID_ENUM);
   }
   NanReturnUndefined();
 }
@@ -674,20 +662,20 @@ GL_METHOD(GetProgramParameter) {
 
   GLint value = 0;
   switch (pname) {
-  case GL_DELETE_STATUS:
-  case GL_LINK_STATUS:
-  case GL_VALIDATE_STATUS:
-    glGetProgramiv(program, pname, &value);
-    NanReturnValue(NanNew<v8::Boolean>(value != 0));
+    case GL_DELETE_STATUS:
+    case GL_LINK_STATUS:
+    case GL_VALIDATE_STATUS:
+      glGetProgramiv(program, pname, &value);
+      NanReturnValue(NanNew<v8::Boolean>(value != 0));
 
-  case GL_ATTACHED_SHADERS:
-  case GL_ACTIVE_ATTRIBUTES:
-  case GL_ACTIVE_UNIFORMS:
-    glGetProgramiv(program, pname, &value);
-    NanReturnValue(NanNew<v8::Integer>(value));
+    case GL_ATTACHED_SHADERS:
+    case GL_ACTIVE_ATTRIBUTES:
+    case GL_ACTIVE_UNIFORMS:
+      glGetProgramiv(program, pname, &value);
+      NanReturnValue(NanNew<v8::Integer>(value));
 
-  default:
-    return NanThrowTypeError("GetProgramParameter: Invalid Enum");
+    default:
+      inst->setError(GL_INVALID_ENUM);
   }
   NanReturnUndefined();
 }
@@ -1495,19 +1483,20 @@ GL_METHOD(ValidateProgram) {
 
 GL_METHOD(TexSubImage2D) {
   GL_BOILERPLATE;
-  GLenum target = args[0]->Int32Value();
-  GLint level = args[1]->Int32Value();
-  GLint xoffset = args[2]->Int32Value();
-  GLint yoffset = args[3]->Int32Value();
-  GLsizei width = args[4]->Int32Value();
-  GLsizei height = args[5]->Int32Value();
-  GLenum format = args[6]->Int32Value();
-  GLenum type = args[7]->Int32Value();
-  void *pixels=getImageData(args[8]);
+  GLenum target   = args[0]->Int32Value();
+  GLint level     = args[1]->Int32Value();
+  GLint xoffset   = args[2]->Int32Value();
+  GLint yoffset   = args[3]->Int32Value();
+  GLsizei width   = args[4]->Int32Value();
+  GLsizei height  = args[5]->Int32Value();
+  GLenum format   = args[6]->Int32Value();
+  GLenum type     = args[7]->Int32Value();
+  void *pixels    = getImageData(args[8]);
   if(!pixels) {
-    return NanThrowError("Invalid image data");
+    inst->setError(GL_INVALID_VALUE);
+  } else {
+    glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
   }
-  glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
   NanReturnValue(NanUndefined());
 }
 
@@ -1520,10 +1509,13 @@ GL_METHOD(ReadPixels) {
   GLenum format  = args[4]->Int32Value();
   GLenum type    = args[5]->Int32Value();
   void *pixels   = getImageData(args[6]);
+
   if(!pixels) {
-    return NanThrowError("Invalid image data");
+    inst->setError(GL_INVALID_VALUE);
+  } else {
+    glReadPixels(x, y, width, height, format, type, pixels);
   }
-  glReadPixels(x, y, width, height, format, type, pixels);
+
   NanReturnValue(NanUndefined());
 }
 
@@ -1812,7 +1804,7 @@ GL_METHOD(GetVertexAttrib) {
     NanReturnValue(arr);
   }
   default:
-    return NanThrowError("GetVertexAttrib: Invalid Enum");
+    inst->setError(GL_INVALID_ENUM);
   }
   NanReturnValue(NanUndefined());
 }
