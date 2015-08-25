@@ -89,16 +89,18 @@ gl.VERSION = 0x1F02
 
 ////////////////////////////////////////////////////////////////////////////////
 
-//Check context ownership
-function checkOwns(context, object) {
-  return object        !== null     &&
-         typeof object === 'object' &&
-         object._ctx   === context  &&
-         object._      !== 0
+//Set error code on WebGL context
+function setError(context, error) {
+  nativeGL.setError.call(context, error|0)
 }
 
-function checkWrapper(context, object, type) {
-  return checkOwns(context, object) && object instanceof type
+function checkValid(object, type) {
+  return object instanceof type && object._ !== 0
+}
+
+function checkOwns(context, object) {
+  return typeof object === 'object' &&
+         object._ctx   === context
 }
 
 function checkUniform(program, location) {
@@ -107,15 +109,18 @@ function checkUniform(program, location) {
 }
 
 function checkLocation(location) {
-  return location instanceof WebGLUniformLocation &&
-         checkWrapper(location._prog)
+  return location instanceof WebGLUniformLocation
 }
 
-
-
-//Set error code on WebGL context
-function setError(context, error) {
-  nativeGL.setError.call(context, error|0)
+function checkWrapper(context, object, wrapper) {
+  if(!checkValid(object, wrapper)) {
+    setError(context, gl.INVALID_VALUE)
+    return false
+  } else if(!checkOwns(context, object)) {
+    setError(context, gl.INVALID_OPERATION)
+    return false
+  }
+  return true
 }
 
 //Resize surface
@@ -182,7 +187,6 @@ gl.bindAttribLocation = function bindAttribLocation(program, index, name) {
       index|0,
       name+'')
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 function bindObject(method, wrapper) {
@@ -201,7 +205,6 @@ function bindObject(method, wrapper) {
         target|0,
         object._|0)
     }
-    setError(this, gl.INVALID_OPERATION)
   }
 }
 
@@ -330,7 +333,6 @@ gl.compileShader = function compileShader(shader) {
   if(checkWrapper(this, shader, WebGLShader)) {
     return _compileShader.call(this, shader._)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _copyTexImage2D = gl.copyTexImage2D
@@ -440,7 +442,6 @@ gl.detachShader = function detachShader(program, shader) {
      checkWrapper(this, shader, WebGLShader)) {
     return _detachShader.call(this, program._, shader._)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _disable = gl.disable
@@ -497,7 +498,6 @@ gl.framebufferRenderbuffer = function framebufferRenderbuffer(
       renderbuffertarget|0,
       renderbuffer._)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _framebufferTexture2D = gl.framebufferTexture2D
@@ -516,7 +516,6 @@ gl.framebufferTexture2D = function framebufferTexture2D(
       texture._|0,
       level|0)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _frontFace = gl.frontFace
@@ -532,20 +531,22 @@ gl.generateMipmap = function generateMipmap(target) {
 var _getActiveAttrib = gl.getActiveAttrib
 gl.getActiveAttrib = function getActiveAttrib(program, index) {
   if(checkWrapper(this, program, WebGLProgram)) {
-    return new WebGLActiveInfo(
-      _getActiveAttrib.call(this, program._|0, index|0))
+    var info = _getActiveAttrib.call(this, program._|0, index|0)
+    if(info) {
+      return new WebGLActiveInfo(info)
+    }
   }
-  setError(this, gl.INVALID_OPERATION)
   return null
 }
 
 var _getActiveUniform = gl.getActiveUniform
 gl.getActiveUniform = function getActiveUniform(program, index) {
   if(checkWrapper(this, program, WebGLProgram)) {
-    return new WebGLActiveInfo(
-      _getActiveUniform.call(this, program._|0, index|0))
+    var info = _getActiveUniform.call(this, program._|0, index|0)
+    if(info) {
+      return new WebGLActiveInfo(info)
+    }
   }
-  setError(this, gl.INVALID_OPERATION)
   return null
 }
 
@@ -554,7 +555,6 @@ gl.getAttachedShaders = function getAttachedShaders(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _getAttachedShaders.call(this, program._|0)
   }
-  setError(this, gl.INVALID_OPERATION)
   return null
 }
 
@@ -563,7 +563,6 @@ gl.getAttribLocation = function getAttribLocation(program, name) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _getAttribLocation.call(this, program._|0, name+'')
   }
-  setError(this, gl.INVALID_OPERATION)
   return null
 }
 
@@ -621,7 +620,6 @@ gl.getProgramParameter = function getProgramParameter(program, pname) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _getProgramParameter.call(this, program._|0, pname|0)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _getProgramInfoLog = gl.getProgramInfoLog
@@ -629,7 +627,6 @@ gl.getProgramInfoLog = function getProgramInfoLog(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _getProgramInfoLog.call(this, program._|0)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _getRenderbufferParameter = gl.getRenderbufferParameter
@@ -642,7 +639,6 @@ gl.getShaderParameter = function getShaderParameter(shader, pname) {
   if(checkWrapper(this, shader, WebGLShader)) {
     return _getShaderParameter.call(this, shader._|0, pname|0)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _getShaderInfoLog = gl.getShaderInfoLog
@@ -650,7 +646,6 @@ gl.getShaderInfoLog = function getShaderInfoLog(shader) {
   if(checkWrapper(this, shader, WebGLShader)) {
     return _getShaderInfoLog.call(this, shader._|0)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _getShaderSource = gl.getShaderSource
@@ -658,7 +653,6 @@ gl.getShaderSource = function getShaderSource(shader) {
   if(checkWrapper(this, shader, WebGLShader)) {
     return _getShaderSource.call(this, shader._|0)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _getTexParameter = gl.getTexParameter
@@ -672,7 +666,6 @@ gl.getUniform = function getUniform(program, location) {
      checkUniform(program, location)) {
     return _getUniform.call(this, program._|0, location._|0)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _getUniformLocation = gl.getUniformLocation
@@ -685,7 +678,6 @@ gl.getUniformLocation = function getUniformLocation(program, name) {
       return null
     }
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _getVertexAttrib = gl.getVertexAttrib
@@ -739,7 +731,6 @@ gl.linkProgram = function linkProgram(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _linkProgram.call(this, program._|0)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _pixelStorei = gl.pixelStorei
@@ -813,7 +804,6 @@ gl.shaderSource = function shaderSource(shader, source) {
   if(checkWrapper(this, shader, WebGLShader)) {
     return _shaderSource.call(this, shader._|0, source+'')
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _stencilFunc = gl.stencilFunc
@@ -974,7 +964,6 @@ gl.useProgram = function useProgram(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _useProgram.call(this, program._|0)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _validateProgram = gl.validateProgram
@@ -982,7 +971,6 @@ gl.validateProgram = function validateProgram(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _validateProgram.call(this, program._|0)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 function makeVertexAttribs() {

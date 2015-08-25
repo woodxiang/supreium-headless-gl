@@ -1573,11 +1573,15 @@ GL_METHOD(GetActiveAttrib) {
   GLenum type;
   GLsizei size;
   glGetActiveAttrib(program, index, 1024, &length, &size, &type, name);
-  v8::Local<v8::Array> activeInfo = NanNew<v8::Array>(3);
-  activeInfo->Set(NanNew<v8::String>("size"), NanNew<v8::Integer>(size));
-  activeInfo->Set(NanNew<v8::String>("type"), NanNew<v8::Integer>((int)type));
-  activeInfo->Set(NanNew<v8::String>("name"), NanNew<v8::String>(name));
-  NanReturnValue(activeInfo);
+  if(length > 0) {
+    v8::Local<v8::Array> activeInfo = NanNew<v8::Array>(3);
+    activeInfo->Set(NanNew<v8::String>("size"), NanNew<v8::Integer>(size));
+    activeInfo->Set(NanNew<v8::String>("type"), NanNew<v8::Integer>((int)type));
+    activeInfo->Set(NanNew<v8::String>("name"), NanNew<v8::String>(name));
+    NanReturnValue(activeInfo);
+  } else {
+    NanReturnUndefined();
+  }
 }
 
 GL_METHOD(GetActiveUniform) {
@@ -1590,11 +1594,15 @@ GL_METHOD(GetActiveUniform) {
   GLenum type;
   GLsizei size;
   glGetActiveUniform(program, index, 1024, &length, &size, &type, name);
-  v8::Local<v8::Array> activeInfo = NanNew<v8::Array>(3);
-  activeInfo->Set(NanNew<v8::String>("size"), NanNew<v8::Integer>(size));
-  activeInfo->Set(NanNew<v8::String>("type"), NanNew<v8::Integer>((int)type));
-  activeInfo->Set(NanNew<v8::String>("name"), NanNew<v8::String>(name));
-  NanReturnValue(activeInfo);
+  if(length > 0) {
+    v8::Local<v8::Array> activeInfo = NanNew<v8::Array>(3);
+    activeInfo->Set(NanNew<v8::String>("size"), NanNew<v8::Integer>(size));
+    activeInfo->Set(NanNew<v8::String>("type"), NanNew<v8::Integer>((int)type));
+    activeInfo->Set(NanNew<v8::String>("name"), NanNew<v8::String>(name));
+    NanReturnValue(activeInfo);
+  } else {
+    NanReturnUndefined();
+  }
 }
 
 GL_METHOD(GetAttachedShaders) {
