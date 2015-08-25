@@ -65,6 +65,7 @@ function createContext(width, height, options) {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)
 
     gl.disable(gl.DEPTH_TEST)
+    gl.disable(gl.STENCIL_TEST)
     gl.clearColor(0, 0, 0, 0)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT)
 

@@ -757,7 +757,13 @@ gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
   console.log('reading pixels', x, y, width, height, format, type, this.drawingBufferWidth, this.drawingBufferHeight)
   width = width|0
   height = height|0
-  if(width < 0 || height < 0) {
+  if(format === gl.RGB ||
+     format === gl.ALPHA) {
+    //Special case: gl.RGB reports invalid operation
+    setError(this, gl.INVALID_OPERATION)
+  } else if(format !== gl.RGBA) {
+    setError(this, gl.INVALID_ENUM)
+  } else if(width < 0 || height < 0) {
     setError(this, gl.INVALID_VALUE)
   } else if(pixels instanceof Uint8Array &&
     width * height * 4 <= pixels.length) {
@@ -773,6 +779,7 @@ gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
         new Uint8Array(pixels.buffer))
     }
   } else {
+    //Default unspecified error
     setError(this, gl.INVALID_OPERATION)
   }
 }
