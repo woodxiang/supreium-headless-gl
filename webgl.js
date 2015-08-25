@@ -745,7 +745,7 @@ gl.polygonOffset = function polygonOffset(factor, units) {
 
 var _readPixels = gl.readPixels
 gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
-  console.log('reading pixels', x, y, width, height, format, type, this.drawingBufferWidth, this.drawingBufferHeight)
+  this.drawingBufferWidth, this.drawingBufferHeight)
   width = width|0
   height = height|0
   if(format === gl.RGB ||

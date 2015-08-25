@@ -217,7 +217,6 @@ void WebGLRenderingContext::setError(GLenum error) {
 }
 
 void WebGLRenderingContext::dispose() {
-
   //Unregister context
   unregisterContext();
 
@@ -256,12 +255,15 @@ void WebGLRenderingContext::dispose() {
     }
   }
 
-  //Destroy context
-  eglDestroyContext(DISPLAY, context);
-  eglDestroySurface(DISPLAY, surface);
-
-  //Unlink from active
+  //Deactivate context
+  eglMakeCurrent(DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
   ACTIVE = NULL;
+
+  //Destroy surface and context
+
+  //FIXME:  This shouldn't be commented out
+  //eglDestroySurface(DISPLAY, surface);
+  eglDestroyContext(DISPLAY, context);
 }
 
 WebGLRenderingContext::~WebGLRenderingContext() {
