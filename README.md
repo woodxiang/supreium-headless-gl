@@ -52,12 +52,33 @@ Because `headless-gl` uses native code, it is a bit more involved to set up than
 
 ## API
 
+### Context creation
+
 #### `var gl = require('gl')(width, height[, options])`
+Creates a new `WebGLRenderingContext` with the given parameters.
+
+* `width` is the width of the drawing buffer
+* `height` is the height of the drawing buffer
+* `options` is an optional object whose properties are the context attributes for the WebGLRendering context
+
+**Returns** A new `WebGLRenderingContext` object
+
+### Extra methods
+
+In addition to all of the usual WebGL methods, `headless-gl` adds the following two methods to each WebGL context in order to support some functionality which would not otherwise be exposed at the WebGL level.
 
 #### `gl.resize(width, height)`
+Resizes the drawing buffer of a WebGL rendering context
+
+* `width` is the new width of the drawing buffer for the context
+* `height` is the new height of the drawing buffer for the context
+
+**Note** In the DOM, this method would implemented by resizing the canvas, which is done by modifying the `width/height` properties.
 
 #### `gl.destroy()`
+Destroys the WebGL context immediately, reclaiming all resources
 
+**Note** For long running jobs, garbage collection of contexts is often not fast enough.  To prevent the system from becoming overloaded with unused contexts, you can force the system to reclaim a WebGL context immediately by calling `.destroy()`.
 
 ## Building locally
 
@@ -79,7 +100,7 @@ It depends on what you are trying to do.  [node-webgl](https://github.com/mikese
 
 `nw.js` is good if you need a full DOM implementation.  On the other hand, because it is a larger dependency it can be more difficult to set up and configure.  `headless-gl` is lighter weight and more modular in the sense that it just implements WebGL and nothing else.
 
-### How are <image> and <video> elements implemented?
+### How are `<image>` and `<video>` elements implemented?
 
 They aren't for now.  If you want to upload data to a texture, you will need to unpack the pixels into a `Uint8Array` and stick on the GPU yourself.
 
