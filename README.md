@@ -1,76 +1,88 @@
-headless-gl
-===========
-This is a gutted version of [node-webgl](https://github.com/mikeseven/node-webgl) with no external dependencies, DOM emulation or window handling.  You can use it to create WebGL contexts for GPGPU programming and server-side rendering in node.  It should also work in browsers that support WebGL.
+# headless-gl
+`headless-gl` lets you create a WebGL context in node.js without making a window or loading a full browser environment.
 
-Dependencies
-============
+It aspires to be fully conformant with the WebGL 1.0 specification.
 
-* Opengl
-* GLEW (if running on Linux)
+## Example
 
-Installation
-============
-Just do:
+```javascript
+//Create context
+var width   = 64
+var height  = 64
+var gl = require("gl")(width, height)
 
-    npm install gl
+//Clear screen to red
+gl.clearColor(1, 0, 0, 1)
+gl.clear(gl.COLOR_BUFFER_BIT)
 
-Currently only works on OS X and Linux. If you have access to working Windows system and want to contribute, please let me know.
+//Write output as a PPM formatted image
+var pixels = new Uint8Array(width * height * 4)
+gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+process.stdout.write(["P3\n# gl.ppm\n", width, " ", height, "\n255\n"].join(""))
+for(var i=0; i<pixels.length; i += 4) {
+  for(var j=0; j<3; ++j) {
+    process.stdout.write(pixels[i + j] + " ")
+  }
+}
+```
 
-Usage
-=====
-To get a handle on the headless OpenGL context, just do:
+## Install
+Because `headless-gl` uses native code, it is a bit more involved to set up than a typical JavaScript npm module.  Before you can use it, you will need to ensure that your system has the correct dependencies installed.
 
-    var gl = require("gl");
+### System dependencies
 
-Then you can use all the ordinary [WebGL methods](https://www.khronos.org/registry/webgl/specs/1.0/).
+#### Mac OS X
 
-Example
-=======
-Here is an example that creates an offscreen framebuffer, clears it to red, reads the result and writes the image to stdout as a [PPM](http://netpbm.sourceforge.net/doc/ppm.html) :
+* Python 2.7
+* XCode
 
-    //Create context
-    var width   = 64;
-    var height  = 64;
-    var gl = require("gl").createContext(width, height);
+#### Linux
 
-    //Create texture
-    var tex = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, tex)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+* Python 2.7
+* A GNU C++ environment (available via the `build-essential` package on `apt`)
+* Working and up to date OpenGL drivers
+* GLEW
 
-    //Create frame buffer
-    var fbo = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+#### Windows
 
-    //Clear screen to red
-    gl.clearColor(1.0, 0.0, 0.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+* Python 2.7
+* Microsoft Visual Studio
 
-    //Write output
-    var pixels = new Uint8Array(width * height * 3);
-    gl.readPixels(0, 0, width, height, gl.RGB, gl.UNSIGNED_BYTE, pixels);
-    process.stdout.write(["P3\n# gl.ppm\n", width, " ", height, "\n255\n"].join(""));
-    for(var i=0; i<pixels.length; ++i) {
-        process.stdout.write(pixels[i] + " ");
-    }
+### npm
 
+## API
 
-Multiple Contexts
-=================
-You can create multiple WebGL contexts if you like.  To do this, just call:
+#### `var gl = require('gl')(width, height[, options])`
 
-    var my_context = gl.createContext();
+#### `gl.resize(width, height)`
 
-Which will work just like any other WebGL context.  To get rid of a context when you are done with it, jst call destroy() on it:
-
-    my_context.destroy();
+#### `gl.destroy()`
 
 
-Why use this thing instead of node-webgl?
------------------------------------------
-It depends on what you are trying to do.  [node-webgl](https://github.com/mikeseven/node-webgl) is good if you are making a graphical application like a game.  On the other hand, because headless-gl does not create any windows, it is suitable for running in a server environment.  This means that you can use it to generate figures using OpenGL or perform GPGPU computations using shaders.
+## Building locally
 
-Credits
-=======
+## More information
+
+### Changes from version 1.0.0
+
+* Improved conformance
+* ANGLE
+* No default context
+* .destroy
+* .resize
+
+### Why use this thing instead of `node-webgl`?
+
+It depends on what you are trying to do.  [node-webgl](https://github.com/mikeseven/node-webgl) is good if you are making a graphical application like a game, and allows for access to some features which are not part of ordinary WebGL.  On the other hand, because headless-gl does not create any windows, it is suitable for running in a server environment.  This means that you can use it to generate figures using OpenGL or perform GPGPU computations using shaders. Also, unlike `node-webgl`, `headless-gl` attempts to correctly implement the full WebGL standard making it more reliable.
+
+### Why use this thing instead of `nw.js`?
+
+`nw.js` is good if you need a full DOM implementation.  On the other hand, because it is a larger dependency it can be more difficult to set up and configure.  `headless-gl` is lighter weight and more modular in the sense that it just implements WebGL and nothing else.
+
+### How are <image> and <video> elements implemented?
+
+They aren't for now.  If you want to upload data to a texture, you will need to unpack the pixels into a `Uint8Array` and stick on the GPU yourself.
+
+## License
+
 See LICENSES
