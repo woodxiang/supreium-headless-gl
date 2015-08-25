@@ -17,33 +17,36 @@ function WebGLProgram(_, ctx) {
 exports.WebGLProgram = WebGLProgram
 
 function WebGLShader(_, ctx) {
-  this._ = _
+  this._    = _
   this._ctx = ctx
 }
 exports.WebGLShader = WebGLShader
 
 function WebGLBuffer(_, ctx) {
-  this._ = _
-  this._ctx = ctx
+  this._        = _
+  this._ctx     = ctx
   this._binding = 0
 }
 exports.WebGLBuffer = WebGLBuffer
 
 function WebGLFramebuffer(_, ctx) {
-  this._ = _
-  this._ctx = ctx
+  this._        = _
+  this._ctx     = ctx
+  this._binding = 0
 }
 exports.WebGLFramebuffer = WebGLFramebuffer
 
 function WebGLRenderbuffer(_, ctx) {
-  this._ = _
-  this._ctx = ctx
+  this._        = _
+  this._ctx     = ctx
+  this._binding = 0
 }
 exports.WebGLRenderbuffer = WebGLRenderbuffer
 
 function WebGLTexture(_, ctx) {
-  this._ = _
-  this._ctx = ctx
+  this._        = _
+  this._ctx     = ctx
+  this._binding = 0
 }
 exports.WebGLTexture = WebGLTexture
 
@@ -150,7 +153,7 @@ gl.attachShader = function attachShader(program, shader) {
       program._|0,
       shader._|0)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _bindAttribLocation = gl.bindAttribLocation;
@@ -162,56 +165,33 @@ gl.bindAttribLocation = function bindAttribLocation(program, index, name) {
       index|0,
       name+'')
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
-var _bindBuffer = gl.bindBuffer;
-gl.bindBuffer = function bindBuffer(target, buffer) {
-  target = target|0
-  if(buffer) {
-    if(checkWrapper(this, buffer, WebGLBuffer) &&
-       !(buffer._binding && buffer._binding != target)) {
-      buffer._binding = target
-      return _bindBuffer.call(this, target, buffer._|0)
+function bindObject(method, wrapper) {
+  var native = gl[method]
+  gl[method] = function(target, object) {
+    if(object === null) {
+      return native.call(
+        this,
+        target|0,
+        0)
+    } else if(checkWrapper(this, object, wrapper) &&
+       !(object._binding && object._binding != target)) {
+      object._binding = target
+      return native.call(
+        this,
+        target|0,
+        object._|0)
     }
-  } else {
-    return _bindBuffer.call(this, target, 0)
+    setError(this, gl.INVALID_OPERATION)
   }
-  setError(this, gl.INVALID_VALUE)
 }
 
-var _bindFramebuffer = gl.bindFramebuffer
-gl.bindFramebuffer = function bindFramebuffer(target, framebuffer) {
-  if(checkWrapper(this, framebuffer, WebGLFramebuffer)) {
-    return _bindFramebuffer.call(
-      this,
-      target|0,
-      framebuffer._|0)
-  }
-  setError(this, gl.INVALID_VALUE)
-}
-
-var _bindRenderbuffer = gl.bindRenderbuffer
-gl.bindRenderbuffer = function bindRenderbuffer(target, renderbuffer) {
-  if(checkWrapper(this, renderbuffer, WebGLRenderbuffer)) {
-    return _bindRenderbuffer.call(
-      this,
-      target|0,
-      renderbuffer._|0)
-  }
-  setError(this, gl.INVALID_VALUE)
-}
-
-var _bindTexture = gl.bindTexture
-gl.bindTexture = function bindTexture(target, texture) {
-  if(checkWrapper(this, texture, WebGLTexture)) {
-    return _bindTexture.call(
-      this,
-      target|0,
-      texture._|0)
-  }
-  setError(this, gl.INVALID_VALUE)
-}
+bindObject('bindBuffer',        WebGLBuffer)
+bindObject('bindFramebuffer',   WebGLFramebuffer)
+bindObject('bindRenderbuffer',  WebGLRenderbuffer)
+bindObject('bindTexture',       WebGLTexture)
 
 var _blendColor = gl.blendColor
 gl.blendColor = function blendColor(red, green, blue, alpha) {
@@ -274,7 +254,7 @@ gl.bufferData = function bufferData(target, data, usage) {
       data|0,
       usage)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _bufferSubData = gl.bufferSubData
@@ -333,7 +313,7 @@ gl.compileShader = function compileShader(shader) {
   if(checkWrapper(this, shader, WebGLShader)) {
     return _compileShader.call(this, shader._)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _copyTexImage2D = gl.copyTexImage2D
@@ -411,7 +391,7 @@ function deleteObject(name, type, refset) {
         return native.call(this, id)
       }
     }
-    setError(this, gl.INVALID_VALUE)
+    setError(this, gl.INVALID_OPERATION)
   }
 }
 
@@ -443,7 +423,7 @@ gl.detachShader = function detachShader(program, shader) {
      checkWrapper(this, shader, WebGLShader)) {
     return _detachShader.call(this, program._, shader._)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _disable = gl.disable
@@ -500,7 +480,7 @@ gl.framebufferRenderbuffer = function framebufferRenderbuffer(
       renderbuffertarget|0,
       renderbuffer._)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _framebufferTexture2D = gl.framebufferTexture2D
@@ -519,7 +499,7 @@ gl.framebufferTexture2D = function framebufferTexture2D(
       texture._|0,
       level|0)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _frontFace = gl.frontFace
@@ -538,7 +518,7 @@ gl.getActiveAttrib = function getActiveAttrib(program, index) {
     return new WebGLActiveInfo(
       _getActiveAttrib.call(this, program._|0, index|0))
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
   return null
 }
 
@@ -548,7 +528,7 @@ gl.getActiveUniform = function getActiveUniform(program, index) {
     return new WebGLActiveInfo(
       _getActiveUniform.call(this, program._|0, index|0))
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
   return null
 }
 
@@ -557,7 +537,7 @@ gl.getAttachedShaders = function getAttachedShaders(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _getAttachedShaders.call(this, program._|0)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
   return null
 }
 
@@ -566,7 +546,7 @@ gl.getAttribLocation = function getAttribLocation(program, name) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _getAttribLocation.call(this, program._|0, name+'')
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
   return null
 }
 
@@ -624,7 +604,7 @@ gl.getProgramParameter = function getProgramParameter(program, pname) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _getProgramParameter.call(this, program._|0, pname|0)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _getProgramInfoLog = gl.getProgramInfoLog
@@ -632,7 +612,7 @@ gl.getProgramInfoLog = function getProgramInfoLog(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _getProgramInfoLog.call(this, program._|0)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _getRenderbufferParameter = gl.getRenderbufferParameter
@@ -645,7 +625,7 @@ gl.getShaderParameter = function getShaderParameter(shader, pname) {
   if(checkWrapper(this, shader, WebGLShader)) {
     return _getShaderParameter.call(this, shader._|0, pname|0)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _getShaderInfoLog = gl.getShaderInfoLog
@@ -653,7 +633,7 @@ gl.getShaderInfoLog = function getShaderInfoLog(shader) {
   if(checkWrapper(this, shader, WebGLShader)) {
     return _getShaderInfoLog.call(this, shader._|0)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _getShaderSource = gl.getShaderSource
@@ -661,7 +641,7 @@ gl.getShaderSource = function getShaderSource(shader) {
   if(checkWrapper(this, shader, WebGLShader)) {
     return _getShaderSource.call(this, shader._|0)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _getTexParameter = gl.getTexParameter
@@ -675,7 +655,7 @@ gl.getUniform = function getUniform(program, location) {
      checkUniform(program, location)) {
     return _getUniform.call(this, program._|0, location._|0)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _getUniformLocation = gl.getUniformLocation
@@ -688,7 +668,7 @@ gl.getUniformLocation = function getUniformLocation(program, name) {
       return null
     }
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _getVertexAttrib = gl.getVertexAttrib
@@ -742,7 +722,7 @@ gl.linkProgram = function linkProgram(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _linkProgram.call(this, program._|0)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _pixelStorei = gl.pixelStorei
@@ -768,7 +748,7 @@ gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
       type|0,
       new Uint8Array(pixels.buffer))
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _renderbufferStorage = gl.renderbufferStorage
@@ -800,7 +780,7 @@ gl.shaderSource = function shaderSource(shader, source) {
   if(checkWrapper(this, shader, WebGLShader)) {
     return _shaderSource.call(this, shader._|0, source+'')
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _stencilFunc = gl.stencilFunc
@@ -848,8 +828,20 @@ gl.texImage2D = function texImage2D(
       format|0,
       type|0,
       new Uint8Array(pixels.buffer))
+  } else if(pixels === null) {
+    return _texImage2D.call(
+      this,
+      target|0,
+      level|0,
+      internalformat|0,
+      width|0,
+      height|0,
+      border|0,
+      format|0,
+      type|0,
+      null)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _texParameterf = gl.texParameterf
@@ -878,7 +870,7 @@ gl.texSubImage2D = function texSubImage2D(
       type|0,
       new Uint8Array(pixels.buffer))
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 //Generate uniform binding code
@@ -904,7 +896,7 @@ function makeUniforms() {
                new Float32Array(v))
            }
       }
-      setError(this, gl.INVALID_VALUE)
+      setError(this, gl.INVALID_OPERATION)
     }
   }
 
@@ -922,7 +914,7 @@ function makeUniforms() {
         if(checkLocation(this, location)) {
           return native.call(this, location._|0, x, y, z, w)
         }
-        setError(this, gl.INVALID_VALUE)
+        setError(this, gl.INVALID_OPERATION)
       }
 
       gl[func + 'v'] = function(location, v) {
@@ -937,7 +929,7 @@ function makeUniforms() {
             case 4: return native.call(this, location._|0, v[0], v[1], v[2], v[3])
           }
         }
-        setError(this, gl.INVALID_VALUE)
+        setError(this, gl.INVALID_OPERATION)
       }
     })
   }
@@ -949,7 +941,7 @@ gl.useProgram = function useProgram(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _useProgram.call(this, program._|0)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _validateProgram = gl.validateProgram
@@ -957,7 +949,7 @@ gl.validateProgram = function validateProgram(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _validateProgram.call(this, program._|0)
   }
-  setError(this, gl.INVALID_VALUE)
+  setError(this, gl.INVALID_OPERATION)
 }
 
 function makeVertexAttribs() {
@@ -978,10 +970,10 @@ function makeVertexAttribs() {
           case 4: return native.call(this, idx|0, +v[0], +v[1], +v[2], +v[3])
         }
       }
-      setError(this, gl.INVALID_VALUE)
+      setError(this, gl.INVALID_OPERATION)
     }
   }
-  for(var n=1; n<4; ++n) makeVertex(n)
+  for(var n=1; n<=4; ++n) makeVertex(n)
 }
 makeVertexAttribs()
 
