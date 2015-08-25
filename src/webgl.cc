@@ -129,12 +129,18 @@ WebGLRenderingContext::WebGLRenderingContext(
   PUSH_ATTRIB(EGL_BLUE_SIZE, 8);
   if(alpha) {
     PUSH_ATTRIB(EGL_ALPHA_SIZE, 8);
+  } else {
+    PUSH_ATTRIB(EGL_ALPHA_SIZE, 0);
   }
   if(depth) {
     PUSH_ATTRIB(EGL_DEPTH_SIZE, 24);
+  } else {
+    PUSH_ATTRIB(EGL_DEPTH_SIZE, 0);
   }
   if(stencil) {
     PUSH_ATTRIB(EGL_STENCIL_SIZE, 8);
+  } else {
+    PUSH_ATTRIB(EGL_STENCIL_SIZE, 0);
   }
 
   attrib_list.push_back(EGL_NONE);
@@ -1453,11 +1459,19 @@ GL_METHOD(IsTexture) {
 
 GL_METHOD(RenderbufferStorage) {
   GL_BOILERPLATE;
-  GLenum target = args[0]->Int32Value();
+  GLenum target         = args[0]->Int32Value();
   GLenum internalformat = args[1]->Int32Value();
-  GLsizei width = args[2]->Uint32Value();
-  GLsizei height = args[3]->Uint32Value();
-  glRenderbufferStorage(target, internalformat, width, height);
+  GLsizei width         = args[2]->Uint32Value();
+  GLsizei height        = args[3]->Uint32Value();
+
+  if(target != GL_RENDERBUFFER) {
+    inst->setError(GL_INVALID_ENUM);
+  } else {
+    if(internalformat == GL_DEPTH_STENCIL) {
+      internalformat = GL_DEPTH24_STENCIL8;
+    }
+    glRenderbufferStorage(target, internalformat, width, height);
+  }
   NanReturnValue(NanUndefined());
 }
 
