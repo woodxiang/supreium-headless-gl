@@ -303,7 +303,8 @@ GL_METHOD(Resize) {
     } else {
       EGLSurface prevSurface = inst->surface;
       inst->surface = nextSurface;
-      eglDestroySurface(DISPLAY, prevSurface);
+      //FIXME: Destroy surface when not needed
+      //eglDestroySurface(DISPLAY, prevSurface);
     }
   }
 
