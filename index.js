@@ -58,6 +58,14 @@ function createContext(width, height, options) {
   gl._framebuffers  = {}
   gl._renderbuffers = {}
 
+  gl._activeProgram            = null
+  gl._activeFramebuffer        = null
+  gl._activeArrayBuffer        = null
+  gl._activeElementArrayBuffer = null
+  gl._activeRenderbuffer       = null
+
+  //TODO: Active slots for textures
+
   var numAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS)
   for(var i=0; i<numAttribs; ++i) {
     gl.disableVertexAttribArray(i)
