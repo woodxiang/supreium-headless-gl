@@ -737,18 +737,26 @@ gl.polygonOffset = function polygonOffset(factor, units) {
 
 var _readPixels = gl.readPixels
 gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
-  if(pixels instanceof Uint8Array) {
-    return _readPixels.call(
-      this,
-      x|0,
-      y|0,
-      width|0,
-      height|0,
-      format|0,
-      type|0,
-      new Uint8Array(pixels.buffer))
+  width = width|0
+  height = height|0
+  if(width < 0 || height < 0) {
+    setError(this, gl.INVALID_VALUE)
+  } else if(pixels instanceof Uint8Array &&
+    width * height * 4 <= pixels.length) {
+    if(width * height > 0) {
+      return _readPixels.call(
+        this,
+        x|0,
+        y|0,
+        width|0,
+        height|0,
+        format|0,
+        type|0,
+        new Uint8Array(pixels.buffer))
+    }
+  } else {
+    setError(this, gl.INVALID_OPERATION)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _renderbufferStorage = gl.renderbufferStorage
