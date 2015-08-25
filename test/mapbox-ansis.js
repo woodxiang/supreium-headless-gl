@@ -125,4 +125,6 @@ tape('mapbox-ansis', function(t) {
   t.equals(pixels[3], 255)
 
   gl.destroy();
+
+  t.end()
 })
