@@ -1,26 +1,66 @@
-"use strict";
+'use strict'
 
 var nativeGL = require('bindings')('webgl')
+
+var HEADLESS_VERSION = require('./package.json').version
 
 //Hook clean up
 process.on('exit', nativeGL.cleanup)
 
 //Export type boxes for WebGL
 exports.WebGLRenderingContext = nativeGL.WebGLRenderingContext
-exports.WebGLProgram=function (_)      { this._ = _; }
-exports.WebGLShader=function (_)       { this._ = _; }
-exports.WebGLBuffer=function (_)       { this._ = _; this._binding=0; }
-exports.WebGLFramebuffer=function (_)  { this._ = _; }
-exports.WebGLRenderbuffer=function (_) { this._ = _; }
-exports.WebGLTexture=function (_)      { this._ = _; }
-exports.WebGLActiveInfo=function (_)   {
-  this._=_
-  this.size=_.size
-  this.type=_.type
-  this.name=_.name;
+
+function WebGLProgram(_, ctx) {
+  this._    = _
+  this._ctx = ctx
 }
-exports.WebGLUniformLocation=function (_) { this._ = _; }
-exports.WebGLContextAttributes= function(
+exports.WebGLProgram = WebGLProgram
+
+function WebGLShader(_, ctx) {
+  this._ = _
+  this._ctx = ctx
+}
+exports.WebGLShader = WebGLShader
+
+function WebGLBuffer(_, ctx) {
+  this._ = _
+  this._ctx = ctx
+  this._binding = 0
+}
+exports.WebGLBuffer = WebGLBuffer
+
+function WebGLFramebuffer(_, ctx) {
+  this._ = _
+  this._ctx = ctx
+}
+exports.WebGLFramebuffer = WebGLFramebuffer
+
+function WebGLRenderbuffer(_, ctx) {
+  this._ = _
+  this._ctx = ctx
+}
+exports.WebGLRenderbuffer = WebGLRenderbuffer
+
+function WebGLTexture(_, ctx) {
+  this._ = _
+  this._ctx = ctx
+}
+exports.WebGLTexture = WebGLTexture
+
+function WebGLActiveInfo(_) {
+  this._    = _
+  this.size = _.size
+  this.type = _.type
+  this.name = _.name
+}
+exports.WebGLActiveInfo = WebGLActiveInfo
+
+function WebGLUniformLocation(_, _prog) {
+  this._ = _
+}
+exports.WebGLUniformLocation = WebGLUniformLocation
+
+function WebGLContextAttributes(
   alpha,
   depth,
   stencil,
@@ -38,12 +78,36 @@ exports.WebGLContextAttributes= function(
     this.preferLowPowerToHighPerformance = preferLowPowerToHighPerformance
     this.failIfMajorPerformanceCaveat = failIfMajorPerformanceCaveat
 }
+exports.WebGLContextAttributes = WebGLContextAttributes
 
 //We need to wrap some of the native WebGL functions to handle certain error codes and check input values
 var gl = nativeGL.WebGLRenderingContext.prototype
 gl.VERSION = 0x1F02
 
 ////////////////////////////////////////////////////////////////////////////////
+
+//Check context ownership
+function checkOwns(context, object) {
+  return object        !== null     &&
+         typeof object === 'object' &&
+         object._ctx   === context  &&
+         object._      !== 0
+}
+
+function checkWrapper(context, object, type) {
+  return checkOwns(context, object) && object instanceof type
+}
+
+function checkUniform(program, location) {
+  return location instanceof WebGLUniformLocation &&
+         location._prog === program
+}
+
+function checkLocation(location) {
+  return location instanceof WebGLUniformLocation &&
+         checkWrapper(location._prog)
+}
+
 
 //Set error code on WebGL context
 function setError(context, error) {
@@ -59,549 +123,448 @@ gl.getContextAttributes = function() {
   return this._contextattributes
 }
 
-var _getSupportedExtensions = gl.getSupportedExtensions;
+var _getSupportedExtensions = gl.getSupportedExtensions
 gl.getSupportedExtensions = function getSupportedExtensions() {
-  return _getSupportedExtensions.call(this).split(" ");
+  return _getSupportedExtensions.call(this).split(" ")
 }
 
 var _getExtension = gl.getExtension;
 gl.getExtension = function getExtension(name) {
-  if (!(arguments.length === 1 && typeof name === "string")) {
-    throw new TypeError('Expected getExtension(string name)');
-  }
-  return _getExtension.call(this, name);
+  //TODO
+  return null
 }
 
-var _activeTexture = gl.activeTexture;
+var _activeTexture = gl.activeTexture
 gl.activeTexture = function activeTexture(texture) {
-  if (!(arguments.length === 1 && typeof texture === "number")) {
-    throw new TypeError('Expected activeTexture(number texture)');
-  }
-  return _activeTexture.call(this, texture);
+  return _activeTexture.call(this, texture|0)
 }
 
-var _attachShader = gl.attachShader;
+var _attachShader = gl.attachShader
 gl.attachShader = function attachShader(program, shader) {
-  if (!(arguments.length === 2 && (program === null || program instanceof exports.WebGLProgram) && (shader === null || shader instanceof exports.WebGLShader))) {
-    throw new TypeError('Expected attachShader(WebGLProgram program, WebGLShader shader)');
+  if(checkOwns(this, program) &&
+     checkOwns(this, shader) &&
+     program instanceof WebGLProgram &&
+     shader instanceof WebGLShader) {
+    return _attachShader.call(
+      this,
+      program._,
+      shader._)
   }
-  return _attachShader.call(this, program ? program._ : 0, shader ? shader._ : 0);
+  setError(this, gl.INVALID_VALUE)
 }
 
 var _bindAttribLocation = gl.bindAttribLocation;
 gl.bindAttribLocation = function bindAttribLocation(program, index, name) {
-  if (!(arguments.length === 3 && (program === null || program instanceof exports.WebGLProgram) && typeof index === "number" && typeof name === "string")) {
-    throw new TypeError('Expected bindAttribLocation(WebGLProgram program, number index, string name)');
+  if(checkWrapper(this, program, WebGLProgram)) {
+    return _bindAttribLocation.call(
+      this,
+      program._,
+      index|0,
+      name+'')
   }
-  return _bindAttribLocation.call(this, program ? program._ : 0, index, name);
+  setError(this, gl.INVALID_VALUE)
 }
 
 var _bindBuffer = gl.bindBuffer;
 gl.bindBuffer = function bindBuffer(target, buffer) {
-  if (!(arguments.length === 2 &&
-    (buffer === null || buffer instanceof exports.WebGLBuffer))) {
-    throw new TypeError('Expected bindBuffer(number target, WebGLBuffer buffer)')
-  }
   target = target|0
   if(buffer) {
-    if(buffer._binding && buffer._binding != target) {
-      setError(this, gl.INVALID_OPERATION)
-    } else {
+    if(checkWrapper(this, buffer, WebGLBuffer) &&
+       !(buffer._binding && buffer._binding != target)) {
       buffer._binding = target
-      return _bindBuffer.call(this, target, buffer._)
+      return _bindBuffer.call(this, target, buffer._|0)
     }
   } else {
     return _bindBuffer.call(this, target, 0)
   }
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _bindFramebuffer = gl.bindFramebuffer;
+var _bindFramebuffer = gl.bindFramebuffer
 gl.bindFramebuffer = function bindFramebuffer(target, framebuffer) {
-  if (!(arguments.length === 2 && typeof target === "number" && (framebuffer === null || framebuffer instanceof exports.WebGLFramebuffer))) {
-    throw new TypeError('Expected bindFramebuffer(number target, WebGLFramebuffer framebuffer)');
+  if(checkWrapper(this, framebuffer, WebGLFramebuffer)) {
+    return _bindFramebuffer.call(
+      this,
+      target|0,
+      framebuffer._|0)
   }
-  return _bindFramebuffer.call(this, target, framebuffer ? framebuffer._ : 0);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _bindRenderbuffer = gl.bindRenderbuffer;
+var _bindRenderbuffer = gl.bindRenderbuffer
 gl.bindRenderbuffer = function bindRenderbuffer(target, renderbuffer) {
-  if (!(arguments.length === 2 && typeof target === "number" && (renderbuffer === null || renderbuffer instanceof exports.WebGLRenderbuffer))) {
-    throw new TypeError('Expected bindRenderbuffer(number target, WebGLRenderbuffer renderbuffer)');
+  if(checkWrapper(this, renderbuffer, WebGLRenderbuffer)) {
+    return _bindRenderbuffer.call(
+      this,
+      target|0,
+      renderbuffer._|0)
   }
-  return _bindRenderbuffer.call(this, target, renderbuffer ? renderbuffer._ : 0);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _bindTexture = gl.bindTexture;
+var _bindTexture = gl.bindTexture
 gl.bindTexture = function bindTexture(target, texture) {
-  if (!(arguments.length === 2 && typeof target === "number" && (texture === null || texture instanceof exports.WebGLTexture))) {
-    throw new TypeError('Expected bindTexture(number target, WebGLTexture texture)');
+  if(checkWrapper(this, texture, WebGLTexture)) {
+    return _bindTexture.call(
+      this,
+      target|0,
+      texture._|0)
   }
-  return _bindTexture.call(this, target, texture ? texture._ : 0);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _blendColor = gl.blendColor;
+var _blendColor = gl.blendColor
 gl.blendColor = function blendColor(red, green, blue, alpha) {
-  if (!(arguments.length === 4 && typeof red === "number" && typeof green === "number" && typeof blue === "number" && typeof alpha === "number")) {
-    throw new TypeError('Expected blendColor(number red, number green, number blue, number alpha)');
-  }
-  return _blendColor.call(this, red, green, blue, alpha);
+  return _blendColor.call(this, +red, +green, +blue, +alpha)
 }
 
-var _blendEquation = gl.blendEquation;
+var _blendEquation = gl.blendEquation
 gl.blendEquation = function blendEquation(mode) {
-  if (!(arguments.length === 1 && typeof mode === "number")) {
-    throw new TypeError('Expected blendEquation(number mode)');
-  }
-  return _blendEquation.call(this, mode);
+  return _blendEquation.call(this, mode|0)
 }
 
-var _blendEquationSeparate = gl.blendEquationSeparate;
+var _blendEquationSeparate = gl.blendEquationSeparate
 gl.blendEquationSeparate = function blendEquationSeparate(modeRGB, modeAlpha) {
-  if (!(arguments.length === 2 && typeof modeRGB === "number" && typeof modeAlpha === "number")) {
-    throw new TypeError('Expected blendEquationSeparate(number modeRGB, number modeAlpha)');
-  }
-  return _blendEquationSeparate.call(this, modeRGB, modeAlpha);
+  return _blendEquationSeparate.call(this, modeRGB|0, modeAlpha|0)
 }
 
-var _blendFunc = gl.blendFunc;
+var _blendFunc = gl.blendFunc
 gl.blendFunc = function blendFunc(sfactor, dfactor) {
-  if (!(arguments.length === 2 && typeof sfactor === "number" && typeof dfactor === "number")) {
-    throw new TypeError('Expected blendFunc(number sfactor, number dfactor)');
-  }
-  return _blendFunc.call(this, sfactor, dfactor);
+  return _blendFunc.call(this, sfactor|0, dfactor|0)
 }
 
-var _blendFuncSeparate = gl.blendFuncSeparate;
-gl.blendFuncSeparate = function blendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha) {
-  if (!(arguments.length === 4 && typeof srcRGB === "number" && typeof dstRGB === "number" && typeof srcAlpha === "number" && typeof dstAlpha === "number")) {
-    throw new TypeError('Expected blendFuncSeparate(number srcRGB, number dstRGB, number srcAlpha, number dstAlpha)');
-  }
-  return _blendFuncSeparate.call(this, srcRGB, dstRGB, srcAlpha, dstAlpha);
+var _blendFuncSeparate = gl.blendFuncSeparate
+gl.blendFuncSeparate = function blendFuncSeparate(
+  srcRGB,
+  dstRGB,
+  srcAlpha,
+  dstAlpha) {
+  return _blendFuncSeparate.call(
+    this,
+    srcRGB|0,
+    dstRGB|0,
+    srcAlpha|0,
+    dstAlpha|0)
 }
 
-var _bufferData = gl.bufferData;
+var _bufferData = gl.bufferData
 gl.bufferData = function bufferData(target, data, usage) {
-  target = target | 0
-  usage  = usage  | 0
+  target |= 0
+  usage  |= 0
   if(typeof data === 'object') {
-    if(data === null) {
-      setError(this, gl.INVALID_VALUE)
-    } else if(data.buffer) {
-      return _bufferData.call(this, target, new Uint8Array(data.buffer), usage)
-    } else if(data instanceof ArrayBuffer) {
-      return _bufferData.call(this, target, new Uint8Array(data), usage)
-    } else {
-      setError(this, gl.INVALID_VALUE)
+    if(data) {
+      if(data.buffer) {
+        return _bufferData.call(
+          this,
+          target,
+          new Uint8Array(data.buffer),
+          usage)
+      } else if(data instanceof ArrayBuffer) {
+        return _bufferData.call(
+          this,
+          target,
+          new Uint8Array(data),
+          usage)
+      }
     }
   } else {
-    return _bufferData.call(this, target, data|0, usage)
+    return _bufferData.call(
+      this,
+      target,
+      data|0,
+      usage)
   }
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _bufferSubData = gl.bufferSubData;
+var _bufferSubData = gl.bufferSubData
 gl.bufferSubData = function bufferSubData(target, offset, data) {
-  target = target | 0
-  offset = offset | 0
+  target |= 0
+  offset |= 0
   if(data != null && typeof data === 'object') {
     if(data.buffer) {
-      return _bufferSubData.call(this, target, offset, new Uint8Array(data.buffer))
+      return _bufferSubData.call(
+        this,
+        target,
+        offset,
+        new Uint8Array(data.buffer))
     } else if(data instanceof ArrayBuffer) {
-      return _bufferSubData.call(this, target, offset, new Uint8Array(data))
+      return _bufferSubData.call(
+        this,
+        target,
+        offset,
+        new Uint8Array(data))
     }
   }
 }
 
-var _checkFramebufferStatus = gl.checkFramebufferStatus;
+var _checkFramebufferStatus = gl.checkFramebufferStatus
 gl.checkFramebufferStatus = function checkFramebufferStatus(target) {
-  if (!(arguments.length === 1 && typeof target === "number")) {
-    throw new TypeError('Expected checkFramebufferStatus(number target)');
-  }
-  return _checkFramebufferStatus.call(this, target);
+  return _checkFramebufferStatus.call(this, target|0)
 }
 
-var _clear = gl.clear;
+var _clear = gl.clear
 gl.clear = function clear(mask) {
-  if (!(arguments.length === 1 && typeof mask === "number")) {
-    throw new TypeError('Expected clear(number mask)');
-  }
-  return _clear.call(this, mask);
+  return _clear.call(this, mask|0)
 }
 
-var _clearColor = gl.clearColor;
+var _clearColor = gl.clearColor
 gl.clearColor = function clearColor(red, green, blue, alpha) {
-  if (!(arguments.length === 4 && typeof red === "number" && typeof green === "number" && typeof blue === "number" && typeof alpha === "number")) {
-    throw new TypeError('Expected clearColor(number red, number green, number blue, number alpha)');
-  }
-  return _clearColor.call(this, red, green, blue, alpha);
+  return _clearColor.call(this, +red, +green, +blue, +alpha)
 }
 
-var _clearDepth = gl.clearDepth;
+var _clearDepth = gl.clearDepth
 gl.clearDepth = function clearDepth(depth) {
-  if (!(arguments.length === 1 && typeof depth === "number")) {
-    throw new TypeError('Expected clearDepth(number depth)');
-  }
-  return _clearDepth.call(this, depth);
+  return _clearDepth.call(this, +depth)
 }
 
-var _clearStencil = gl.clearStencil;
+var _clearStencil = gl.clearStencil
 gl.clearStencil = function clearStencil(s) {
-  if (!(arguments.length === 1 && typeof s === "number")) {
-    throw new TypeError('Expected clearStencil(number s)');
-  }
-  return _clearStencil.call(this, s);
+  return _clearStencil.call(this, s|0)
 }
 
-var _colorMask = gl.colorMask;
+var _colorMask = gl.colorMask
 gl.colorMask = function colorMask(red, green, blue, alpha) {
-  if (!(arguments.length === 4 && typeof red === "boolean" && typeof green === "boolean" && typeof blue === "boolean" && typeof alpha === "boolean")) {
-    throw new TypeError('Expected colorMask(boolean red, boolean green, boolean blue, boolean alpha)');
-  }
-  return _colorMask.call(this, red, green, blue, alpha);
+  return _colorMask.call(this, !!red, !!green, !!blue, !!alpha)
 }
 
-var _compileShader = gl.compileShader;
+var _compileShader = gl.compileShader
 gl.compileShader = function compileShader(shader) {
-  if (!(arguments.length === 1 && (shader === null || shader instanceof exports.WebGLShader))) {
-    throw new TypeError('Expected compileShader(WebGLShader shader)');
+  if(checkWrapper(this, shader, WebGLShader)) {
+    return _compileShader.call(this, shader._)
   }
-  return _compileShader.call(this, shader ? shader._ : 0);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _copyTexImage2D = gl.copyTexImage2D;
-gl.copyTexImage2D = function copyTexImage2D(target, level, internalformat, x, y, width, height, border) {
-  if (!(arguments.length === 8 && typeof target === "number" && typeof level === "number" && typeof internalformat === "number" && typeof x === "number" && typeof y === "number" && typeof width === "number" && typeof height === "number" && typeof border === "number")) {
-    throw new TypeError('Expected copyTexImage2D(number target, number level, number internalformat, number x, number y, number width, number height, number border)');
-  }
-  return _copyTexImage2D.call(this, target, level, internalformat, x, y, width, height, border);
+var _copyTexImage2D = gl.copyTexImage2D
+gl.copyTexImage2D = function copyTexImage2D(
+  target,
+  level,
+  internalformat,
+  x, y, width, height,
+  border) {
+  return _copyTexImage2D.call(
+    this,
+    target|0,
+    level|0,
+    internalformat|0,
+    x|0,
+    y|0,
+    width|0,
+    height|0,
+    border|0)
 }
 
-var _copyTexSubImage2D = gl.copyTexSubImage2D;
-gl.copyTexSubImage2D = function copyTexSubImage2D(target, level, xoffset, yoffset, x, y, width, height) {
-  if (!(arguments.length === 8 && typeof target === "number" && typeof level === "number" && typeof xoffset === "number" && typeof yoffset === "number" && typeof x === "number" && typeof y === "number" && typeof width === "number" && typeof height === "number")) {
-    throw new TypeError('Expected copyTexSubImage2D(number target, number level, number xoffset, number yoffset, number x, number y, number width, number height)');
-  }
-  return _copyTexSubImage2D.call(this, target, level, xoffset, yoffset, x, y, width, height);
+var _copyTexSubImage2D = gl.copyTexSubImage2D
+gl.copyTexSubImage2D = function copyTexSubImage2D(
+  target,
+  level,
+  xoffset,
+  yoffset,
+  x, y, width, height) {
+  return _copyTexSubImage2D.call(
+    this,
+    target|0,
+    level|0,
+    xoffset|0,
+    yoffset|0,
+    x|0,
+    y|0,
+    width|0,
+    height|0)
 }
 
-var _createBuffer = gl.createBuffer;
-gl.createBuffer = function createBuffer() {
-  if (!(arguments.length === 0)) {
-    throw new TypeError('Expected createBuffer()');
+//Object constructor methods
+function createObject(method, wrapper, refset) {
+  var native = gl[method]
+  gl[method] = function() {
+    var id = native.call(this)
+    return this[refset][id] = new wrapper(id)
   }
-  var buffer_id = _createBuffer.call(this)
-  return this._buffers[buffer_id] = new exports.WebGLBuffer(buffer_id)
 }
+createObject('createBuffer', WebGLBuffer, '_buffers')
+createObject('createFramebuffer', WebGLFramebuffer, '_framebuffers')
+createObject('createProgram', WebGLProgram, '_programs')
+createObject('createRenderbuffer', WebGLRenderbuffer, '_renderbuffers')
+createObject('createShader', WebGLShader, '_shaders')
+createObject('createTexture', WebGLTexture, '_textures')
 
-var _createFramebuffer = gl.createFramebuffer
-gl.createFramebuffer = function () {
-  if (!(arguments.length === 0)) {
-    throw new TypeError('Expected createFramebuffer()')
-  }
-  var fbo_id = _createFramebuffer.call(this)
-  return this._framebuffers[fbo_id] = new exports.WebGLFramebuffer(fbo_id)
-}
-
-var _createProgram = gl.createProgram
-gl.createProgram = function createProgram() {
-  if (!(arguments.length === 0)) {
-    throw new TypeError('Expected createProgram()')
-  }
-  var prog_id = _createProgram.call(this)
-  return this._programs[prog_id] = new exports.WebGLProgram(prog_id)
-}
-
-var _createRenderbuffer = gl.createRenderbuffer
-gl.createRenderbuffer = function createRenderbuffer() {
-  if (!(arguments.length === 0)) {
-    throw new TypeError('Expected createRenderbuffer()')
-  }
-  var renderbuffer_id = _createRenderbuffer.call(this)
-  return this._renderbuffers[renderbuffer_id] = new exports.WebGLRenderbuffer(renderbuffer_id)
-}
-
-var _createShader = gl.createShader
-gl.createShader = function createShader(type) {
-  if (!(arguments.length === 1 && typeof type === "number")) {
-    throw new TypeError('Expected createShader(number type)')
-  }
-  var shader_id = _createShader.call(this, type)
-  return this._shaders[shader_id] = new exports.WebGLShader(shader_id)
-}
-
-var _createTexture = gl.createTexture
-gl.createTexture = function createTexture() {
-  if (!(arguments.length === 0)) {
-    throw new TypeError('Expected createTexture()')
-  }
-  var texture_id = _createTexture.call(this)
-  return this._textures[texture_id] = new exports.WebGLTexture(texture_id)
-}
 
 var _cullFace = gl.cullFace;
 gl.cullFace = function cullFace(mode) {
-  if (!(arguments.length === 1 && typeof mode === "number")) {
-    throw new TypeError('Expected cullFace(number mode)')
-  }
   return _cullFace.call(this, mode|0)
 }
 
-var _deleteBuffer = gl.deleteBuffer
-gl.deleteBuffer = function deleteBuffer(buffer) {
-  if (!(arguments.length === 1 &&
-      (buffer === null || buffer instanceof exports.WebGLBuffer))) {
-    throw new TypeError('Expected deleteBuffer(WebGLBuffer buffer)')
-  }
-  var id = buffer._
-  if(id in this._buffers) {
-    delete this._buffers[id]
-    buffer._ = 0
-    return _deleteBuffer.call(this, id)
-  } else {
+//Generic object deletion method
+function deleteObject(name, type, refset) {
+  var native = gl[name]
+  gl[name] = function(object) {
+    if(checkOwns(this, object) &&
+       object instanceof type) {
+      var id = object._
+      if(id in this[refset]) {
+        delete this[refset][id]
+        object._ = 0
+        return native.call(this, id)
+      }
+    }
     setError(this, gl.INVALID_VALUE)
   }
 }
 
-var _deleteFramebuffer = gl.deleteFramebuffer
-gl.deleteFramebuffer = function deleteFramebuffer(framebuffer) {
-  if (!(arguments.length === 1 &&
-      (framebuffer === null || framebuffer instanceof exports.WebGLFramebuffer))) {
-    throw new TypeError('Expected deleteFramebuffer(WebGLFramebuffer framebuffer)')
-  }
-  var id = framebuffer._
-  if(id in this._framebuffers) {
-    delete this._framebuffers[id]
-    framebuffer._ = 0
-    return _deleteFramebuffer.call(this, id)
-  } else {
-    setError(this, gl.INVALID_VALUE)
-  }
-}
+deleteObject('deleteBuffer', WebGLBuffer, '_buffers')
+deleteObject('deleteFramebuffer', WebGLFramebuffer, '_framebuffers')
+deleteObject('deleteProgram', WebGLProgram, '_programs')
+deleteObject('deleteRenderbuffer', WebGLRenderbuffer, '_renderbuffers')
+deleteObject('deleteShader', WebGLShader, '_shaders')
+deleteObject('deleteTexture', WebGLTexture, '_textures')
 
-var _deleteProgram = gl.deleteProgram
-gl.deleteProgram = function deleteProgram(program) {
-  if (!(arguments.length === 1 &&
-       (program === null || program instanceof exports.WebGLProgram))) {
-    throw new TypeError('Expected deleteProgram(WebGLProgram program)')
-  }
-  var id = program._
-  if(id in this._programs) {
-    delete this._programs[id]
-    program._ = 0
-    return _deleteProgram.call(this, id)
-  } else {
-    setError(this, gl.INVALID_VALUE)
-  }
-}
-
-var _deleteRenderbuffer = gl.deleteRenderbuffer
-gl.deleteRenderbuffer = function deleteRenderbuffer(renderbuffer) {
-  if (!(arguments.length === 1 &&
-    (renderbuffer === null || renderbuffer instanceof exports.WebGLRenderbuffer))) {
-    throw new TypeError('Expected deleteRenderbuffer(WebGLRenderbuffer renderbuffer)')
-  }
-  var id = renderbuffer._
-  if(id in this._renderbuffers) {
-    delete this._renderbuffers[id]
-    renderbuffer._ = 0
-    return _deleteRenderbuffer.call(this, id)
-  } else {
-    setError(this, gl.INVALID_VALUE)
-  }
-}
-
-var _deleteShader = gl.deleteShader
-gl.deleteShader = function deleteShader(shader) {
-  if (!(arguments.length === 1 &&
-      (shader === null || shader instanceof exports.WebGLShader))) {
-    throw new TypeError('Expected deleteShader(WebGLShader shader)')
-  }
-  var id = shader._
-  if(id in this._shaders) {
-    delete this._shaders[id]
-    shader._ = 0
-    return _deleteShader.call(this, id)
-  } else {
-    setError(this, gl.INVALID_VALUE)
-  }
-}
-
-var _deleteTexture = gl.deleteTexture
-gl.deleteTexture = function deleteTexture(texture) {
-  if (!(arguments.length === 1 &&
-      (texture === null || texture instanceof exports.WebGLTexture))) {
-    throw new TypeError('Expected deleteTexture(WebGLTexture texture)');
-  }
-  var id = texture._
-  if(id in this._textures) {
-    delete this._textures[id]
-    texture._ = 0
-    return _deleteTexture.call(this, id)
-  } else {
-    setError(this, gl.INVALID_VALUE)
-  }
-}
-
-var _depthFunc = gl.depthFunc;
+var _depthFunc = gl.depthFunc
 gl.depthFunc = function depthFunc(func) {
-  if (!(arguments.length === 1 && typeof func === "number")) {
-    throw new TypeError('Expected depthFunc(number func)');
-  }
-  return _depthFunc.call(this, func);
+  return _depthFunc.call(this, func|0)
 }
 
-var _depthMask = gl.depthMask;
+var _depthMask = gl.depthMask
 gl.depthMask = function depthMask(flag) {
-  if (!(arguments.length === 1 && typeof flag === "boolean")) {
-    throw new TypeError('Expected depthMask(boolean flag)');
-  }
-  return _depthMask.call(this, flag);
+  return _depthMask.call(this, !!flag)
 }
 
-var _depthRange = gl.depthRange;
+var _depthRange = gl.depthRange
 gl.depthRange = function depthRange(zNear, zFar) {
-  if (!(arguments.length === 2 && typeof zNear === "number" && typeof zFar === "number")) {
-    throw new TypeError('Expected depthRange(number zNear, number zFar)');
-  }
-  return _depthRange.call(this, zNear, zFar);
+  return _depthRange.call(this, +zNear, +zFar)
 }
 
-var _detachShader = gl.detachShader;
+var _detachShader = gl.detachShader
 gl.detachShader = function detachShader(program, shader) {
-  if (!(arguments.length === 2 && (program === null || program instanceof exports.WebGLProgram) && (shader === null || shader instanceof exports.WebGLShader))) {
-    throw new TypeError('Expected detachShader(WebGLProgram program, WebGLShader shader)');
+  if(checkWrapper(this, program, WebGLProgram) &&
+     checkWrapper(this, shader, WebGLShader)) {
+    return _detachShader.call(this, program._, shader._)
   }
-  return _detachShader.call(this, program ? program._ : 0, shader ? shader._ : 0);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _disable = gl.disable;
+var _disable = gl.disable
 gl.disable = function disable(cap) {
-  if (!(arguments.length === 1 && typeof cap === "number")) {
-    throw new TypeError('Expected disable(number cap)');
-  }
-  return _disable.call(this, cap);
+  return _disable.call(this, cap|0)
 }
 
-var _disableVertexAttribArray = gl.disableVertexAttribArray;
+var _disableVertexAttribArray = gl.disableVertexAttribArray
 gl.disableVertexAttribArray = function disableVertexAttribArray(index) {
-  if (!(arguments.length === 1 && typeof index === "number")) {
-    throw new TypeError('Expected disableVertexAttribArray(number index)');
-  }
-  return _disableVertexAttribArray.call(this, index);
+  return _disableVertexAttribArray.call(this, index|0)
 }
 
-var _drawArrays = gl.drawArrays;
+var _drawArrays = gl.drawArrays
 gl.drawArrays = function drawArrays(mode, first, count) {
-  if (!(arguments.length === 3 && typeof mode === "number" && typeof first === "number" && typeof count === "number")) {
-    throw new TypeError('Expected drawArrays(number mode, number first, number count)');
-  }
-  return _drawArrays.call(this, mode, first, count);
+  return _drawArrays.call(this, mode|0, first|0, count|0)
 }
 
-var _drawElements = gl.drawElements;
+var _drawElements = gl.drawElements
 gl.drawElements = function drawElements(mode, count, type, offset) {
-  if (!(arguments.length === 4 && typeof mode === "number" && typeof count === "number" && typeof type === "number" && typeof offset === "number")) {
-    throw new TypeError('Expected drawElements(number mode, number count, number type, number offset)');
-  }
-  return _drawElements.call(this, mode, count, type, offset);
+  return _drawElements.call(this, mode|0, count|0, type|0, offset|0)
 }
 
-var _enable = gl.enable;
+var _enable = gl.enable
 gl.enable = function enable(cap) {
-  if (!(arguments.length === 1 && typeof cap === "number")) {
-    throw new TypeError('Expected enable(number cap)');
-  }
-  return _enable.call(this, cap);
+  return _enable.call(this, cap|0)
 }
 
-var _enableVertexAttribArray = gl.enableVertexAttribArray;
+var _enableVertexAttribArray = gl.enableVertexAttribArray
 gl.enableVertexAttribArray = function enableVertexAttribArray(index) {
-  if (!(arguments.length === 1)) {
-    throw new TypeError('Expected enableVertexAttribArray(number index)');
-  }
-  return _enableVertexAttribArray.call(this, index|0);
+  return _enableVertexAttribArray.call(this, index|0)
 }
 
-var _finish = gl.finish;
+var _finish = gl.finish
 gl.finish = function finish() {
-  if (!(arguments.length === 0)) {
-    throw new TypeError('Expected finish()');
-  }
-  return _finish.call(this);
+  return _finish.call(this)
 }
 
-var _flush = gl.flush;
+var _flush = gl.flush
 gl.flush = function flush() {
-  if (!(arguments.length === 0)) {
-    throw new TypeError('Expected flush()');
-  }
-  return _flush.call(this);
+  return _flush.call(this)
 }
 
-var _framebufferRenderbuffer = gl.framebufferRenderbuffer;
-gl.framebufferRenderbuffer = function framebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer) {
-  if (!(arguments.length === 4 && typeof target === "number" && typeof attachment === "number" && typeof renderbuffertarget === "number" && (renderbuffer === null || renderbuffer instanceof exports.WebGLRenderbuffer))) {
-    throw new TypeError('Expected framebufferRenderbuffer(number target, number attachment, number renderbuffertarget, WebGLRenderbuffer renderbuffer)');
+var _framebufferRenderbuffer = gl.framebufferRenderbuffer
+gl.framebufferRenderbuffer = function framebufferRenderbuffer(
+  target,
+  attachment,
+  renderbuffertarget,
+  renderbuffer) {
+  if(checkWrapper(this, renderbuffer, WebGLRenderbuffer)) {
+    return _framebufferRenderbuffer.call(
+      this,
+      target|0,
+      attachment|0,
+      renderbuffertarget|0,
+      renderbuffer._)
   }
-  return _framebufferRenderbuffer.call(this, target, attachment, renderbuffertarget, renderbuffer ? renderbuffer._ : 0);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _framebufferTexture2D = gl.framebufferTexture2D;
-gl.framebufferTexture2D = function framebufferTexture2D(target, attachment, textarget, texture, level) {
-  if (!(arguments.length === 5 && typeof target === "number" && typeof attachment === "number" && typeof textarget === "number" && (texture === null || texture instanceof exports.WebGLTexture) && typeof level === "number")) {
-    throw new TypeError('Expected framebufferTexture2D(number target, number attachment, number textarget, WebGLTexture texture, number level)');
+var _framebufferTexture2D = gl.framebufferTexture2D
+gl.framebufferTexture2D = function framebufferTexture2D(
+  target,
+  attachment,
+  textarget,
+  texture,
+  level) {
+  if(checkWrapper(this, texture, WebGLTexture)) {
+    return _framebufferTexture2D.call(
+      this,
+      target|0,
+      attachment|0,
+      textarget|0,
+      texture._|0,
+      level|0)
   }
-  return _framebufferTexture2D.call(this, target, attachment, textarget, texture ? texture._ : 0, level);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _frontFace = gl.frontFace;
+var _frontFace = gl.frontFace
 gl.frontFace = function frontFace(mode) {
-  if (!(arguments.length === 1 && typeof mode === "number")) {
-    throw new TypeError('Expected frontFace(number mode)');
-  }
-  return _frontFace.call(this, mode);
+  return _frontFace.call(this, mode|0)
 }
 
-var _generateMipmap = gl.generateMipmap;
+var _generateMipmap = gl.generateMipmap
 gl.generateMipmap = function generateMipmap(target) {
-  if (!(arguments.length === 1 && typeof target === "number")) {
-    throw new TypeError('Expected generateMipmap(number target)');
-  }
-  return _generateMipmap.call(this, target);
+  return _generateMipmap.call(this, target|0)|0
 }
 
-var _getActiveAttrib = gl.getActiveAttrib;
+var _getActiveAttrib = gl.getActiveAttrib
 gl.getActiveAttrib = function getActiveAttrib(program, index) {
-  if (!(arguments.length === 2 && (program === null || program instanceof exports.WebGLProgram) && typeof index === "number")) {
-    throw new TypeError('Expected getActiveAttrib(WebGLProgram program, number index)');
+  if(checkWrapper(this, program, WebGLProgram)) {
+    return new WebGLActiveInfo(
+      _getActiveAttrib.call(this, program._|0, index|0))
   }
-  return new exports.WebGLActiveInfo(_getActiveAttrib.call(this, program ? program._ : 0, index));
+  setError(this, gl.INVALID_VALUE)
+  return null
 }
 
-var _getActiveUniform = gl.getActiveUniform;
+var _getActiveUniform = gl.getActiveUniform
 gl.getActiveUniform = function getActiveUniform(program, index) {
-  if (!(arguments.length === 2 && (program === null || program instanceof exports.WebGLProgram) && typeof index === "number")) {
-    throw new TypeError('Expected getActiveUniform(WebGLProgram program, number index)');
+  if(checkWrapper(this, program, WebGLProgram)) {
+    return new WebGLActiveInfo(
+      _getActiveUniform.call(this, program._|0, index|0))
   }
-  return new exports.WebGLActiveInfo(_getActiveUniform.call(this, program ? program._ : 0, index));
+  setError(this, gl.INVALID_VALUE)
+  return null
 }
 
 var _getAttachedShaders = gl.getAttachedShaders
 gl.getAttachedShaders = function getAttachedShaders(program) {
-  if (!(arguments.length === 1 &&
-      (program === null || program instanceof exports.WebGLProgram))) {
-    throw new TypeError('Expected getAttachedShaders(WebGLProgram program)')
+  if(checkWrapper(this, program, WebGLProgram)) {
+    return _getAttachedShaders.call(this, program._|0)
   }
-  return _getAttachedShaders.call(this, program ? program._ : 0)
+  setError(this, gl.INVALID_VALUE)
+  return null
 }
 
 var _getAttribLocation = gl.getAttribLocation
 gl.getAttribLocation = function getAttribLocation(program, name) {
-  if (!(arguments.length === 2 &&
-      (program === null || program instanceof exports.WebGLProgram) &&
-      typeof name === "string")) {
-    throw new TypeError('Expected getAttribLocation(WebGLProgram program, string name)')
+  if(checkWrapper(this, program, WebGLProgram)) {
+    return _getAttribLocation.call(this, program._|0, name+'')
   }
-  return _getAttribLocation.call(this, program ? program._ : 0, name)
+  setError(this, gl.INVALID_VALUE)
+  return null
 }
 
 var _getParameter = gl.getParameter
@@ -621,669 +584,408 @@ gl.getParameter = function getParameter(pname) {
       return this._textures[_getParameter.call(this, pname)] || null
     case gl.TEXTURE_BINDING_CUBE:
       return this._textures[_getParameter.call(this, pname)] || null
+    case gl.VERSION:
+      return 'WebGL 1.0 headless-gl ' + HEADLESS_VERSION
+    case gl.VENDOR:
+      return 'stackgl'
+    case gl.RENDERER:
+      return 'ANGLE'
+    case gl.SHADING_LANGUAGE_VERSION:
+      return 'WebGL 1.0 headless-gl'
     default:
       return _getParameter.call(this, pname)
   }
 }
 
-var _getBufferParameter = gl.getBufferParameter;
+var _getBufferParameter = gl.getBufferParameter
 gl.getBufferParameter = function getBufferParameter(target, pname) {
-  if (!(arguments.length === 2 &&
-      typeof target === "number" && typeof pname === "number")) {
-    throw new TypeError('Expected getBufferParameter(number target, number pname)');
-  }
-  return _getBufferParameter.call(this, target, pname);
+  return _getBufferParameter.call(this, target|0, pname|0);
 }
 
-var _getError = gl.getError;
+var _getError = gl.getError
 gl.getError = function getError() {
-  if (!(arguments.length === 0)) {
-    throw new TypeError('Expected getError()');
-  }
-  return _getError.call(this);
+  return _getError.call(this)
 }
 
-var _getFramebufferAttachmentParameter = gl.getFramebufferAttachmentParameter;
+var _getFramebufferAttachmentParameter = gl.getFramebufferAttachmentParameter
 gl.getFramebufferAttachmentParameter = function getFramebufferAttachmentParameter(target, attachment, pname) {
-  if (!(arguments.length === 3 && typeof target === "number" && typeof attachment === "number" && typeof pname === "number")) {
-    throw new TypeError('Expected getFramebufferAttachmentParameter(number target, number attachment, number pname)');
-  }
-  return _getFramebufferAttachmentParameter.call(this, target, attachment, pname);
+  return _getFramebufferAttachmentParameter.call(
+    this,
+    target|0,
+    attachment|0,
+    pname|0)
 }
 
-var _getProgramParameter = gl.getProgramParameter;
+var _getProgramParameter = gl.getProgramParameter
 gl.getProgramParameter = function getProgramParameter(program, pname) {
-  if (!(arguments.length === 2 && (program === null || program instanceof exports.WebGLProgram) && typeof pname === "number")) {
-    throw new TypeError('Expected getProgramParameter(WebGLProgram program, number pname)');
+  if(checkWrapper(this, program, WebGLProgram)) {
+    return _getProgramParameter.call(this, program._|0, pname|0)
   }
-  return _getProgramParameter.call(this, program ? program._ : 0, pname);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _getProgramInfoLog = gl.getProgramInfoLog;
+var _getProgramInfoLog = gl.getProgramInfoLog
 gl.getProgramInfoLog = function getProgramInfoLog(program) {
-  if (!(arguments.length === 1 && (program === null || program instanceof exports.WebGLProgram))) {
-    throw new TypeError('Expected getProgramInfoLog(WebGLProgram program)');
+  if(checkWrapprer(this, program, WebGLProgram)) {
+    return _getProgramInfoLog.call(this, program._|0)
   }
-  return _getProgramInfoLog.call(this, program ? program._ : 0);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _getRenderbufferParameter = gl.getRenderbufferParameter;
+var _getRenderbufferParameter = gl.getRenderbufferParameter
 gl.getRenderbufferParameter = function getRenderbufferParameter(target, pname) {
-  if (!(arguments.length === 2 && typeof target === "number" && typeof pname === "number")) {
-    throw new TypeError('Expected getRenderbufferParameter(number target, number pname)');
-  }
-  return _getRenderbufferParameter.call(this, target, pname);
+  return _getRenderbufferParameter.call(this, target|0, pname|0)
 }
 
-var _getShaderParameter = gl.getShaderParameter;
+var _getShaderParameter = gl.getShaderParameter
 gl.getShaderParameter = function getShaderParameter(shader, pname) {
-  if (!(arguments.length === 2 && (shader === null || shader instanceof exports.WebGLShader) && typeof pname === "number")) {
-    throw new TypeError('Expected getShaderParameter(WebGLShader shader, number pname)');
+  if(checkWrapper(this, shader, WebGLShader)) {
+    return _getShaderParameter.call(this, shader._|0, pname|0)
   }
-  return _getShaderParameter.call(this, shader ? shader._ : 0, pname);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _getShaderInfoLog = gl.getShaderInfoLog;
+var _getShaderInfoLog = gl.getShaderInfoLog
 gl.getShaderInfoLog = function getShaderInfoLog(shader) {
-  if (!(arguments.length === 1 && (shader === null || shader instanceof exports.WebGLShader))) {
-    throw new TypeError('Expected getShaderInfoLog(WebGLShader shader)');
+  if(checkWrapper(this, shader, WebGLShader)) {
+    return _getShaderInfoLog.call(this, shader._|0)
   }
-  return _getShaderInfoLog.call(this, shader ? shader._ : 0);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _getShaderSource = gl.getShaderSource;
+var _getShaderSource = gl.getShaderSource
 gl.getShaderSource = function getShaderSource(shader) {
-  if (!(arguments.length === 1 && (shader === null || shader instanceof exports.WebGLShader))) {
-    throw new TypeError('Expected getShaderSource(WebGLShader shader)');
+  if(checkWrapper(this, shader, WebGLShader)) {
+    return _getShaderSource.call(this, shader._|0)
   }
-  return _getShaderSource.call(this, shader ? shader._ : 0);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _getTexParameter = gl.getTexParameter;
+var _getTexParameter = gl.getTexParameter
 gl.getTexParameter = function getTexParameter(target, pname) {
-  if (!(arguments.length === 2 && typeof target === "number" && typeof pname === "number")) {
-    throw new TypeError('Expected getTexParameter(number target, number pname)');
-  }
-  return _getTexParameter.call(this, target, pname);
+  return _getTexParameter.call(this, target|0, pname|0)
 }
 
-var _getUniform = gl.getUniform;
+var _getUniform = gl.getUniform
 gl.getUniform = function getUniform(program, location) {
-  if (!(arguments.length === 2 && (program === null || program instanceof exports.WebGLProgram) && (location === null || location instanceof exports.WebGLUniformLocation))) {
-    throw new TypeError('Expected getUniform(WebGLProgram program, WebGLUniformLocation location)');
+  if(checkWrapper(this, program, WebGLProgram) &&
+     checkUniform(program, location)) {
+    return _getUniform.call(this, program._|0, location._|0)
   }
-  return _getUniform.call(this, program ? program._ : 0, location ? location._ : 0);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _getUniformLocation = gl.getUniformLocation;
+var _getUniformLocation = gl.getUniformLocation
 gl.getUniformLocation = function getUniformLocation(program, name) {
-  if (!(arguments.length === 2 &&
-    (program === null || program instanceof exports.WebGLProgram) &&
-    typeof name === "string")) {
-    throw new TypeError('Expected getUniformLocation(WebGLProgram program, string name)')
+  if(checkWrapper(this, program, WebGLProgram)) {
+    var loc = _getUniformLocation.call(this, program._|0, name+'')
+    if(loc > 0) {
+      return new WebGLUniformLocation(loc, program)
+    } else {
+      return null
+    }
   }
-  return new exports.WebGLUniformLocation(
-    _getUniformLocation.call(this, program ? program._ : 0, name))
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _getVertexAttrib = gl.getVertexAttrib;
+var _getVertexAttrib = gl.getVertexAttrib
 gl.getVertexAttrib = function getVertexAttrib(index, pname) {
-  if (!(arguments.length === 2 && typeof index === "number" && typeof pname === "number")) {
-    throw new TypeError('Expected getVertexAttrib(number index, number pname)');
-  }
-  return _getVertexAttrib.call(this, index, pname);
+  return _getVertexAttrib.call(this, index|0, pname|0)
 }
 
-var _getVertexAttribOffset = gl.getVertexAttribOffset;
+var _getVertexAttribOffset = gl.getVertexAttribOffset
 gl.getVertexAttribOffset = function getVertexAttribOffset(index, pname) {
-  if (!(arguments.length === 2 && typeof index === "number" && typeof pname === "number")) {
-    throw new TypeError('Expected getVertexAttribOffset(number index, number pname)');
-  }
-
   if(pname === gl.CURRENT_VERTEX_ATTRIB) {
-    var buf=_getVertexAttribOffset(index, pname);
-    return new Float32Array(buf);
+    var buf = _getVertexAttribOffset(index|0, pname|0)
+    return new Float32Array(buf)
   }
-  return _getVertexAttribOffset.call(this, index, pname);
+  return _getVertexAttribOffset.call(this, index|0, pname|0)
 }
 
-var _hint = gl.hint;
+var _hint = gl.hint
 gl.hint = function hint(target, mode) {
-  if (!(arguments.length === 2 && typeof target === "number" && typeof mode === "number")) {
-    throw new TypeError('Expected hint(number target, number mode)');
-  }
-  return _hint.call(this, target, mode);
+  return _hint.call(this, target|0, mode|0)
 }
 
-var _isBuffer = gl.isBuffer;
-gl.isBuffer = function isBuffer(buffer) {
-  if (!(arguments.length === 1 && (buffer === null || buffer instanceof exports.WebGLBuffer))) {
-    throw new TypeError('Expected isBuffer(WebGLBuffer buffer)');
+function isObject(method, wrapper) {
+  var native = gl[method]
+  gl[method] = function(object) {
+    if(checkWrapper(this, object, wrapper)) {
+      return native.call(this, object._|0)
+    }
+    return false
   }
-  return _isBuffer.call(this, buffer ? buffer._ : 0);
 }
 
-var _isEnabled = gl.isEnabled;
+isObject('isBuffer', WebGLBuffer)
+isObject('isFrameBuffer', WebGLFramebuffer)
+isObject('isProgram', WebGLProgram)
+isObject('isRenderbuffer', WebGLRenderbuffer)
+isObject('isShader', WebGLShader)
+isObject('isTexture', WebGLTexture)
+
+var _isEnabled = gl.isEnabled
 gl.isEnabled = function isEnabled(cap) {
-  if (!(arguments.length === 1 && typeof cap === "number")) {
-    throw new TypeError('Expected isEnabled(number cap)');
-  }
-  return _isEnabled.call(this, cap);
+  return _isEnabled.call(this, cap|0)
 }
 
-var _isFramebuffer = gl.isFramebuffer;
-gl.isFramebuffer = function isFramebuffer(framebuffer) {
-  if (!(arguments.length === 1 && (framebuffer === null || framebuffer instanceof exports.WebGLFramebuffer))) {
-    throw new TypeError('Expected isFramebuffer(WebGLFramebuffer framebuffer)');
-  }
-  return _isFramebuffer.call(this, framebuffer ? framebuffer._ : 0);
-}
-
-var _isProgram = gl.isProgram;
-gl.isProgram = function isProgram(program) {
-  if (!(arguments.length === 1 && (program === null || program instanceof exports.WebGLProgram))) {
-    throw new TypeError('Expected isProgram(WebGLProgram program)');
-  }
-  return _isProgram.call(this, program ? program._ : 0);
-}
-
-var _isRenderbuffer = gl.isRenderbuffer;
-gl.isRenderbuffer = function isRenderbuffer(renderbuffer) {
-  if (!(arguments.length === 1 && (renderbuffer === null || renderbuffer instanceof exports.WebGLRenderbuffer))) {
-    throw new TypeError('Expected isRenderbuffer(WebGLRenderbuffer renderbuffer)');
-  }
-  return _isRenderbuffer.call(this, renderbuffer ? renderbuffer._ : 0);
-}
-
-var _isShader = gl.isShader;
-gl.isShader = function isShader(shader) {
-  if (!(arguments.length === 1 && (shader === null || shader instanceof exports.WebGLShader))) {
-    throw new TypeError('Expected isShader(WebGLShader shader)');
-  }
-  return _isShader.call(this, shader ? shader._ : 0);
-}
-
-var _isTexture = gl.isTexture;
-gl.isTexture = function isTexture(texture) {
-  if (!(arguments.length === 1 && (texture === null || texture instanceof exports.WebGLTexture))) {
-    throw new TypeError('Expected isTexture(WebGLTexture texture)');
-  }
-  return _isTexture.call(this, texture ? texture._ : 0);
-}
-
-var _lineWidth = gl.lineWidth;
+var _lineWidth = gl.lineWidth
 gl.lineWidth = function lineWidth(width) {
-  if (!(arguments.length === 1 && typeof width === "number")) {
-    throw new TypeError('Expected lineWidth(number width)');
-  }
-  return _lineWidth.call(this, width);
+  return _lineWidth.call(this, +width)
 }
 
-var _linkProgram = gl.linkProgram;
+var _linkProgram = gl.linkProgram
 gl.linkProgram = function linkProgram(program) {
-  if (!(arguments.length === 1 && (program === null || program instanceof exports.WebGLProgram))) {
-    throw new TypeError('Expected linkProgram(WebGLProgram program)');
+  if(!checkWrapper(this, program, WebGLProgram)) {
+    return _linkProgram.call(this, program._|0)
   }
-  return _linkProgram.call(this, program ? program._ : 0);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _pixelStorei = gl.pixelStorei;
+var _pixelStorei = gl.pixelStorei
 gl.pixelStorei = function pixelStorei(pname, param) {
-  if (!(arguments.length === 2 && typeof pname === "number" && (typeof param === "number") || typeof param === "boolean")) {
-    throw new TypeError('Expected pixelStorei(number pname, number param)');
-  }
-
-  if(typeof param === "boolean")
-    param= param ? 1 : 0;
-  return _pixelStorei.call(this, pname, param);
+  return _pixelStorei.call(this, pname|0, param|0)
 }
 
-var _polygonOffset = gl.polygonOffset;
+var _polygonOffset = gl.polygonOffset
 gl.polygonOffset = function polygonOffset(factor, units) {
-  if (!(arguments.length === 2 && typeof factor === "number" && typeof units === "number")) {
-    throw new TypeError('Expected polygonOffset(number factor, number units)');
-  }
-  return _polygonOffset.call(this, factor, units);
+  return _polygonOffset.call(this, +factor, +units)
 }
 
-var _readPixels = gl.readPixels;
+var _readPixels = gl.readPixels
 gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
-  x = x|0
-  y = y|0
-  width = width|0
-  height = height|0
-  format = format|0
-  type = type|0
-  if (!(
-    arguments.length === 7 &&
-    typeof format === "number" &&
-    typeof type === "number" &&
-    pixels instanceof Uint8Array)) {
-    throw new TypeError('Expected readPixels(number x, number y, number width, number height, number format, number type, ArrayBufferView pixels)');
+  if(pixels instanceof Uint8Array) {
+    return _readPixels.call(
+      this,
+      x|0,
+      y|0,
+      width|0,
+      height|0,
+      format|0,
+      type|0,
+      new Uint8Array(pixels.buffer))
   }
-  if(format !== gl.RGBA) {
-    throw new Error('Only gl.RGBA is supported')
-  }
-  if(type !== gl.UNSIGNED_BYTE) {
-    throw new Error('Only gl.UNSIGNED_BYTE is supported')
-  }
-  return _readPixels.call(this, x, y, width, height, format, type, new Uint8Array(pixels.buffer));
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _renderbufferStorage = gl.renderbufferStorage;
-gl.renderbufferStorage = function renderbufferStorage(target, internalformat, width, height) {
-  if (!(arguments.length === 4 && typeof target === "number" && typeof internalformat === "number" && typeof width === "number" && typeof height === "number")) {
-    throw new TypeError('Expected renderbufferStorage(number target, number internalformat, number width, number height)');
-  }
-  return _renderbufferStorage.call(this, target, internalformat, width, height);
+var _renderbufferStorage = gl.renderbufferStorage
+gl.renderbufferStorage = function renderbufferStorage(
+  target,
+  internalformat,
+  width,
+  height) {
+  return _renderbufferStorage.call(
+    this,
+    target|0,
+    internalformat|0,
+    width|0,
+    height|0)
 }
 
-var _sampleCoverage = gl.sampleCoverage;
+var _sampleCoverage = gl.sampleCoverage
 gl.sampleCoverage = function sampleCoverage(value, invert) {
-  if (!(arguments.length === 2 && typeof value === "number" && typeof invert === "boolean")) {
-    throw new TypeError('Expected sampleCoverage(number value, boolean invert)');
-  }
-  return _sampleCoverage.call(this, value, invert);
+  return _sampleCoverage.call(this, +value, +invert)
 }
 
-var _scissor = gl.scissor;
+var _scissor = gl.scissor
 gl.scissor = function scissor(x, y, width, height) {
-  if (!(arguments.length === 4 && typeof x === "number" && typeof y === "number" && typeof width === "number" && typeof height === "number")) {
-    throw new TypeError('Expected scissor(number x, number y, number width, number height)');
-  }
-  return _scissor.call(this, x, y, width, height);
+  return _scissor.call(this, x|0, y|0, width|0, height|0)
 }
 
-var _shaderSource = gl.shaderSource;
+var _shaderSource = gl.shaderSource
 gl.shaderSource = function shaderSource(shader, source) {
-  if (!(arguments.length === 2 && (shader === null || shader instanceof exports.WebGLShader) && typeof source === "string")) {
-    throw new TypeError('Expected shaderSource(WebGLShader shader, string source)');
+  if(checkWrapper(this, shader, WebGLShader)) {
+    return _shaderSource.call(this, shader._|0, source+'')
   }
-  return _shaderSource.call(this, shader ? shader._ : 0, source);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _stencilFunc = gl.stencilFunc;
+var _stencilFunc = gl.stencilFunc
 gl.stencilFunc = function stencilFunc(func, ref, mask) {
-  if (!(arguments.length === 3 && typeof func === "number" && typeof ref === "number" && typeof mask === "number")) {
-    throw new TypeError('Expected stencilFunc(number func, number ref, number mask)');
-  }
-  return _stencilFunc.call(this, func, ref, mask);
+  return _stencilFunc.call(this, func|0, ref|0, mask|0)
 }
 
-var _stencilFuncSeparate = gl.stencilFuncSeparate;
+var _stencilFuncSeparate = gl.stencilFuncSeparate
 gl.stencilFuncSeparate = function stencilFuncSeparate(face, func, ref, mask) {
-  if (!(arguments.length === 4 && typeof face === "number" && typeof func === "number" && typeof ref === "number" && typeof mask === "number")) {
-    throw new TypeError('Expected stencilFuncSeparate(number face, number func, number ref, number mask)');
-  }
-  return _stencilFuncSeparate.call(this, face, func, ref, mask);
+  return _stencilFuncSeparate.call(this, face|0, func|0, ref|0, mask|0)
 }
 
-var _stencilMask = gl.stencilMask;
+var _stencilMask = gl.stencilMask
 gl.stencilMask = function stencilMask(mask) {
-  if (!(arguments.length === 1 && typeof mask === "number")) {
-    throw new TypeError('Expected stencilMask(number mask)');
-  }
-  return _stencilMask.call(this, mask);
+  return _stencilMask.call(this, mask|0)
 }
 
-var _stencilMaskSeparate = gl.stencilMaskSeparate;
+var _stencilMaskSeparate = gl.stencilMaskSeparate
 gl.stencilMaskSeparate = function stencilMaskSeparate(face, mask) {
-  if (!(arguments.length === 2 && typeof face === "number" && typeof mask === "number")) {
-    throw new TypeError('Expected stencilMaskSeparate(number face, number mask)');
-  }
-  return _stencilMaskSeparate.call(this, face, mask);
+  return _stencilMaskSeparate.call(this, face|0, mask|0)
 }
 
-var _stencilOp = gl.stencilOp;
+var _stencilOp = gl.stencilOp
 gl.stencilOp = function stencilOp(fail, zfail, zpass) {
-  if (!(arguments.length === 3 && typeof fail === "number" && typeof zfail === "number" && typeof zpass === "number")) {
-    throw new TypeError('Expected stencilOp(number fail, number zfail, number zpass)');
-  }
-  return _stencilOp.call(this, fail, zfail, zpass);
+  return _stencilOp.call(this, fail|0, zfail|0, zpass|0)
 }
 
-var _stencilOpSeparate = gl.stencilOpSeparate;
+var _stencilOpSeparate = gl.stencilOpSeparate
 gl.stencilOpSeparate = function stencilOpSeparate(face, fail, zfail, zpass) {
-  if (!(arguments.length === 4 && typeof face === "number" && typeof fail === "number" && typeof zfail === "number" && typeof zpass === "number")) {
-    throw new TypeError('Expected stencilOpSeparate(number face, number fail, number zfail, number zpass)');
-  }
-  return _stencilOpSeparate.call(this, face, fail, zfail, zpass);
+  return _stencilOpSeparate.call(this, face|0, fail|0, zfail|0, zpass|0)
 }
 
-var _texImage2D = gl.texImage2D;
-gl.texImage2D = function texImage2D(target, level, internalformat, width, height, border, format, type, pixels) {
-  if(!(arguments.length == 9 || arguments.length == 6)) {
-    throw new TypeError('Expected texImage2D(number target, number level, number internalformat, number width, number height, number border, number format, number type, ArrayBufferView pixels) \
-        or texImage2D(number target, number level, number internalformat, number format, number type, Image pixels)');
+var _texImage2D = gl.texImage2D
+gl.texImage2D = function texImage2D(
+  target, level, internalformat, width, height, border, format, type, pixels) {
+  if(pixels instanceof Uint8Array) {
+    return _texImage2D.call(
+      this,
+      target|0,
+      level|0,
+      internalformat|0,
+      width|0,
+      height|0,
+      border|0,
+      format|0,
+      type|0,
+      new Uint8Array(pixels.buffer))
   }
-
-  if (arguments.length == 6) {
-    // width is now format, height is now type, and border is now pixels
-    if(!(
-        typeof target === "number" &&
-        typeof level === "number" && typeof internalformat === "number" &&
-        typeof width === "number" && typeof height === "number")) {
-      throw new TypeError('Expected texImage2D(number target, number level, number internalformat, number format, number type, Image pixels)');
-    }
-
-    pixels=border;
-    type=height;
-    format=width;
-
-    return _texImage2D.call(this, target, level, internalformat, pixels.width, pixels.height, 0, format, type, pixels);
-  }
-  else if (arguments.length == 9) {
-    if(!(typeof target === "number" &&
-        typeof level === "number" && typeof internalformat === "number" &&
-        typeof width === "number" && typeof height === "number" && typeof border === "number" &&
-        typeof format === "number" && typeof type === "number" &&
-        (pixels==null || typeof pixels === "object"))) {
-      throw new TypeError('Expected texImage2D(number target, number level, number internalformat, number width, number height, number border, number format, number type, ArrayBufferView pixels)');
-    }
-    return _texImage2D.call(this, target, level, internalformat, width, height, border, format, type, pixels);
-  }
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _texParameterf = gl.texParameterf;
+var _texParameterf = gl.texParameterf
 gl.texParameterf = function texParameterf(target, pname, param) {
-  if (!(arguments.length === 3 && typeof target === "number" && typeof pname === "number" && typeof param === "number")) {
-    throw new TypeError('Expected texParameterf(number target, number pname, number param)');
-  }
-  return _texParameterf.call(this, target, pname, param);
+  return _texParameterf.call(this, target|0, pname|0, +param)
 }
 
-var _texParameteri = gl.texParameteri;
+var _texParameteri = gl.texParameteri
 gl.texParameteri = function texParameteri(target, pname, param) {
-  if (!(arguments.length === 3 && typeof target === "number" && typeof pname === "number" && typeof param === "number")) {
-    throw new TypeError('Expected texParameteri(number target, number pname, number param)');
-  }
-  return _texParameteri.call(this, target, pname, param);
+  return _texParameteri.call(this, target|0, pname|0, param|0)
 }
 
-var _texSubImage2D = gl.texSubImage2D;
-gl.texSubImage2D = function texSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels) {
-  if (!(arguments.length === 9 && typeof target === "number" && typeof level === "number" &&
-      typeof xoffset === "number" && typeof yoffset === "number" &&
-      typeof width === "number" && typeof height === "number" &&
-      typeof format === "number" && typeof type === "number" &&
-      (pixels==null || typeof pixels === "object"))) {
-    throw new TypeError('Expected texSubImage2D(number target, number level, number xoffset, number yoffset, number width, number height, number format, number type, ArrayBufferView pixels)');
+var _texSubImage2D = gl.texSubImage2D
+gl.texSubImage2D = function texSubImage2D(
+  target, level, xoffset, yoffset, width, height, format, type, pixels) {
+  if(pixels instanceof Uint8Array) {
+    return _texSubImage2D.call(
+      this,
+      target|0,
+      level|0,
+      xoffset|0,
+      yoffset|0,
+      width|0,
+      height|0,
+      format|0,
+      type|0,
+      new Uint8Array(pixels.buffer))
   }
-  return _texSubImage2D.call(this, target, level, xoffset, yoffset, width, height, format, type, pixels);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _uniform1f = gl.uniform1f;
-gl.uniform1f = function uniform1f(location, x) {
-  if (!(arguments.length === 2 &&
-    (location === null || location instanceof exports.WebGLUniformLocation))) {
-    throw new TypeError('Expected uniform1f(WebGLUniformLocation location, number x)')
-  }
-  return _uniform1f.call(this, location ? location._ : 0, +x)
-}
-gl.uniform1fv = function uniform1fv(location, v) {
-  if (!(arguments.length === 2 &&
-       (location === null || location instanceof exports.WebGLUniformLocation) &&
-      v !== null && typeof v === "object" && v.length === 1)) {
-    throw new TypeError('Expected uniform1fv(WebGLUniformLocation location, FloatArray v)')
-  }
-  return _uniform1f.call(this, location ? location._ : 0, +v[0])
-}
+//Generate uniform binding code
+function makeUniforms() {
+  for(var n=1; n<=4; ++n) {
+    ['i', 'f'].forEach(function(type) {
+      var i = n
+      var func = 'uniform' + i + type
+      var native = gl[func]
 
-var _uniform1i = gl.uniform1i;
-gl.uniform1i = function uniform1i(location, x) {
-  if (!(arguments.length === 2 &&
-      (location === null || location instanceof exports.WebGLUniformLocation))) {
-    throw new TypeError('Expected uniform1i(WebGLUniformLocation location, number x)')
-  }
-  return _uniform1i.call(this, location ? location._ : 0, x|0)
-}
-gl.uniform1iv = function uniform1iv(location, v) {
-  if (!(arguments.length === 2 &&
-      (location === null || location instanceof exports.WebGLUniformLocation) &&
-      v !== null && typeof v === "object" && v.length === 1)) {
-    throw new TypeError('Expected uniform1iv(WebGLUniformLocation location, Int32Array v)')
-  }
-  return _uniform1i.call(this, location ? location._ : 0, v[0]|0)
-}
+      gl[func] = function(location, x, y, z, w) {
+        if(checkLocation(this, location)) {
+          return native.call(this, location._|0, x, y, z, w)
+        }
+        setError(this, gl.INVALID_VALUE)
+      }
+      gl[func + 'v'] = function(location, v) {
+        if(checkLocation(this, location) &&
+           typeof v === 'object' &&
+           v !== null &&
+           v.length === i) {
+          switch(i) {
+            case 1: return native.call(this, location._|0, v[0])
+            case 2: return native.call(this, location._|0, v[0], v[1])
+            case 3: return native.call(this, location._|0, v[0], v[1], v[2])
+            case 4: return native.call(this, location._|0, v[0], v[1], v[2], v[3])
+          }
+        }
+        setError(this, gl.INVALID_VALUE)
+      }
+    })
 
-var _uniform2f = gl.uniform2f;
-gl.uniform2f = function uniform2f(location, x, y) {
-  if (!(arguments.length === 3 &&
-      (location === null || location instanceof exports.WebGLUniformLocation))) {
-    throw new TypeError('Expected uniform2f(WebGLUniformLocation location, number x, number y)')
+    if(n > 1) {
+      (function(i) {
+        var func = 'uniformMatrix' + i + 'fv'
+        var native = gl[func]
+        gl[func] = function(location, transpose, v) {
+          if(checkLocation(this, location) &&
+             typeof v === 'object' &&
+             v !== null &&
+             v.length === i*i) {
+               if(v instanceof Float32Array) {
+                 return native.call(this,
+                   location._|0,
+                   !!transpose,
+                   new Float32Array(v.buffer))
+               } else {
+                 return native.call(this,
+                   location._|0,
+                   !!transpose,
+                   new Float32Array(v))
+               }
+          }
+          setError(this, gl.INVALID_VALUE)
+        }
+      })(n)
+    }
   }
-  return _uniform2f.call(this, location ? location._ : 0, +x, +y)
 }
-gl.uniform2fv = function uniform2fv(location, v) {
-  if (!(arguments.length === 2 &&
-      (location === null || location instanceof exports.WebGLUniformLocation) &&
-      v !== null && typeof v === "object" && v.length === 2)) {
-    throw new TypeError('Expected uniform2fv(WebGLUniformLocation location, FloatArray v)')
-  }
-  return _uniform2f.call(this, location ? location._ : 0, +v[0], +v[1], +v[2])
-}
+makeUniforms()
 
-var _uniform2i = gl.uniform2i;
-gl.uniform2i = function uniform2i(location, x, y) {
-  if (!(arguments.length === 3 &&
-      (location === null || location instanceof exports.WebGLUniformLocation))) {
-    throw new TypeError('Expected uniform2i(WebGLUniformLocation location, number x, number y)')
-  }
-  return _uniform2i.call(this, location ? location._ : 0, x|0, y|0)
-}
-gl.uniform2iv = function uniform2iv(location, v) {
-  if (!(arguments.length === 2 &&
-    (location === null || location instanceof exports.WebGLUniformLocation) &&
-    v !== null && typeof v === "object" && v.length === 2)) {
-    throw new TypeError('Expected uniform2iv(WebGLUniformLocation location, Int32Array v)')
-  }
-  return _uniform2i.call(this, location ? location._ : 0, v[0]|0, v[1]|0)
-}
-
-var _uniform3f = gl.uniform3f;
-gl.uniform3f = function uniform3f(location, x, y, z) {
-  if (!(arguments.length === 4 &&
-    (location === null || location instanceof exports.WebGLUniformLocation))) {
-    throw new TypeError('Expected uniform3f(WebGLUniformLocation location, number x, number y, number z)')
-  }
-  return _uniform3f.call(this, location ? location._ : 0, +x, +y, +z)
-}
-gl.uniform3fv = function uniform3fv(location, v) {
-  if (!(arguments.length === 2 &&
-    (location === null || location instanceof exports.WebGLUniformLocation) &&
-    v !== null && typeof v === "object" && v.length === 3)) {
-    throw new TypeError('Expected uniform3fv(WebGLUniformLocation location, FloatArray v)')
-  }
-  return _uniform3f.call(this, location ? location._ : 0, +v[0], +v[1], +v[2])
-}
-
-var _uniform3i = gl.uniform3i;
-gl.uniform3i = function uniform3i(location, x, y, z) {
-  if (!(arguments.length === 4 &&
-    (location === null || location instanceof exports.WebGLUniformLocation))) {
-    throw new TypeError('Expected uniform3i(WebGLUniformLocation location, number x, number y, number z)')
-  }
-  return _uniform3i.call(this, location ? location._ : 0, x|0, y|0, z|0)
-}
-gl.uniform3iv = function uniform3iv(location, v) {
-  if (!(arguments.length === 2 &&
-    (location === null || location instanceof exports.WebGLUniformLocation) &&
-    v !== null && typeof v === "object" && v.length === 3)) {
-    throw new TypeError('Expected uniform3iv(WebGLUniformLocation location, Int32Array x)')
-  }
-  return _uniform3i.call(this, location ? location._ : 0, v[0]|0, v[1]|0, v[2]|0)
-}
-
-var _uniform4f = gl.uniform4f;
-gl.uniform4f = function uniform4f(location, x, y, z, w) {
-  if (!(arguments.length === 5 &&
-      (location === null || location instanceof exports.WebGLUniformLocation))) {
-    throw new TypeError('Expected uniform4f(WebGLUniformLocation location, number x, number y, number z, number w)')
-  }
-  return _uniform4f.call(this, location ? location._ : 0, +x, +y, +z, +w)
-}
-gl.uniform4fv = function uniform4fv(location, v) {
-  if (!(arguments.length === 2 &&
-    (location === null || location instanceof exports.WebGLUniformLocation) &&
-    v !== null && typeof v === "object" && v.length === 4)) {
-    throw new TypeError('Expected uniform4fv(WebGLUniformLocation location, FloatArray v)')
-  }
-  return _uniform4f.call(this, location ? location._ : 0, +v[0], +v[1], +v[2], +v[3])
-}
-
-var _uniform4i = gl.uniform4i;
-gl.uniform4i = function uniform4i(location, x, y, z, w) {
-  if (!(arguments.length === 5 &&
-    (location === null || location instanceof exports.WebGLUniformLocation))) {
-    throw new TypeError('Expected uniform4i(WebGLUniformLocation location, number x, number y, number z, number w)')
-  }
-  return _uniform4i.call(this, location ? location._ : 0, x|0, y|0, z|0, w|0)
-}
-gl.uniform4iv = function uniform4iv(location, v) {
-  if (!(arguments.length === 2 &&
-    (location === null || location instanceof exports.WebGLUniformLocation) &&
-    v !== null && typeof v === "object" && v.length === 4)) {
-    throw new TypeError('Expected uniform4iv(WebGLUniformLocation location, Int32Array v)')
-  }
-  return _uniform4i.call(this, location ? location._ : 0, x[0]|0, x[1]|0, x[2]|0, x[3]|0)
-}
-
-var _uniformMatrix2fv = gl.uniformMatrix2fv
-gl.uniformMatrix2fv = function uniformMatrix2fv(location, transpose, value) {
-  if (!(arguments.length === 3 &&
-    (location === null || location instanceof exports.WebGLUniformLocation) &&
-    typeof transpose === "boolean" &&
-    value !== null && typeof value === "object" && value.length === 4)) {
-    throw new TypeError('Expected uniformMatrix2fv(WebGLUniformLocation location, boolean transpose, FloatArray value)');
-  }
-  if(!(value instanceof Float32Array)) {
-    value = new Float32Array(value)
-  } else {
-    value = new Float32Array(value.buffer)
-  }
-  return _uniformMatrix2fv.call(this, location ? location._ : 0, transpose, value)
-}
-
-var _uniformMatrix3fv = gl.uniformMatrix3fv
-gl.uniformMatrix3fv = function uniformMatrix3fv(location, transpose, value) {
-  if (!(arguments.length === 3 &&
-    (location === null || location instanceof exports.WebGLUniformLocation) &&
-    typeof transpose === "boolean" &&
-    value !== null && typeof value === "object" && value.length === 9)) {
-    throw new TypeError('Expected uniformMatrix3fv(WebGLUniformLocation location, boolean transpose, FloatArray value)')
-  }
-  if(!(value instanceof Float32Array)) {
-    value = new Float32Array(value)
-  } else {
-    value = new Float32Array(value.buffer)
-  }
-  return _uniformMatrix3fv.call(this, location ? location._ : 0, transpose, value)
-}
-
-var _uniformMatrix4fv = gl.uniformMatrix4fv;
-gl.uniformMatrix4fv = function uniformMatrix4fv(location, transpose, value) {
-  if (!(arguments.length === 3 &&
-    (location === null || location instanceof exports.WebGLUniformLocation) &&
-    typeof transpose === "boolean" &&
-    value !== null && typeof value === "object" && value.length === 16)) {
-    throw new TypeError('Expected uniformMatrix4fv(WebGLUniformLocation location, boolean transpose, FloatArray value)')
-  }
-  if(!(value instanceof Float32Array)) {
-    value = new Float32Array(value)
-  } else {
-    value = new Float32Array(value.buffer)
-  }
-  return _uniformMatrix4fv.call(this, location ? location._ : 0, transpose, value)
-}
-
-var _useProgram = gl.useProgram;
+var _useProgram = gl.useProgram
 gl.useProgram = function useProgram(program) {
-  if (!(arguments.length === 1 && (program === null || program instanceof exports.WebGLProgram))) {
-    throw new TypeError('Expected useProgram(WebGLProgram program)');
+  if(checkWrapper(this, program, WebGLProgram)) {
+    return _useProgram.call(this, program._|0)
   }
-  return _useProgram.call(this, program ? program._ : 0);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _validateProgram = gl.validateProgram;
+var _validateProgram = gl.validateProgram
 gl.validateProgram = function validateProgram(program) {
-  if (!(arguments.length === 1 && (program === null || program instanceof exports.WebGLProgram))) {
-    throw new TypeError('Expected validateProgram(WebGLProgram program)');
+  if(checkWrapper(this, program, WebGLProgram)) {
+    return _validateProgram.call(this, program._|0)
   }
-  return _validateProgram.call(this, program ? program._ : 0);
+  setError(this, gl.INVALID_VALUE)
 }
 
-var _vertexAttrib1f = gl.vertexAttrib1f;
-gl.vertexAttrib1f = function vertexAttrib1f(indx, x) {
-  if (!(arguments.length === 2 &&
-    typeof indx === "number")) {
-    throw new TypeError('Expected vertexAttrib1f(number indx, number x)')
+function makeVertexAttribs() {
+  function makeVertex(i) {
+    var func = 'vertexAttrib' + i + 'f'
+    var native = gl[func]
+    gl[func] = function(idx, x, y, z, w) {
+      return native.call(this, idx|0, +x, +y, +z, +w)
+    }
+    gl[func+'v'] = function(idx, v) {
+      if(typeof v === 'object' &&
+         v !== null &&
+         v.length === i) {
+        switch(i) {
+          case 1: return native.call(this, idx|0, +v[0])
+          case 2: return native.call(this, idx|0, +v[0], +v[1])
+          case 3: return native.call(this, idx|0, +v[0], +v[1], +v[2])
+          case 4: return native.call(this, idx|0, +v[0], +v[1], +v[2], +v[3])
+        }
+      }
+      setError(this, gl.INVALID_VALUE)
+    }
   }
-  return _vertexAttrib1f.call(this, indx|0, +x)
+  for(var n=1; n<4; ++n) makeVertex(n)
 }
-gl.vertexAttrib1fv = function vertexAttrib1fv(indx, values) {
-  if (!(arguments.length === 2 &&
-    typeof indx === "number" &&
-    values !== null && typeof values === "object" && values.length === 1)) {
-    throw new TypeError('Expected vertexAttrib1fv(number indx, FloatArray values)');
-  }
-  return _vertexAttrib1f.call(this, indx|0, +values[0]);
-}
+makeVertexAttribs()
 
-var _vertexAttrib2f = gl.vertexAttrib2f;
-gl.vertexAttrib2f = function vertexAttrib2f(indx, x, y) {
-  if (!(arguments.length === 3 &&
-    typeof indx === "number")) {
-    throw new TypeError('Expected vertexAttrib2f(number indx, number x, number y)')
-  }
-  return _vertexAttrib2f.call(this, indx|0, +x, +y)
-}
-gl.vertexAttrib2fv = function vertexAttrib2fv(indx, values) {
-  if (!(arguments.length === 2 &&
-    typeof indx === "number" &&
-    values !== null && typeof values === "object" && values.length === 2)) {
-    throw new TypeError('Expected vertexAttrib2fv(number indx, FloatArray values)')
-  }
-  return _vertexAttrib2f.call(this, indx|0, +values[0], +values[1])
-}
-
-var _vertexAttrib3f = gl.vertexAttrib3f;
-gl.vertexAttrib3f = function vertexAttrib3f(indx, x, y, z) {
-  if (!(arguments.length === 4 &&
-    typeof indx === "number")) {
-    throw new TypeError('Expected vertexAttrib3f(number indx, number x, number y, number z)')
-  }
-  return _vertexAttrib3f.call(this, indx|0, +x, +y, +z)
-}
-gl.vertexAttrib3fv = function vertexAttrib3fv(indx, values) {
-  if (!(arguments.length === 2 &&
-    typeof indx === "number" &&
-    values !== null && typeof values === "object" && values.length === 3)) {
-    throw new TypeError('Expected vertexAttrib3fv(number indx, FloatArray values)')
-  }
-  return _vertexAttrib3f.call(this, indx|0, +values[0], +values[1], +values[2])
-}
-
-var _vertexAttrib4f = gl.vertexAttrib4f;
-gl.vertexAttrib4f = function vertexAttrib4f(indx, x, y, z, w) {
-  if (!(arguments.length === 5 && typeof indx === "number")) {
-    throw new TypeError('Expected vertexAttrib4f(number indx, number x, number y, number z, number w)')
-  }
-  return _vertexAttrib4f.call(this, indx|0, +x, +y, +z, +w)
-}
-gl.vertexAttrib4fv = function vertexAttrib4fv(indx, values) {
-  if (!(arguments.length === 2 &&
-    typeof indx === "number" &&
-    values !== null && typeof values === "object" && values.length === 4)) {
-    throw new TypeError('Expected vertexAttrib4fv(number indx, FloatArray values)')
-  }
-  return _vertexAttrib4f.call(this, indx|0, +values[0], +values[1], +values[2], +values[3])
-}
-
-var _vertexAttribPointer = gl.vertexAttribPointer;
-gl.vertexAttribPointer = function vertexAttribPointer(indx, size, type, normalized, stride, offset) {
-  if (arguments.length !== 6) {
-    throw new TypeError('Expected vertexAttribPointer(number indx, number size, number type, boolean normalized, number stride, number offset)')
-  }
+var _vertexAttribPointer = gl.vertexAttribPointer
+gl.vertexAttribPointer = function vertexAttribPointer(
+  indx,
+  size,
+  type,
+  normalized,
+  stride,
+  offset) {
   return _vertexAttribPointer.call(this,
     indx|0,
     size|0,
@@ -1293,10 +995,7 @@ gl.vertexAttribPointer = function vertexAttribPointer(indx, size, type, normaliz
     offset|0)
 }
 
-var _viewport = gl.viewport;
+var _viewport = gl.viewport
 gl.viewport = function viewport(x, y, width, height) {
-  if (!(arguments.length === 4 && typeof x === "number" && typeof y === "number" && typeof width === "number" && typeof height === "number")) {
-    throw new TypeError('Expected viewport(number x, number y, number width, number height)');
-  }
-  return _viewport.call(this, x, y, width, height);
+  return _viewport.call(this, x|0, y|0, width|0, height|0)
 }

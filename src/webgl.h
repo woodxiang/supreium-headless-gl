@@ -96,11 +96,13 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   //Error handling
   GLenum lastError;
   void setError(GLenum error);
+  GLenum getError();
   static NAN_METHOD(SetError);
+  static NAN_METHOD(GetError);
 
   //Buffer state
   GLuint activeArrayBuffer, activeElementArrayBuffer;
-
+  
   //Destructors
   void dispose();
 
@@ -120,7 +122,6 @@ struct WebGLRenderingContext : public node::ObjectWrap {
 
   static NAN_METHOD(PixelStorei);
   static NAN_METHOD(BindAttribLocation);
-  static NAN_METHOD(GetError);
   static NAN_METHOD(DrawArrays);
   static NAN_METHOD(UniformMatrix2fv);
   static NAN_METHOD(UniformMatrix3fv);

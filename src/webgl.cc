@@ -430,17 +430,18 @@ GL_METHOD(BindAttribLocation) {
   NanReturnUndefined();
 }
 
+GLenum WebGLRenderingContext::getError() {
+  GLenum error = glGetError();
+  if(lastError != GL_NO_ERROR) {
+    error = lastError;
+  }
+  lastError = GL_NO_ERROR;
+  return error;
+}
 
 GL_METHOD(GetError) {
   GL_BOILERPLATE;
-
-  GLenum error = glGetError();
-  if(inst->lastError != GL_NO_ERROR) {
-    error = inst->lastError;
-  }
-  inst->lastError = GL_NO_ERROR;
-
-  NanReturnValue(NanNew<v8::Number>(error));
+  NanReturnValue(NanNew<v8::Integer>(inst->getError()));
 }
 
 
@@ -523,7 +524,7 @@ GL_METHOD(GetAttribLocation) {
   int program = args[0]->Int32Value();
   v8::String::Utf8Value name(args[1]);
 
-  NanReturnValue(NanNew<v8::Number>(glGetAttribLocation(program, *name)));
+  NanReturnValue(NanNew<v8::Integer>(glGetAttribLocation(program, *name)));
 }
 
 
@@ -553,11 +554,9 @@ GL_METHOD(CreateShader) {
   GL_BOILERPLATE;
 
   GLuint shader=glCreateShader(args[0]->Int32Value());
-  #ifdef LOGGING
-  cout<<"createShader "<<shader<<endl;
-  #endif
   inst->registerGLObj(GLOBJECT_TYPE_SHADER, shader);
-  NanReturnValue(NanNew<v8::Number>(shader));
+
+  NanReturnValue(NanNew<v8::Integer>(shader));
 }
 
 
@@ -607,11 +606,11 @@ GL_METHOD(GetShaderParameter) {
     NanReturnValue(NanNew<v8::Boolean>(static_cast<bool>(value!=0)));
   case GL_SHADER_TYPE:
     glGetShaderiv(shader, pname, &value);
-    NanReturnValue(NanNew<v8::Number>(static_cast<unsigned long>(value)));
+    NanReturnValue(NanNew<v8::Integer>(value));
   case GL_INFO_LOG_LENGTH:
   case GL_SHADER_SOURCE_LENGTH:
     glGetShaderiv(shader, pname, &value);
-    NanReturnValue(NanNew<v8::Number>(static_cast<long>(value)));
+    NanReturnValue(NanNew<v8::Integer>(value));
   default:
     return NanThrowTypeError("GetShaderParameter: Invalid Enum");
   }
@@ -634,11 +633,9 @@ GL_METHOD(CreateProgram) {
   GL_BOILERPLATE;
 
   GLuint program=glCreateProgram();
-  #ifdef LOGGING
-  cout<<"createProgram "<<program<<endl;
-  #endif
   inst->registerGLObj(GLOBJECT_TYPE_PROGRAM, program);
-  NanReturnValue(NanNew<v8::Number>(program));
+
+  NanReturnValue(NanNew<v8::Integer>(program));
 }
 
 
@@ -676,11 +673,13 @@ GL_METHOD(GetProgramParameter) {
   case GL_VALIDATE_STATUS:
     glGetProgramiv(program, pname, &value);
     NanReturnValue(NanNew<v8::Boolean>(static_cast<bool>(value!=0)));
+
   case GL_ATTACHED_SHADERS:
   case GL_ACTIVE_ATTRIBUTES:
   case GL_ACTIVE_UNIFORMS:
     glGetProgramiv(program, pname, &value);
-    NanReturnValue(NanNew<v8::Number>(static_cast<long>(value)));
+    NanReturnValue(NanNew<v8::Integer>(value));
+
   default:
     return NanThrowTypeError("GetProgramParameter: Invalid Enum");
   }
@@ -741,7 +740,8 @@ GL_METHOD(CreateTexture) {
   GLuint texture;
   glGenTextures(1, &texture);
   inst->registerGLObj(GLOBJECT_TYPE_TEXTURE, texture);
-  NanReturnValue(NanNew<v8::Number>(texture));
+
+  NanReturnValue(NanNew<v8::Integer>(texture));
 }
 
 
@@ -833,8 +833,7 @@ GL_METHOD(CreateBuffer) {
   glGenBuffers(1, &buffer);
   inst->registerGLObj(GLOBJECT_TYPE_BUFFER, buffer);
 
-
-  NanReturnValue(NanNew<v8::Number>(buffer));
+  NanReturnValue(NanNew<v8::Integer>(buffer));
 }
 
 GL_METHOD(BindBuffer) {
@@ -867,15 +866,16 @@ GL_METHOD(CreateFramebuffer) {
   GLuint buffer;
   glGenFramebuffers(1, &buffer);
   inst->registerGLObj(GLOBJECT_TYPE_FRAMEBUFFER, buffer);
-  NanReturnValue(NanNew<v8::Number>(0));
+
+  NanReturnValue(NanNew<v8::Integer>(buffer));
 }
 
 
 GL_METHOD(BindFramebuffer) {
   GL_BOILERPLATE;
 
-  int target = args[0]->Int32Value();
-  int buffer = args[1]->IsNull() ? 0 : args[1]->Int32Value();
+  GLint target = (GLint)args[0]->Int32Value();
+  GLint buffer = (GLint)(args[1]->IsNull() ? 0 : args[1]->Int32Value());
 
   glBindFramebuffer(target, buffer);
 
@@ -886,11 +886,11 @@ GL_METHOD(BindFramebuffer) {
 GL_METHOD(FramebufferTexture2D) {
   GL_BOILERPLATE;
 
-  int target = args[0]->Int32Value();
-  int attachment = args[1]->Int32Value();
-  int textarget = args[2]->Int32Value();
-  int texture = args[3]->Int32Value();
-  int level = args[4]->Int32Value();
+  GLenum target      = args[0]->Int32Value();
+  GLenum attachment  = args[1]->Int32Value();
+  GLint textarget   = args[2]->Int32Value();
+  GLint texture     = args[3]->Int32Value();
+  GLint level       = args[4]->Int32Value();
 
   glFramebufferTexture2D(target, attachment, textarget, texture, level);
 
@@ -901,7 +901,7 @@ GL_METHOD(FramebufferTexture2D) {
 GL_METHOD(BufferData) {
   GL_BOILERPLATE;
 
-  int target = args[0]->Int32Value();
+  GLint target = args[0]->Int32Value();
   GLenum usage = args[2]->Int32Value();
 
   if(args[1]->IsObject()) {
@@ -1332,10 +1332,12 @@ GL_METHOD(BindRenderbuffer) {
 
 GL_METHOD(CreateRenderbuffer) {
   GL_BOILERPLATE;
+
   GLuint renderbuffers;
   glGenRenderbuffers(1,&renderbuffers);
   inst->registerGLObj(GLOBJECT_TYPE_RENDERBUFFER, renderbuffers);
-  NanReturnValue(NanNew<v8::Number>(renderbuffers));
+
+  NanReturnValue(NanNew<v8::Integer>(renderbuffers));
 }
 
 GL_METHOD(DeleteBuffer) {
@@ -1398,11 +1400,16 @@ GL_METHOD(DetachShader) {
 
 GL_METHOD(FramebufferRenderbuffer) {
   GL_BOILERPLATE;
-  GLenum target = args[0]->Int32Value();
-  GLenum attachment = args[1]->Int32Value();
+  GLenum target             = args[0]->Int32Value();
+  GLenum attachment         = args[1]->Int32Value();
   GLenum renderbuffertarget = args[2]->Int32Value();
-  GLuint renderbuffer = args[3]->Uint32Value();
-  glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
+  GLuint renderbuffer       = args[3]->Uint32Value();
+  printf("%d, %d, %d, %u\n", target, attachment, renderbuffertarget, renderbuffer);
+  glFramebufferRenderbuffer(
+    target,
+    attachment,
+    renderbuffertarget,
+    renderbuffer);
   NanReturnValue(NanUndefined());
 }
 
@@ -1513,7 +1520,7 @@ GL_METHOD(GetTexParameter) {
   GLenum pname = args[1]->Int32Value();
   GLint param_value=0;
   glGetTexParameteriv(target, pname, &param_value);
-  NanReturnValue(NanNew<v8::Number>(param_value));
+  NanReturnValue(NanNew<v8::Integer>(param_value));
 }
 
 GL_METHOD(GetActiveAttrib) {
