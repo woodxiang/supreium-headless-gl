@@ -148,6 +148,11 @@ function activeTexture(context, target) {
   return null
 }
 
+function validTextureTarget(target) {
+  return target === gl.TEXTURE_2D ||
+         target === gl.TEXTURE_CUBE
+}
+
 function glSize(type) {
   switch(type) {
     case gl.UNSIGNED_BYTE:
@@ -435,7 +440,7 @@ function bindObject(method, wrapper, activeProp) {
     } else {
       return
     }
-    var active = context[activeProp]
+    var active = this[activeProp]
     if(active !== object) {
       if(active) {
         active._refCount -= 1
@@ -445,7 +450,7 @@ function bindObject(method, wrapper, activeProp) {
         object._refCount += 1
       }
     }
-    context[activeProp] = object
+    this[activeProp] = object
   }
 }
 
@@ -456,13 +461,13 @@ var _bindTexture = gl.bindTexture
 gl.bindTexture = function bindTexture(target, texture) {
   target |= 0
 
-  if(target !== gl.TEXTURE_2D || target !== gl.TEXTURE_CUBE) {
+  if(!validTextureTarget(target)) {
     setError(this, gl.INVALID_ENUM)
     return
   }
 
   var activeUnit = activeTextureUnit(this)
-  var activeTexture = activeTexture(this)
+  var activeTex  = activeTexture(this)
 
   if(texture === null) {
     _bindTexture.call(
@@ -487,10 +492,10 @@ gl.bindTexture = function bindTexture(target, texture) {
   }
 
   //Update references
-  if(activeTexture !== texture) {
-    if(activeTexture) {
-      activerTexture._refCount -= 1
-      checkDelete(activeTexture)
+  if(activeTex !== texture) {
+    if(activeTex) {
+      activerTex._refCount -= 1
+      checkDelete(activeTex)
     }
     if(texture) {
       texture._refCount += 1
@@ -498,7 +503,7 @@ gl.bindTexture = function bindTexture(target, texture) {
   }
 
   if(target === gl.TEXTURE_2D) {
-    activeUnit._bind2D = texture
+    activeUnit._bind2D   = texture
   } else if(target === gl.TEXTURE_CUBE) {
     activeUnit._bindCube = texture
   }
@@ -999,18 +1004,19 @@ gl.getParameter = function getParameter(pname) {
   pname |= 0
   switch(pname) {
     case gl.ARRAY_BUFFER_BINDING:
-    case gl.ELEMENT_ARRAY_BUFFER:
-      return this._buffers[_getParameter.call(this, pname)] || null
+      return this._activeArrayBuffer
+    case gl.ELEMENT_ARRAY_BUFFER_BINDING:
+      return this._activeElementArrayBuffer
     case gl.CURRENT_PROGRAM:
-      return this._programs[_getParameter.call(this, pname)] || null
+      return this._activeProgram
     case gl.FRAMEBUFFER_BINDING:
-      return this._framebuffers[_getParameter.call(this, pname)] || null
+      return this._activeFramebuffer
     case gl.RENDERBUFFER_BINDING:
-      return this._renderbuffers[_getParameter.call(this, pname)] || null
+      return this._activeRenderbuffer
     case gl.TEXTURE_BINDING_2D:
-      return this._textures[_getParameter.call(this, pname)] || null
-    case gl.TEXTURE_BINDING_CUBE:
-      return this._textures[_getParameter.call(this, pname)] || null
+      return activeTextureUnit(this)._bind2D
+    case gl.TEXTURE_BINDING_CUBE_MAP:
+      return activeTextureUnit(this)._bindCube
     case gl.VERSION:
       return 'WebGL 1.0 headless-gl ' + HEADLESS_VERSION
     case gl.VENDOR:
@@ -1019,6 +1025,9 @@ gl.getParameter = function getParameter(pname) {
       return 'ANGLE'
     case gl.SHADING_LANGUAGE_VERSION:
       return 'WebGL 1.0 headless-gl'
+
+    case gl.COMPRESSED_TEXTURE_FORMATS:
+      return new Uint32Array(0)
 
     //Int arrays
     case gl.MAX_VIEWPORT_DIMS:
@@ -1216,14 +1225,26 @@ gl.getUniformLocation = function getUniformLocation(program, name) {
 
 var _getVertexAttrib = gl.getVertexAttrib
 gl.getVertexAttrib = function getVertexAttrib(index, pname) {
-  return _getVertexAttrib.call(this, index|0, pname|0)
+  index |= 0
+  pname |= 0
+  if(index < 0 || index >= this._vertexAttribs.length) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+  switch(pname) {
+    case gl.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING:
+      return this._vertexAttribs[index]._pointerBuffer
+    case gl.CURRENT_VERTEX_ATTRIB:
+      return new Float32Array(_getVertexAttrib.call(this, index, pname))
+    default:
+      return _getVertexAttrib.call(this, index, pname)
+  }
 }
 
 var _getVertexAttribOffset = gl.getVertexAttribOffset
 gl.getVertexAttribOffset = function getVertexAttribOffset(index, pname) {
   if(pname === gl.CURRENT_VERTEX_ATTRIB) {
-    var buf = _getVertexAttribOffset(index|0, pname|0)
-    return new Float32Array(buf)
+    return new Float32Array(_getVertexAttribOffset(index|0, pname|0))
   }
   return _getVertexAttribOffset.call(this, index|0, pname|0)
 }
@@ -1419,12 +1440,24 @@ gl.texImage2D = function texImage2D(
 
 var _texParameterf = gl.texParameterf
 gl.texParameterf = function texParameterf(target, pname, param) {
-  return _texParameterf.call(this, target|0, pname|0, +param)
+  target |= 0
+  pname  |= 0
+  param  = +param
+  if(validTextureTarget(target)) {
+    return _texParameterf.call(this, target, pname, param)
+  }
+  setError(this, gl.INVALID_ENUM)
 }
 
 var _texParameteri = gl.texParameteri
 gl.texParameteri = function texParameteri(target, pname, param) {
-  return _texParameteri.call(this, target|0, pname|0, param|0)
+  target |= 0
+  pname  |= 0
+  param  |= 0
+  if(validTextureTarget(target)) {
+    return _texParameteri.call(this, target, pname, param)
+  }
+  setError(this, gl.INVALID_ENUM)
 }
 
 var _texSubImage2D = gl.texSubImage2D
@@ -1628,9 +1661,9 @@ gl.vertexAttribPointer = function vertexAttribPointer(
     return
   }
 
-  var byteSize = glSize(type)
   //fixed, int and unsigned int aren't allowed in WebGL
-  if(byteSize === 0       ||
+  var byteSize = glSize(type)
+  if(byteSize === 0 ||
      type === gl.INT  ||
      type === gl.UNSIGNED_INT) {
     setError(this, gl.INVALID_ENUM)
