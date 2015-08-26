@@ -121,9 +121,32 @@ function WebGLVertexAttribute(ctx, idx) {
 }
 exports.WebGLVertexAttribute = WebGLVertexAttribute
 
+function WebGLTextureUnit(ctx, idx) {
+  this._ctx       = ctx
+  this._idx       = idx
+  this._mode      = 0
+  this._bind2D   = null
+  this._bindCube = null
+}
+exports.WebGLTextureUnit = WebGLTextureUnit
+
 //We need to wrap some of the native WebGL functions to handle certain error codes and check input values
 var gl = nativeGL.WebGLRenderingContext.prototype
 gl.VERSION = 0x1F02
+
+function activeTextureUnit(context) {
+  return context._textureUnits[context._activeTextureUnit]
+}
+
+function activeTexture(context, target) {
+  var activeUnit = activeTextureUnit(context)
+  if(target === gl.TEXTURE_2D) {
+    return activeUnit._bind2D
+  } else if(target === gl.TEXTURE_CUBE) {
+    return activeUnit._bindCube
+  }
+  return null
+}
 
 function glSize(type) {
   switch(type) {
@@ -319,7 +342,7 @@ gl.getExtension = function getExtension(name) {
 var _activeTexture = gl.activeTexture
 gl.activeTexture = function activeTexture(texture) {
   var texNum = texture - gl.TEXTURE0
-  if(0 <= texNum && texNum < this._activeTextures.length) {
+  if(0 <= texNum && texNum < this._textureUnits.length) {
     this._activeTextureUnit = texNum|0
   }
   return _activeTexture.call(this, texture|0)
@@ -353,15 +376,14 @@ gl.bindAttribLocation = function bindAttribLocation(program, index, name) {
 }
 
 function switchActiveBuffer(active, buffer) {
-  if(active === buffer) {
-    return false
-  }
-  if(active) {
-    active._refCount -= 1
-    checkDelete(active)
-  }
-  if(buffer) {
-    buffer._refCount += 1
+  if(active !== buffer) {
+    if(active) {
+      active._refCount -= 1
+      checkDelete(active)
+    }
+    if(buffer) {
+      buffer._refCount += 1
+    }
   }
 }
 
@@ -371,38 +393,48 @@ gl.bindBuffer = function bindBuffer(target, buffer) {
   if(target !== gl.ARRAY_BUFFER &&
      target !== gl.ELEMENT_ARRAY_BUFFER) {
     setError(this, gl.INVALID_ENUM)
-  } else if(buffer === null) {
-    if(target === gl.ARRAY_BUFFER) {
-      switchActiveBuffer(this._activeArrayBuffer, null)
-      this._activeArrayBuffer = null
-    } else {
-      switchActiveBuffer(this._activeElementArrayBuffer, null)
-      this._activeElementArrayBuffer = null
-    }
-    return _bindBuffer.call(this, target, 0)
+    return
+  }
+
+  if(buffer === null) {
+    _bindBuffer.call(this, target, 0)
   } else if(checkWrapper(this, buffer, WebGLBuffer)) {
-    //Check buffer binding
-    if(buffer._binding === 0) {
-      buffer._binding = target|0
-    } else if(buffer._binding !== target) {
+    if(buffer._binding && buffer._binding !== target) {
       setError(this, gl.INVALID_OPERATION)
       return
     }
-    //Check ref count on active buffer
-    if(target === gl.ARRAY_BUFFER) {
-      switchActiveBuffer(this._activeArrayBuffer, buffer)
-      this._activeArrayBuffer = buffer
-    } else {
-      switchActiveBuffer(this._activeElementArrayBuffer, buffer)
-      this._activeElementArrayBuffer = buffer
-    }
-    return _bindBuffer.call(this, target, buffer._|0)
+    buffer._binding = target|0
+
+    _bindBuffer.call(this, target, buffer._|0)
+  } else {
+    return
+  }
+
+  if(target === gl.ARRAY_BUFFER) {
+    switchActiveBuffer(this._activeArrayBuffer, buffer)
+    this._activeArrayBuffer = buffer
+  } else {
+    switchActiveBuffer(this._activeElementArrayBuffer, buffer)
+    this._activeElementArrayBuffer = buffer
   }
 }
 
 function bindObject(method, wrapper, activeProp) {
   var native = gl[method]
-  function swapActive(context, object) {
+  gl[method] = function(target, object) {
+    if(object === null) {
+      native.call(
+        this,
+        target|0,
+        0)
+    } else if(checkWrapper(this, object, wrapper)) {
+      native.call(
+        this,
+        target|0,
+        object._|0)
+    } else {
+      return
+    }
     var active = context[activeProp]
     if(active !== object) {
       if(active) {
@@ -415,21 +447,6 @@ function bindObject(method, wrapper, activeProp) {
     }
     context[activeProp] = object
   }
-  gl[method] = function(target, object) {
-    if(object === null) {
-      swapActive(this, object)
-      return native.call(
-        this,
-        target|0,
-        0)
-    } else if(checkWrapper(this, object, wrapper)) {
-      swapActive(this, object)
-      return native.call(
-        this,
-        target|0,
-        object._|0)
-    }
-  }
 }
 
 bindObject('bindFramebuffer',  WebGLFramebuffer, '_activeFramebuffer')
@@ -437,8 +454,54 @@ bindObject('bindRenderbuffer', WebGLRenderbuffer, '_activeRenderbuffer')
 
 var _bindTexture = gl.bindTexture
 gl.bindTexture = function bindTexture(target, texture) {
-  //FIXME: Validate and ref count texture for active texture unit
-  return _bindTexture.call(texture|0, texture._|0)
+  target |= 0
+
+  if(target !== gl.TEXTURE_2D || target !== gl.TEXTURE_CUBE) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  var activeUnit = activeTextureUnit(this)
+  var activeTexture = activeTexture(this)
+
+  if(texture === null) {
+    _bindTexture.call(
+      this,
+      target,
+      0)
+  } else if(checkWrapper(this, texture, WebGLTexture)) {
+
+    //Check binding mode of texture
+    if(texture._binding && texture._binding !== target) {
+      setError(this, gl.INVALID_OPERATION)
+      return
+    }
+    texture._binding = target
+
+    _bindTexture.call(
+      this,
+      target,
+      texture._|0)
+  } else {
+    return
+  }
+
+  //Update references
+  if(activeTexture !== texture) {
+    if(activeTexture) {
+      activerTexture._refCount -= 1
+      checkDelete(activeTexture)
+    }
+    if(texture) {
+      texture._refCount += 1
+    }
+  }
+
+  if(target === gl.TEXTURE_2D) {
+    activeUnit._bind2D = texture
+  } else if(target === gl.TEXTURE_CUBE) {
+    activeUnit._bindCube = texture
+  }
 }
 
 var _blendColor = gl.blendColor
@@ -446,14 +509,29 @@ gl.blendColor = function blendColor(red, green, blue, alpha) {
   return _blendColor.call(this, +red, +green, +blue, +alpha)
 }
 
+function validBlendMode(mode) {
+  return mode === gl.FUNC_ADD ||
+         mode === gl.FUNC_SUBTRACT ||
+         mode !== gl.FUNC_REVERSE_SUBTRACT
+}
+
 var _blendEquation = gl.blendEquation
 gl.blendEquation = function blendEquation(mode) {
-  return _blendEquation.call(this, mode|0)
+  mode |= 0
+  if(validBlendMode(mode)) {
+    return _blendEquation.call(this, mode)
+  }
+  setError(this, gl.INVALID_ENUM)
 }
 
 var _blendEquationSeparate = gl.blendEquationSeparate
 gl.blendEquationSeparate = function blendEquationSeparate(modeRGB, modeAlpha) {
-  return _blendEquationSeparate.call(this, modeRGB|0, modeAlpha|0)
+  modeRGB |= 0
+  modeAlpha |= 0
+  if(validBlendMode(modeRGB) && validBlendMode(modeAlpha)) {
+    return _blendEquationSeparate.call(this, modeRGB, modeAlpha)
+  }
+  setError(this, gl.INVALID_ENUM)
 }
 
 var _blendFunc = gl.blendFunc
@@ -712,7 +790,15 @@ gl.detachShader = function detachShader(program, shader) {
 
 var _disable = gl.disable
 gl.disable = function disable(cap) {
-  return _disable.call(this, cap|0)
+  cap |= 0
+  _disable.call(this, cap)
+  if(cap === gl.TEXTURE_2D ||
+     cap === gl.TEXTURE_CUBE) {
+    var active = activeTextureUnit(this)
+    if(active._mode === cap) {
+      active._mode = 0
+    }
+  }
 }
 
 var _disableVertexAttribArray = gl.disableVertexAttribArray
@@ -783,7 +869,12 @@ gl.drawElements = function drawElements(mode, count, type, offset) {
 
 var _enable = gl.enable
 gl.enable = function enable(cap) {
-  return _enable.call(this, cap|0)
+  cap |= 0
+  _enable.call(this, cap)
+  if(cap === gl.TEXTURE_2D ||
+     cap === gl.TEXTURE_CUBE) {
+    activeTextureUnit(this)._mode = cap
+  }
 }
 
 var _enableVertexAttribArray = gl.enableVertexAttribArray

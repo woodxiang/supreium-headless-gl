@@ -66,9 +66,9 @@ function createContext(width, height, options) {
 
   //Initialize texture units
   var numTextures = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)
-  gl._activeTextures = new Array(numTextures)
+  gl._textureUnits = new Array(numTextures)
   for(var i=0; i<numTextures; ++i) {
-    gl._activeTextures[i] = null
+    gl._textureUnits[i] = new webgl.WebGLTextureUnit(i)
   }
   gl._activeTextureUnit = 0
   gl.activeTexture(gl.TEXTURE0)
