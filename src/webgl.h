@@ -38,10 +38,16 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   static bool       HAS_DISPLAY;
   static EGLDisplay DISPLAY;
 
+
   EGLContext context;
   EGLConfig  config;
   EGLSurface surface;
   GLContextState  state;
+
+  //WebGL specific flags
+  bool unpack_flip_y;
+  bool unpack_premultiply_alpha;
+  GLint unpack_colorspace_conversion;
 
   //A list of object references, need do destroy them at program exit
   std::map< std::pair<GLuint, GLObjectType>, bool > objects;

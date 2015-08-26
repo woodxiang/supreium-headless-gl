@@ -1229,7 +1229,7 @@ gl.getVertexAttrib = function getVertexAttrib(index, pname) {
   pname |= 0
   if(index < 0 || index >= this._vertexAttribs.length) {
     setError(this, gl.INVALID_VALUE)
-    return
+    return null
   }
   switch(pname) {
     case gl.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING:

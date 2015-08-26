@@ -89,6 +89,11 @@ WebGLRenderingContext::WebGLRenderingContext(
   bool failIfMajorPerformanceCaveat) :
 
   state(GLCONTEXT_STATE_INIT),
+
+  unpack_flip_y(false),
+  unpack_premultiply_alpha(false),
+  unpack_colorspace_conversion(0x9244),
+
   next(NULL),
   prev(NULL),
   lastError(GL_NO_ERROR) {
@@ -457,7 +462,24 @@ GL_METHOD(PixelStorei) {
   int pname = args[0]->Int32Value();
   int param = args[1]->Int32Value();
 
-  glPixelStorei(pname,param);
+  //Handle WebGL specific extensions
+  switch(pname) {
+    case 0x9240:
+      inst->unpack_flip_y = param != 0;
+    break;
+
+    case 0x9241:
+      inst->unpack_premultiply_alpha = param != 0;
+    break;
+
+    case 0x9243:
+      inst->unpack_colorspace_conversion = param;
+    break;
+
+    default:
+      glPixelStorei(pname, param);
+    break;
+  }
 
   NanReturnUndefined();
 }
@@ -1586,6 +1608,16 @@ GL_METHOD(GetParameter) {
   GLenum name = args[0]->Int32Value();
 
   switch(name) {
+
+  case 0x9240 /* UNPACK_FLIP_Y_WEBGL */:
+    NanReturnValue(NanNew<v8::Boolean>(inst->unpack_flip_y));
+
+  case 0x9241 /* UNPACK_PREMULTIPLY_ALPHA_WEBGL*/:
+    NanReturnValue(NanNew<v8::Boolean>(inst->unpack_premultiply_alpha));
+
+  case 0x9243 /* UNPACK_COLORSPACE_CONVERSION_WEBGL */:
+    NanReturnValue(NanNew<v8::Integer>(inst->unpack_colorspace_conversion));
+
   case GL_BLEND:
   case GL_CULL_FACE:
   case GL_DEPTH_TEST:
@@ -1595,8 +1627,6 @@ GL_METHOD(GetParameter) {
   case GL_SAMPLE_COVERAGE_INVERT:
   case GL_SCISSOR_TEST:
   case GL_STENCIL_TEST:
-  case 0x9240 /* UNPACK_FLIP_Y_WEBGL */:
-  case 0x9241 /* UNPACK_PREMULTIPLY_ALPHA_WEBGL*/:
   {
     // return a boolean
     GLboolean params;
