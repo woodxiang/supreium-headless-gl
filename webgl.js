@@ -512,7 +512,7 @@ gl.blendColor = function blendColor(red, green, blue, alpha) {
 function validBlendMode(mode) {
   return mode === gl.FUNC_ADD ||
          mode === gl.FUNC_SUBTRACT ||
-         mode !== gl.FUNC_REVERSE_SUBTRACT
+         mode === gl.FUNC_REVERSE_SUBTRACT
 }
 
 var _blendEquation = gl.blendEquation
@@ -557,6 +557,12 @@ var _bufferData = gl.bufferData
 gl.bufferData = function bufferData(target, data, usage) {
   target |= 0
   usage  |= 0
+  if(usage !== gl.STREAM_DRAW &&
+     usage !== gl.STATIC_DRAW &&
+     usage !== gl.DYNAMIC_DRAW) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
   if(typeof data === 'object') {
     if(data) {
       var u8Data = null
@@ -1013,6 +1019,21 @@ gl.getParameter = function getParameter(pname) {
       return 'ANGLE'
     case gl.SHADING_LANGUAGE_VERSION:
       return 'WebGL 1.0 headless-gl'
+
+    //Int arrays
+    case gl.MAX_VIEWPORT_DIMS:
+    case gl.SCISSOR_BOX:
+    case gl.VIEWPORT:
+      return new Int32Array(_getParameter.call(this, pname))
+
+    //Float arrays
+    case gl.ALIASED_LINE_WIDTH_RANGE:
+    case gl.ALIASED_POINT_SIZE_RANGE:
+    case gl.DEPTH_RANGE:
+    case gl.BLEND_COLOR:
+    case gl.COLOR_CLEAR_VALUE:
+      return new Float32Array(_getParameter.call(this, pname))
+
     default:
       return _getParameter.call(this, pname)
   }
