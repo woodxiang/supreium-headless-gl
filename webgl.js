@@ -80,10 +80,12 @@ function WebGLActiveInfo(_) {
 }
 exports.WebGLActiveInfo = WebGLActiveInfo
 
-function WebGLUniformLocation(_, _prog) {
-  this._          = _
-  this._program   = _prog
-  this._linkCount = _prog._linkCount
+function WebGLUniformLocation(_, program, info) {
+  this._           = _
+  this._program    = program
+  this._linkCount  = program._linkCount
+  this._activeInfo = info
+  this._array      = null
 }
 exports.WebGLUniformLocation = WebGLUniformLocation
 
@@ -188,7 +190,7 @@ function checkOwns(context, object) {
 
 function checkUniform(program, location) {
   return location instanceof WebGLUniformLocation &&
-         location._prog === program
+         location._program === program
 }
 
 function checkLocation(context, location) {
@@ -991,18 +993,109 @@ gl.getTexParameter = function getTexParameter(target, pname) {
 
 var _getUniform = gl.getUniform
 gl.getUniform = function getUniform(program, location) {
+  if(location === null) {
+    return null
+  }
   if(checkWrapper(this, program, WebGLProgram) &&
      checkUniform(program, location)) {
-    return _getUniform.call(this, program._|0, location._|0)
+    var data = _getUniform.call(this, program._|0, location._|0)
+    if(!data) {
+      return null
+    }
+    switch(location._activeInfo.type) {
+      case gl.FLOAT:
+        return data[0]
+      case gl.FLOAT_VEC2:
+        return new Float32Array(data.slice(0, 2))
+      case gl.FLOAT_VEC3:
+        return new Float32Array(data.slice(0, 3))
+      case gl.FLOAT_VEC4:
+        return new Float32Array(data.slice(0, 4))
+      case gl.INT:
+        return data[0]|0
+      case gl.INT_VEC2:
+        return new Int32Array(data.slice(0, 2))
+      case gl.INT_VEC3:
+        return new Int32Array(data.slice(0, 3))
+      case gl.INT_VEC4:
+        return new Int32Array(data.slice(0, 4))
+      case gl.BOOL:
+        return !!data[0]
+      case gl.BOOL_VEC2:
+        return [!!data[0], !!data[1]]
+      case gl.BOOL_VEC3:
+        return [!!data[0], !!data[1], !!data[2]]
+      case gl.BOOL_VEC4:
+        return [!!data[0], !!data[1], !!data[2], !!data[3]]
+      case gl.FLOAT_MAT2:
+        return new Float32Array(data.slice(0, 4))
+      case gl.FLOAT_MAT3:
+        return new Float32Array(data.slice(0, 9))
+      case gl.FLOAT_MAT4:
+        return new Float32Array(data.slice(0, 16))
+      case gl.SAMPLER_2D:
+      case gl.SAMPLER_CUBE:
+        return data[0]|0
+      default:
+        return null
+    }
   }
+  return null
 }
 
 var _getUniformLocation = gl.getUniformLocation
 gl.getUniformLocation = function getUniformLocation(program, name) {
   if(checkWrapper(this, program, WebGLProgram)) {
-    var loc = _getUniformLocation.call(this, program._|0, name+'')
+    name = name + ''
+    var loc = _getUniformLocation.call(this, program._|0, name)
     if(loc >= 0) {
-      return new WebGLUniformLocation(loc, program)
+      var info = null
+      saveError(this)
+      if(/\[\d+\]$/.test(name)) {
+        var reducedName = name.replace(/\[\d+\]$/, '')
+        var reducedLoc = _getUniformLocation.call(this,
+          program._|0,
+          reducedName)
+        info = _getActiveUniform.call(this,
+          program._|0,
+          reducedLoc)
+        if(info !== null) {
+          info.name = name
+        }
+      } else {
+        info = _getActiveUniform.call(this, program._|0, loc)
+      }
+      this.getError()
+      restoreError(this, gl.NO_ERROR)
+      if(info === null) {
+        return null
+      }
+      var result = new WebGLUniformLocation(
+        loc,
+        program,
+        info)
+
+      //handle array case
+      if(/\[0\]$/.test(name)) {
+        var baseName = name.replace(/\[0\]$/, '')
+        var arrayLocs = []
+
+        saveError(this)
+        for(var i=0; this.getError() === gl.NO_ERROR; ++i) {
+          var xloc = _getUniformLocation.call(
+            this,
+            program._|0,
+            baseName + '[' + i + ']')
+          if(this.getError() !== gl.NO_ERROR || xloc < 0) {
+            break
+          }
+          arrayLocs.push(xloc)
+        }
+        restoreError(this, gl.NO_ERROR)
+
+        result._array = arrayLocs
+      }
+      return result
     } else {
       return null
     }
@@ -1281,23 +1374,53 @@ function makeUniforms() {
       var native = gl[func]
 
       gl[func] = function(location, x, y, z, w) {
+        if(location === null) {
+          return
+        }
         if(checkLocationActive(this, location)) {
           return native.call(this, location._|0, x, y, z, w)
         }
       }
 
       gl[func + 'v'] = function(location, v) {
+        if(location === null) {
+          return
+        }
         if(!checkLocationActive(this, location)) {
           return
         }
-        if(typeof v === 'object' &&
-           v !== null &&
-           v.length === i) {
-          switch(i) {
-            case 1: return native.call(this, location._|0, v[0])
-            case 2: return native.call(this, location._|0, v[0], v[1])
-            case 3: return native.call(this, location._|0, v[0], v[1], v[2])
-            case 4: return native.call(this, location._|0, v[0], v[1], v[2], v[3])
+        if(typeof v !== 'object' || v === null || typeof v.length !== 'number') {
+          throw new TypeError('Second argument to ' + func + 'v must be array')
+        }
+        if(v.length >= i &&
+           v.length % i === 0) {
+          if(location._array) {
+            var arrayLocs = location._array
+            for(var j=0; j<arrayLocs.length && (j+1) * i <= v.length; ++j) {
+              var loc = arrayLocs[j]
+              switch(i) {
+                case 1:
+                  native.call(this, loc, v[i*j])
+                break
+                case 2:
+                  native.call(this, loc, v[i*j], v[i*j+1])
+                break
+                case 3:
+                  native.call(this, loc, v[i*j], v[i*j+1], v[i*j+2])
+                break
+                case 4:
+                  native.call(this, loc, v[i*j], v[i*j+1], v[i*j+2], v[i*j+3])
+                break
+              }
+            }
+            return
+          } else if(v.length === i) {
+            switch(i) {
+              case 1: return native.call(this, location._|0, v[0])
+              case 2: return native.call(this, location._|0, v[0], v[1])
+              case 3: return native.call(this, location._|0, v[0], v[1], v[2])
+              case 4: return native.call(this, location._|0, v[0], v[1], v[2], v[3])
+            }
           }
         }
         setError(this, gl.INVALID_VALUE)

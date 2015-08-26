@@ -191,12 +191,14 @@ WebGLRenderingContext::WebGLRenderingContext(
 
 bool WebGLRenderingContext::setActive() {
   if(state != GLCONTEXT_STATE_OK) {
+    printf("context is in error state\n");
     return false;
   }
   if(this == ACTIVE) {
     return true;
   }
   if(!eglMakeCurrent(DISPLAY, surface, surface, context)) {
+    printf("eglMakeCurrent failed\n");
     state = GLCONTEXT_STATE_ERROR;
     return false;
   }
@@ -1532,7 +1534,7 @@ GL_METHOD(GetActiveAttrib) {
   GLsizei size;
   glGetActiveAttrib(program, index, 1024, &length, &size, &type, name);
   if(length > 0) {
-    v8::Local<v8::Array> activeInfo = NanNew<v8::Array>(3);
+    v8::Local<v8::Object> activeInfo = NanNew<v8::Object>();
     activeInfo->Set(NanNew<v8::String>("size"), NanNew<v8::Integer>(size));
     activeInfo->Set(NanNew<v8::String>("type"), NanNew<v8::Integer>((int)type));
     activeInfo->Set(NanNew<v8::String>("name"), NanNew<v8::String>(name));
@@ -1553,13 +1555,13 @@ GL_METHOD(GetActiveUniform) {
   GLsizei size;
   glGetActiveUniform(program, index, 1024, &length, &size, &type, name);
   if(length > 0) {
-    v8::Local<v8::Array> activeInfo = NanNew<v8::Array>(3);
+    v8::Local<v8::Object> activeInfo = NanNew<v8::Object>();
     activeInfo->Set(NanNew<v8::String>("size"), NanNew<v8::Integer>(size));
     activeInfo->Set(NanNew<v8::String>("type"), NanNew<v8::Integer>((int)type));
     activeInfo->Set(NanNew<v8::String>("name"), NanNew<v8::String>(name));
     NanReturnValue(activeInfo);
   } else {
-    NanReturnUndefined();
+    NanReturnNull();
   }
 }
 
@@ -1760,7 +1762,6 @@ GL_METHOD(GetUniform) {
 
   GLuint program = args[0]->Int32Value();
   GLint location = args[1]->Int32Value();
-  if(location < 0 ) NanReturnUndefined();
 
   float data[16]; // worst case scenario is 16 floats
 
