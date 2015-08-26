@@ -73,13 +73,15 @@ function createContext(width, height, options) {
   gl._activeTextureUnit = 0
   gl.activeTexture(gl.TEXTURE0)
 
+  gl._errorStack = []
+
   //Initialize vertex attributes
   var numAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS)
-  gl._attribArrays = new Array(numAttribs)
+  gl._vertexAttribs = new Array(numAttribs)
   for(var i=0; i<numAttribs; ++i) {
+    gl._vertexAttribs[i] = new webgl.WebGLVertexAttribute(this, i)
     gl.disableVertexAttribArray(i)
     gl.vertexAttrib4f(i, 0, 0, 0, 1)
-    gl._attribArrays[i] = null
   }
 
   gl.bindBuffer(gl.ARRAY_BUFFER, null)

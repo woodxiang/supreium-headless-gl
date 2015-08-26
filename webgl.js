@@ -10,40 +10,6 @@ process.on('exit', nativeGL.cleanup)
 //Export type boxes for WebGL
 exports.WebGLRenderingContext = nativeGL.WebGLRenderingContext
 
-function link(a, b) {
-  if(a._references.indexOf(b) >= 0) {
-    return false
-  }
-  a._references.push(b)
-  b._refCount += 1
-  return true
-}
-
-function unlink(a, b) {
-  var idx = a._references.indexOf(b)
-  if(idx < 0) {
-    return false
-  }
-  a._references[idx] = a._references[a._references.length-1]
-  a._references.pop()
-  b._refCount -= 1
-  checkDelete(b)
-  return true
-}
-
-function checkDelete(obj) {
-  if(obj._refCount <= 0 &&
-     obj._pendingDelete &&
-     obj._ !== 0) {
-    while(obj._references.length > 0) {
-     unlink(obj, obj._references[0])
-    }
-    obj._performDelete()
-    obj._ = 0
-    obj._ctx = null
-  }
-}
-
 function WebGLProgram(_, ctx) {
   this._              = _
   this._ctx           = ctx
@@ -51,6 +17,7 @@ function WebGLProgram(_, ctx) {
   this._pendingDelete = false
   this._references    = []
   this._refCount      = 0
+  this._attributes    = []
 }
 exports.WebGLProgram = WebGLProgram
 
@@ -64,9 +31,10 @@ function WebGLShader(_, ctx) {
 exports.WebGLShader = WebGLShader
 
 function WebGLBuffer(_, ctx) {
-  this._        = _
-  this._ctx     = ctx
-  this._binding = 0
+  this._              = _
+  this._ctx           = ctx
+  this._binding       = 0
+  this._size          = 0
   this._pendingDelete = false
   this._references    = []
   this._refCount      = 0
@@ -138,9 +106,71 @@ function WebGLContextAttributes(
 }
 exports.WebGLContextAttributes = WebGLContextAttributes
 
+function WebGLVertexAttribute(ctx, idx) {
+  this._ctx         = ctx
+  this._idx         = idx
+  this._isPointer   = false
+
+  this._pointerBuffer = null
+  this._pointerOffset = 0
+  this._pointerSize   = 0
+  this._pointerStride = 0
+}
+exports.WebGLVertexAttribute = WebGLVertexAttribute
+
 //We need to wrap some of the native WebGL functions to handle certain error codes and check input values
 var gl = nativeGL.WebGLRenderingContext.prototype
 gl.VERSION = 0x1F02
+
+function glSize(type) {
+  switch(type) {
+    case gl.UNSIGNED_BYTE:
+    case gl.BYTE:
+      return 1
+    case gl.UNSIGNED_SHORT:
+    case gl.SHORT:
+      return 2
+    case gl.UNSIGNED_INT:
+    case gl.INT:
+    case gl.FLOAT:
+      return 4
+  }
+  return 0
+}
+
+function link(a, b) {
+  if(a._references.indexOf(b) >= 0) {
+    return false
+  }
+  a._references.push(b)
+  b._refCount += 1
+  return true
+}
+
+function unlink(a, b) {
+  var idx = a._references.indexOf(b)
+  if(idx < 0) {
+    return false
+  }
+  a._references[idx] = a._references[a._references.length-1]
+  a._references.pop()
+  b._refCount -= 1
+  checkDelete(b)
+  return true
+}
+
+function checkDelete(obj) {
+  if(obj._refCount <= 0 &&
+     obj._pendingDelete &&
+     obj._ !== 0) {
+    while(obj._references.length > 0) {
+     unlink(obj, obj._references[0])
+    }
+    obj._performDelete()
+    obj._ = 0
+    obj._ctx = null
+  }
+}
 
 function setError(context, error) {
   nativeGL.setError.call(context, error|0)
@@ -197,6 +227,52 @@ function checkWrapper(context, object, wrapper) {
   return true
 }
 
+function saveError(context) {
+  context._errorStack.push(context.getError())
+}
+
+function restoreError(context, lastError) {
+  var topError = context._errorStack.pop()
+  if(topError === gl.NO_ERROR) {
+    setError(context, lastError)
+  } else {
+    setError(context, topError)
+  }
+}
+
+function getActiveBuffer(context, target) {
+  if(target === gl.ARRAY_BUFFER) {
+    return context._activeArrayBuffer
+  } else if(target === gl.ELEMENT_ARRAY_BUFFER) {
+    return context._activeElementArrayBuffer
+  }
+  return null
+}
+
+function checkVertexAttribState(context, maxIndex) {
+  var program = context._activeProgram
+  if(!program) {
+    setError(context, gl.INVALID_OPERATION)
+    return false
+  }
+  var attribs = program._attributes
+  for(var i=0; i<attribs.length; ++i) {
+    var idx    = attribs[i]
+    var attrib = context._vertexAttribs[idx]
+    if(attrib._isPointer) {
+      var buffer = attrib._pointerBuffer
+      var maxByte = attrib._pointerStride * (maxIndex - 1) +
+                    attrib._pointerSize +
+                    attrib._pointerOffset
+      if(!buffer || maxByte > buffer._size) {
+        setError(context, gl.INVALID_OPERATION)
+        return false
+      }
+    }
+  }
+  return true
+}
+
 var _resize = gl.resize
 gl.resize = function(width, height) {
   width = width | 0
@@ -222,7 +298,8 @@ gl.getContextAttributes = function() {
 
 var _getSupportedExtensions = gl.getSupportedExtensions
 gl.getSupportedExtensions = function getSupportedExtensions() {
-  return _getSupportedExtensions.call(this).split(" ")
+  //TODO
+  return []
 }
 
 var _getExtension = gl.getExtension;
@@ -266,7 +343,6 @@ gl.bindAttribLocation = function bindAttribLocation(program, index, name) {
       name+'')
   }
 }
-
 
 function switchActiveBuffer(active, buffer) {
   if(active === buffer) {
@@ -397,29 +473,44 @@ gl.bufferData = function bufferData(target, data, usage) {
   usage  |= 0
   if(typeof data === 'object') {
     if(data) {
+      var u8Data = null
       if(data.buffer) {
-        return _bufferData.call(
-          this,
-          target,
-          new Uint8Array(data.buffer),
-          usage)
+        u8Data = new Uint8Array(data.buffer)
       } else if(data instanceof ArrayBuffer) {
-        return _bufferData.call(
-          this,
-          target,
-          new Uint8Array(data),
-          usage)
+        u8Data = new Uint8Array(data)
+      } else {
+        setError(this, gl.INVALID_VALUE)
+        return
       }
+      saveError(this)
+      _bufferData.call(
+        this,
+        target,
+        u8Data,
+        usage)
+      var bufError = this.getError()
+      if(bufError === gl.NO_ERROR) {
+        getActiveBuffer(this, target)._size = u8Data.length
+      }
+      restoreError(this, bufError)
+      return
     } else {
       setError(this, gl.INVALID_VALUE)
       return
     }
   } else {
-    return _bufferData.call(
+    saveError(this)
+    _bufferData.call(
       this,
       target,
       data|0,
       usage)
+    var bufError = this.getError()
+    if(bufError === gl.NO_ERROR) {
+      getActiveBuffer(this, target)._size = data|0
+    }
+    restoreError(this, bufError)
+    return
   }
   setError(this, gl.INVALID_OPERATION)
 }
@@ -550,8 +641,8 @@ function deleteObject(name, type, refset) {
 
   type.prototype._performDelete = function() {
     var ctx = this._ctx
-    native.call(ctx, this._|0)
     delete ctx[refset][this._|0]
+    native.call(ctx, this._|0)
   }
 
   gl[name] = function(object) {
@@ -566,12 +657,12 @@ function deleteObject(name, type, refset) {
   }
 }
 
-deleteObject('deleteBuffer', WebGLBuffer, '_buffers')
-deleteObject('deleteFramebuffer', WebGLFramebuffer, '_framebuffers')
-deleteObject('deleteProgram', WebGLProgram, '_programs')
+deleteObject('deleteBuffer',       WebGLBuffer, '_buffers')
+deleteObject('deleteFramebuffer',  WebGLFramebuffer, '_framebuffers')
+deleteObject('deleteProgram',      WebGLProgram, '_programs')
 deleteObject('deleteRenderbuffer', WebGLRenderbuffer, '_renderbuffers')
-deleteObject('deleteShader', WebGLShader, '_shaders')
-deleteObject('deleteTexture', WebGLTexture, '_textures')
+deleteObject('deleteShader',       WebGLShader, '_shaders')
+deleteObject('deleteTexture',      WebGLTexture, '_textures')
 
 var _depthFunc = gl.depthFunc
 gl.depthFunc = function depthFunc(func) {
@@ -607,12 +698,23 @@ gl.disable = function disable(cap) {
 
 var _disableVertexAttribArray = gl.disableVertexAttribArray
 gl.disableVertexAttribArray = function disableVertexAttribArray(index) {
-  return _disableVertexAttribArray.call(this, index|0)
+  index |= 0
+  saveError(this)
+  _disableVertexAttribArray.call(this, index)
+  var error = this.getError()
+  if(error === gl.NO_ERROR) {
+    this._vertexAttribs[index]._isPointer = false
+  }
+  restoreError(this, error)
 }
 
 var _drawArrays = gl.drawArrays
 gl.drawArrays = function drawArrays(mode, first, count) {
-  return _drawArrays.call(this, mode|0, first|0, count|0)
+  first |= 0
+  count |= 0
+  if(checkVertexAttribState(this, count + first)) {
+    return _drawArrays.call(this, mode|0, first, count)
+  }
 }
 
 var _drawElements = gl.drawElements
@@ -627,7 +729,14 @@ gl.enable = function enable(cap) {
 
 var _enableVertexAttribArray = gl.enableVertexAttribArray
 gl.enableVertexAttribArray = function enableVertexAttribArray(index) {
-  return _enableVertexAttribArray.call(this, index|0)
+  index |= 0
+  saveError(this)
+  _enableVertexAttribArray.call(this, index)
+  var error = this.getError()
+  if(error === gl.NO_ERROR) {
+    this._vertexAttribs[index]._isPointer = true
+  }
+  restoreError(this, error)
 }
 
 var _finish = gl.finish
@@ -893,7 +1002,23 @@ var _linkProgram = gl.linkProgram
 gl.linkProgram = function linkProgram(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
     program._linkCount += 1
-    return _linkProgram.call(this, program._|0)
+    program._attributes = []
+    saveError(this)
+    _linkProgram.call(this, program._|0)
+    var error = this.getError()
+    if(error === gl.NO_ERROR &&
+       this.getProgramParameter(program, gl.LINK_STATUS)) {
+
+      //Record attribute locations
+      var numAttribs = this.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES)
+      program._attributes.length = numAttribs
+      for(var i=0; i<numAttribs; ++i) {
+        program._attributes[i] = this.getAttribLocation(
+            program,
+            this.getActiveAttrib(program, i).name)|0
+      }
+    }
+    restoreError(this, error)
   }
 }
 
@@ -1189,15 +1314,62 @@ gl.vertexAttribPointer = function vertexAttribPointer(
   stride,
   offset) {
 
-  //FIXME Implement validation logic here
+  indx   |= 0
+  size   |= 0
+  type   |= 0
+  normalized = !!normalized
+  stride |= 0
+  offset |= 0
 
-  return _vertexAttribPointer.call(this,
-    indx|0,
-    size|0,
-    type|0,
-    !!normalized,
-    stride|0,
-    offset|0)
+  if(this._activeArrayBuffer === null) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
+  var byteSize = glSize(type)
+  //fixed, int and unsigned int aren't allowed in WebGL
+  if(byteSize === 0       ||
+     type === gl.INT  ||
+     type === gl.UNSIGNED_INT) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  if(stride > 255 || stride < 0) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  //stride and offset must be multiples of size
+  if((stride % byteSize) !== 0 ||
+     (offset % byteSize) !== 0) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
+  //Call vertex attrib pointer
+  saveError(this)
+  _vertexAttribPointer.call(this, indx, size, type, normalized, stride, offset)
+
+  //Save attribute pointer state
+  var error = this.getError()
+  if(error === gl.NO_ERROR) {
+    var attrib = this._vertexAttribs[indx]
+
+    if(attrib._pointerBuffer &&
+       attrib._pointerBuffer !== this._activeArrayBuffer) {
+      attrib._pointerBuffer._refCount -= 1
+      checkDelete(attrib._pointerBuffer)
+    }
+
+    this._activeArrayBuffer._refCount += 1
+    attrib._pointerBuffer = this._activeArrayBuffer
+    attrib._pointerSize   = size * byteSize
+    attrib._pointerOffset = offset
+    attrib._pointerStride = stride || (size * byteSize)
+  }
+
+  restoreError(this, error)
 }
 
 var _viewport = gl.viewport
