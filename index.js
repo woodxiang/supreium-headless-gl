@@ -64,12 +64,22 @@ function createContext(width, height, options) {
   gl._activeElementArrayBuffer = null
   gl._activeRenderbuffer       = null
 
-  //TODO: Active slots for textures
+  //Initialize texture units
+  var numTextures = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)
+  gl._activeTextures = new Array(numTextures)
+  for(var i=0; i<numTextures; ++i) {
+    gl._activeTextures[i] = null
+  }
+  gl._activeTextureUnit = 0
+  gl.activeTexture(gl.TEXTURE0)
 
+  //Initialize vertex attributes
   var numAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS)
+  gl._attribArrays = new Array(numAttribs)
   for(var i=0; i<numAttribs; ++i) {
     gl.disableVertexAttribArray(i)
     gl.vertexAttrib4f(i, 0, 0, 0, 1)
+    gl._attribArrays[i] = null
   }
 
   gl.bindBuffer(gl.ARRAY_BUFFER, null)
