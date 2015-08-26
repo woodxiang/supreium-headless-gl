@@ -1018,13 +1018,13 @@ gl.getParameter = function getParameter(pname) {
     case gl.TEXTURE_BINDING_CUBE_MAP:
       return activeTextureUnit(this)._bindCube
     case gl.VERSION:
-      return 'WebGL 1.0 headless-gl ' + HEADLESS_VERSION
+      return 'WebGL 1.0 stack-gl ' + HEADLESS_VERSION
     case gl.VENDOR:
-      return 'stackgl'
+      return 'stack-gl'
     case gl.RENDERER:
       return 'ANGLE'
     case gl.SHADING_LANGUAGE_VERSION:
-      return 'WebGL 1.0 headless-gl'
+      return 'WebGL GLSL ES 1.0 stack-gl'
 
     case gl.COMPRESSED_TEXTURE_FORMATS:
       return new Uint32Array(0)
