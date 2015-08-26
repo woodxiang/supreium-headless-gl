@@ -374,7 +374,7 @@ GL_METHOD(Uniform2f) {
   float y = (float) args[2]->NumberValue();
 
   glUniform2f(location, x, y);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(Uniform3f) {
@@ -386,7 +386,7 @@ GL_METHOD(Uniform3f) {
   float z = (float) args[3]->NumberValue();
 
   glUniform3f(location, x, y, z);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(Uniform4f) {
@@ -399,7 +399,7 @@ GL_METHOD(Uniform4f) {
   float w = (float) args[4]->NumberValue();
 
   glUniform4f(location, x, y, z, w);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(Uniform1i) {
@@ -512,7 +512,7 @@ GL_METHOD(UniformMatrix2fv) {
 
   glUniformMatrix2fv(location, count / 4, transpose, data);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(UniformMatrix3fv) {
@@ -525,7 +525,7 @@ GL_METHOD(UniformMatrix3fv) {
 
   glUniformMatrix3fv(location, count / 9, transpose, data);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(UniformMatrix4fv) {
@@ -538,7 +538,7 @@ GL_METHOD(UniformMatrix4fv) {
 
   glUniformMatrix4fv(location, count / 16, transpose, data);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(GenerateMipmap) {
@@ -547,7 +547,7 @@ GL_METHOD(GenerateMipmap) {
   GLint target = args[0]->Int32Value();
   glGenerateMipmap(target);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(GetAttribLocation) {
@@ -565,7 +565,7 @@ GL_METHOD(DepthFunc) {
 
   glDepthFunc(args[0]->Int32Value());
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -579,7 +579,7 @@ GL_METHOD(Viewport) {
 
   glViewport(x, y, width, height);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(CreateShader) {
@@ -604,7 +604,7 @@ GL_METHOD(ShaderSource) {
 
   glShaderSource  (id, 1, codes, &length);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -613,7 +613,7 @@ GL_METHOD(CompileShader) {
 
   glCompileShader(args[0]->Int32Value());
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(FrontFace) {
@@ -621,7 +621,7 @@ GL_METHOD(FrontFace) {
 
   glFrontFace(args[0]->Int32Value());
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -675,7 +675,7 @@ GL_METHOD(AttachShader) {
 
   glAttachShader(program, shader);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -684,7 +684,7 @@ GL_METHOD(LinkProgram) {
 
   glLinkProgram(args[0]->Int32Value());
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -734,7 +734,7 @@ GL_METHOD(ClearColor) {
   float alpha = (float) args[3]->NumberValue();
   glClearColor(red, green, blue, alpha);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -744,21 +744,23 @@ GL_METHOD(ClearDepth) {
   float depth = (float) args[0]->NumberValue();
   glClearDepthf(depth);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(Disable) {
   GL_BOILERPLATE;
 
   glDisable(args[0]->Int32Value());
-  NanReturnValue(NanUndefined());
+
+  NanReturnUndefined();
 }
 
 GL_METHOD(Enable) {
   GL_BOILERPLATE;
 
   glEnable(args[0]->Int32Value());
-  NanReturnValue(NanUndefined());
+
+  NanReturnUndefined();
 }
 
 
@@ -780,7 +782,8 @@ GL_METHOD(BindTexture) {
   int texture = args[1]->IsNull() ? 0 : args[1]->Int32Value();
 
   glBindTexture(target, texture);
-  NanReturnValue(NanUndefined());
+
+  NanReturnUndefined();
 }
 
 
@@ -808,7 +811,7 @@ GL_METHOD(TexImage2D) {
     type,
     pixels);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -821,7 +824,7 @@ GL_METHOD(TexParameteri) {
 
   glTexParameteri(target, pname, param);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(TexParameterf) {
@@ -833,7 +836,7 @@ GL_METHOD(TexParameterf) {
 
   glTexParameterf(target, pname, param);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -842,7 +845,7 @@ GL_METHOD(Clear) {
 
   glClear(args[0]->Int32Value());
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -851,7 +854,7 @@ GL_METHOD(UseProgram) {
 
   glUseProgram(args[0]->Int32Value());
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(CreateBuffer) {
@@ -884,7 +887,7 @@ GL_METHOD(BindBuffer) {
 
   glBindBuffer(target,buffer);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -907,7 +910,7 @@ GL_METHOD(BindFramebuffer) {
 
   glBindFramebuffer(target, buffer);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -922,7 +925,7 @@ GL_METHOD(FramebufferTexture2D) {
 
   glFramebufferTexture2D(target, attachment, textarget, texture, level);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -950,7 +953,7 @@ GL_METHOD(BufferData) {
     }
   }
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -967,7 +970,7 @@ GL_METHOD(BufferSubData) {
 
   glBufferSubData(target, offset, size, data);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -978,7 +981,7 @@ GL_METHOD(BlendEquation) {
 
   glBlendEquation(mode);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -990,7 +993,7 @@ GL_METHOD(BlendFunc) {
 
   glBlendFunc(sfactor,dfactor);
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -999,7 +1002,7 @@ GL_METHOD(EnableVertexAttribArray) {
 
   glEnableVertexAttribArray(args[0]->Int32Value());
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 int getGLTypeSize(GLenum type) {
@@ -1051,7 +1054,7 @@ GL_METHOD(VertexAttribPointer) {
     }
   }
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -1059,7 +1062,7 @@ GL_METHOD(ActiveTexture) {
   GL_BOILERPLATE;
 
   glActiveTexture(args[0]->Int32Value());
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
@@ -1071,20 +1074,20 @@ GL_METHOD(DrawElements) {
   int type = args[2]->Int32Value();
   GLvoid *offset = reinterpret_cast<GLvoid*>(args[3]->Uint32Value());
   glDrawElements(mode, count, type, offset);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 
 GL_METHOD(Flush) {
   GL_BOILERPLATE;
   glFlush();
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(Finish) {
   GL_BOILERPLATE;
   glFinish();
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(VertexAttrib1f) {
@@ -1094,7 +1097,7 @@ GL_METHOD(VertexAttrib1f) {
   float x = (float) args[1]->NumberValue();
 
   glVertexAttrib1f(indx, x);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(VertexAttrib2f) {
@@ -1105,7 +1108,7 @@ GL_METHOD(VertexAttrib2f) {
   float y = (float) args[2]->NumberValue();
 
   glVertexAttrib2f(indx, x, y);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(VertexAttrib3f) {
@@ -1117,7 +1120,7 @@ GL_METHOD(VertexAttrib3f) {
   float z = (float) args[3]->NumberValue();
 
   glVertexAttrib3f(indx, x, y, z);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(VertexAttrib4f) {
@@ -1130,7 +1133,7 @@ GL_METHOD(VertexAttrib4f) {
   float w = (float) args[4]->NumberValue();
 
   glVertexAttrib4f(indx, x, y, z, w);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(BlendColor) {
@@ -1142,7 +1145,7 @@ GL_METHOD(BlendColor) {
   GLclampf a= (float) args[3]->NumberValue();
 
   glBlendColor(r,g,b,a);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(BlendEquationSeparate) {
@@ -1152,7 +1155,7 @@ GL_METHOD(BlendEquationSeparate) {
   GLenum modeAlpha= args[1]->Int32Value();
 
   glBlendEquationSeparate(modeRGB,modeAlpha);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(BlendFuncSeparate) {
@@ -1164,7 +1167,7 @@ GL_METHOD(BlendFuncSeparate) {
   GLenum dstAlpha= args[3]->Int32Value();
 
   glBlendFuncSeparate(srcRGB,dstRGB,srcAlpha,dstAlpha);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(ClearStencil) {
@@ -1173,7 +1176,7 @@ GL_METHOD(ClearStencil) {
   GLint s = args[0]->Int32Value();
 
   glClearStencil(s);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(ColorMask) {
@@ -1185,7 +1188,7 @@ GL_METHOD(ColorMask) {
   GLboolean a = args[3]->BooleanValue();
 
   glColorMask(r,g,b,a);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(CopyTexImage2D) {
@@ -1201,7 +1204,7 @@ GL_METHOD(CopyTexImage2D) {
   GLint border = args[7]->Int32Value();
 
   glCopyTexImage2D( target, level, internalformat, x, y, width, height, border);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(CopyTexSubImage2D) {
@@ -1215,21 +1218,21 @@ GL_METHOD(CopyTexSubImage2D) {
   GLsizei width = args[6]->Int32Value();
   GLsizei height = args[7]->Int32Value();
   glCopyTexSubImage2D( target, level, xoffset, yoffset, x, y, width, height);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(CullFace) {
   GL_BOILERPLATE;
   GLenum mode = args[0]->Int32Value();
   glCullFace(mode);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(DepthMask) {
   GL_BOILERPLATE;
   GLboolean flag = args[0]->BooleanValue();
   glDepthMask(flag);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(DepthRange) {
@@ -1237,14 +1240,14 @@ GL_METHOD(DepthRange) {
   GLclampf zNear = (float) args[0]->NumberValue();
   GLclampf zFar = (float) args[1]->NumberValue();
   glDepthRangef(zNear, zFar);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(DisableVertexAttribArray) {
   GL_BOILERPLATE;
   GLuint index = args[0]->Int32Value();
   glDisableVertexAttribArray(index);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(Hint) {
@@ -1252,7 +1255,7 @@ GL_METHOD(Hint) {
   GLenum target = args[0]->Int32Value();
   GLenum mode = args[1]->Int32Value();
   glHint(target, mode);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(IsEnabled) {
@@ -1266,7 +1269,7 @@ GL_METHOD(LineWidth) {
   GL_BOILERPLATE;
   GLfloat width = (float) args[0]->NumberValue();
   glLineWidth(width);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(PolygonOffset) {
@@ -1274,7 +1277,7 @@ GL_METHOD(PolygonOffset) {
   GLfloat factor = (float) args[0]->NumberValue();
   GLfloat units = (float) args[1]->NumberValue();
   glPolygonOffset(factor, units);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(SampleCoverage) {
@@ -1282,7 +1285,7 @@ GL_METHOD(SampleCoverage) {
   GLclampf value = (float) args[0]->NumberValue();
   GLboolean invert = args[1]->BooleanValue();
   glSampleCoverage(value, invert);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(Scissor) {
@@ -1292,7 +1295,7 @@ GL_METHOD(Scissor) {
   GLsizei width = args[2]->Int32Value();
   GLsizei height = args[3]->Int32Value();
   glScissor(x, y, width, height);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(StencilFunc) {
@@ -1303,7 +1306,7 @@ GL_METHOD(StencilFunc) {
   GLuint mask = args[2]->Int32Value();
 
   glStencilFunc(func, ref, mask);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(StencilFuncSeparate) {
@@ -1313,14 +1316,14 @@ GL_METHOD(StencilFuncSeparate) {
   GLint ref = args[2]->Int32Value();
   GLuint mask = args[3]->Int32Value();
   glStencilFuncSeparate(face, func, ref, mask);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(StencilMask) {
   GL_BOILERPLATE;
   GLuint mask = args[0]->Uint32Value();
   glStencilMask(mask);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(StencilMaskSeparate) {
@@ -1328,16 +1331,18 @@ GL_METHOD(StencilMaskSeparate) {
   GLenum face = args[0]->Int32Value();
   GLuint mask = args[1]->Uint32Value();
   glStencilMaskSeparate(face, mask);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(StencilOp) {
   GL_BOILERPLATE;
+
   GLenum fail = args[0]->Int32Value();
   GLenum zfail = args[1]->Int32Value();
   GLenum zpass = args[2]->Int32Value();
   glStencilOp(fail, zfail, zpass);
-  NanReturnValue(NanUndefined());
+  
+  NanReturnUndefined();
 }
 
 GL_METHOD(StencilOpSeparate) {
@@ -1347,7 +1352,7 @@ GL_METHOD(StencilOpSeparate) {
   GLenum zfail = args[2]->Int32Value();
   GLenum zpass = args[3]->Int32Value();
   glStencilOpSeparate(face, fail, zfail, zpass);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(BindRenderbuffer) {
@@ -1355,7 +1360,7 @@ GL_METHOD(BindRenderbuffer) {
   GLenum target = args[0]->Int32Value();
   GLuint buffer = args[1]->IsNull() ? 0 : args[1]->Int32Value();
   glBindRenderbuffer(target, buffer);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(CreateRenderbuffer) {
@@ -1375,7 +1380,7 @@ GL_METHOD(DeleteBuffer) {
   inst->unregisterGLObj(GLOBJECT_TYPE_BUFFER, buffer);
 
   glDeleteBuffers(1,&buffer);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(DeleteFramebuffer) {
@@ -1383,7 +1388,7 @@ GL_METHOD(DeleteFramebuffer) {
   GLuint buffer = args[0]->Uint32Value();
   inst->unregisterGLObj(GLOBJECT_TYPE_FRAMEBUFFER, buffer);
   glDeleteFramebuffers(1,&buffer);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(DeleteProgram) {
@@ -1391,7 +1396,7 @@ GL_METHOD(DeleteProgram) {
   GLuint program = args[0]->Uint32Value();
   inst->unregisterGLObj(GLOBJECT_TYPE_PROGRAM, program);
   glDeleteProgram(program);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(DeleteRenderbuffer) {
@@ -1399,7 +1404,7 @@ GL_METHOD(DeleteRenderbuffer) {
   GLuint renderbuffer = args[0]->Uint32Value();
   inst->unregisterGLObj(GLOBJECT_TYPE_RENDERBUFFER, renderbuffer);
   glDeleteRenderbuffers(1, &renderbuffer);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(DeleteShader) {
@@ -1407,7 +1412,7 @@ GL_METHOD(DeleteShader) {
   GLuint shader = args[0]->Uint32Value();
   inst->unregisterGLObj(GLOBJECT_TYPE_SHADER, shader);
   glDeleteShader(shader);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(DeleteTexture) {
@@ -1415,7 +1420,7 @@ GL_METHOD(DeleteTexture) {
   GLuint texture = args[0]->Uint32Value();
   inst->unregisterGLObj(GLOBJECT_TYPE_TEXTURE, texture);
   glDeleteTextures(1,&texture);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(DetachShader) {
@@ -1423,7 +1428,7 @@ GL_METHOD(DetachShader) {
   GLuint program = args[0]->Uint32Value();
   GLuint shader = args[1]->Uint32Value();
   glDetachShader(program, shader);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(FramebufferRenderbuffer) {
@@ -1437,7 +1442,7 @@ GL_METHOD(FramebufferRenderbuffer) {
     attachment,
     renderbuffertarget,
     renderbuffer);
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(GetVertexAttribOffset) {
@@ -1494,7 +1499,7 @@ GL_METHOD(RenderbufferStorage) {
     }
     glRenderbufferStorage(target, internalformat, width, height);
   }
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(GetShaderSource) {
@@ -1512,7 +1517,7 @@ GL_METHOD(GetShaderSource) {
 GL_METHOD(ValidateProgram) {
   GL_BOILERPLATE;
   glValidateProgram(args[0]->Int32Value());
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(TexSubImage2D) {
@@ -1531,7 +1536,7 @@ GL_METHOD(TexSubImage2D) {
   } else {
     glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
   }
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(ReadPixels) {
@@ -1550,7 +1555,7 @@ GL_METHOD(ReadPixels) {
     glReadPixels(x, y, width, height, format, type, pixels);
   }
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(GetTexParameter) {
@@ -1747,7 +1752,7 @@ GL_METHOD(GetParameter) {
   }
   }
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(GetBufferParameter) {
@@ -1801,7 +1806,7 @@ GL_METHOD(GetUniform) {
 
   GLuint program = args[0]->Int32Value();
   GLint location = args[1]->Int32Value();
-  if(location < 0 ) NanReturnValue(NanUndefined());
+  if(location < 0 ) NanReturnUndefined();
 
   float data[16]; // worst case scenario is 16 floats
 
@@ -1848,7 +1853,7 @@ GL_METHOD(GetVertexAttrib) {
   default:
     inst->setError(GL_INVALID_ENUM);
   }
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(GetSupportedExtensions) {
@@ -1862,7 +1867,7 @@ GL_METHOD(GetExtension) {
 
   //TODO
 
-  NanReturnValue(NanUndefined());
+  NanReturnUndefined();
 }
 
 GL_METHOD(CheckFramebufferStatus) {

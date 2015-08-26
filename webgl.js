@@ -10,18 +10,56 @@ process.on('exit', nativeGL.cleanup)
 //Export type boxes for WebGL
 exports.WebGLRenderingContext = nativeGL.WebGLRenderingContext
 
+function link(a, b) {
+  if(a._references.indexOf(b) >= 0) {
+    return false
+  }
+  a._references.push(b)
+  b._refCount += 1
+  return true
+}
+
+function unlink(a, b) {
+  var idx = a._references.indexOf(b)
+  if(idx < 0) {
+    return false
+  }
+  a._references[idx] = a._references[a._references.length-1]
+  a._references.pop()
+  b._refCount -= 1
+  checkDelete(b)
+  return true
+}
+
+function checkDelete(obj) {
+  if(obj._refCount <= 0 &&
+     obj._pendingDelete &&
+     obj._ !== 0) {
+    while(obj._references.length > 0) {
+     unlink(obj, obj._references[0])
+    }
+    obj._performDelete()
+    obj._ = 0
+    obj._ctx = null
+  }
+}
+
 function WebGLProgram(_, ctx) {
-  this._          = _
-  this._ctx       = ctx
-  this._linkCount = 0
+  this._              = _
+  this._ctx           = ctx
+  this._linkCount     = 0
   this._pendingDelete = false
+  this._references    = []
+  this._refCount      = 0
 }
 exports.WebGLProgram = WebGLProgram
 
 function WebGLShader(_, ctx) {
-  this._    = _
-  this._ctx = ctx
+  this._              = _
+  this._ctx           = ctx
   this._pendingDelete = false
+  this._references    = []
+  this._refCount      = 0
 }
 exports.WebGLShader = WebGLShader
 
@@ -30,6 +68,8 @@ function WebGLBuffer(_, ctx) {
   this._ctx     = ctx
   this._binding = 0
   this._pendingDelete = false
+  this._references    = []
+  this._refCount      = 0
 }
 exports.WebGLBuffer = WebGLBuffer
 
@@ -38,6 +78,8 @@ function WebGLFramebuffer(_, ctx) {
   this._ctx     = ctx
   this._binding = 0
   this._pendingDelete = false
+  this._references    = []
+  this._refCount      = 0
 }
 exports.WebGLFramebuffer = WebGLFramebuffer
 
@@ -46,6 +88,8 @@ function WebGLRenderbuffer(_, ctx) {
   this._ctx     = ctx
   this._binding = 0
   this._pendingDelete = false
+  this._references    = []
+  this._refCount      = 0
 }
 exports.WebGLRenderbuffer = WebGLRenderbuffer
 
@@ -54,6 +98,8 @@ function WebGLTexture(_, ctx) {
   this._ctx     = ctx
   this._binding = 0
   this._pendingDelete = false
+  this._references    = []
+  this._refCount      = 0
 }
 exports.WebGLTexture = WebGLTexture
 
@@ -196,10 +242,12 @@ gl.attachShader = function attachShader(program, shader) {
      checkOwns(this, shader) &&
      program instanceof WebGLProgram &&
      shader instanceof WebGLShader) {
-    return _attachShader.call(
-      this,
-      program._|0,
-      shader._|0)
+    if(link(program, shader)) {
+      return _attachShader.call(
+        this,
+        program._|0,
+        shader._|0)
+    }
   }
   setError(this, gl.INVALID_OPERATION)
 }
@@ -424,33 +472,33 @@ createObject('createShader', WebGLShader, '_shaders')
 createObject('createTexture', WebGLTexture, '_textures')
 
 //Generic object deletion method
-function deleteObject(name, type, refset, binding_slots) {
+function deleteObject(name, type, refset) {
   var native = gl[name]
+
+  type.prototype._performDelete = function() {
+    var ctx = this._ctx
+    native.call(ctx, this._|0)
+    delete ctx[refset][this._|0]
+  }
+
   gl[name] = function(object) {
-    if(checkOwns(this, object) && object instanceof type) {
+    if(checkOwns(this, object) &&
+       object instanceof type) {
       var id = object._
-      for(var i=0; i<binding_slots.length; ++i) {
-        if(this[binding_slots[i]] === object) {
-          object._pendingDelete = true
-          return native.call(this, id)
-        }
-      }
-      if(id in this[refset]) {
-        delete this[refset][id]
-        object._ = 0
-        return native.call(this, id)
-      }
+      object._pendingDelete = true
+      checkDelete(object)
+      return
     }
     setError(this, gl.INVALID_OPERATION)
   }
 }
 
-deleteObject('deleteBuffer', WebGLBuffer, '_buffers', ['_activeArrayBuffer', '_activeElementArrayBuffer'])
-deleteObject('deleteFramebuffer', WebGLFramebuffer, '_framebuffers', [ '_activeFramebuffer' ])
-deleteObject('deleteProgram', WebGLProgram, '_programs', ['_activeProgram'])
-deleteObject('deleteRenderbuffer', WebGLRenderbuffer, '_renderbuffers', ['_activeRenderbuffer'])
-deleteObject('deleteShader', WebGLShader, '_shaders', [])
-deleteObject('deleteTexture', WebGLTexture, '_textures', [])
+deleteObject('deleteBuffer', WebGLBuffer, '_buffers')
+deleteObject('deleteFramebuffer', WebGLFramebuffer, '_framebuffers')
+deleteObject('deleteProgram', WebGLProgram, '_programs')
+deleteObject('deleteRenderbuffer', WebGLRenderbuffer, '_renderbuffers')
+deleteObject('deleteShader', WebGLShader, '_shaders')
+deleteObject('deleteTexture', WebGLTexture, '_textures')
 
 var _depthFunc = gl.depthFunc
 gl.depthFunc = function depthFunc(func) {
@@ -471,7 +519,11 @@ var _detachShader = gl.detachShader
 gl.detachShader = function detachShader(program, shader) {
   if(checkWrapper(this, program, WebGLProgram) &&
      checkWrapper(this, shader, WebGLShader)) {
-    return _detachShader.call(this, program._, shader._)
+    if(unlink(program, shader)) {
+      _detachShader.call(this, program._, shader._)
+    } else {
+      setError(this, gl.INVALID_OPERATION)
+    }
   }
 }
 
@@ -710,7 +762,7 @@ var _getUniformLocation = gl.getUniformLocation
 gl.getUniformLocation = function getUniformLocation(program, name) {
   if(checkWrapper(this, program, WebGLProgram)) {
     var loc = _getUniformLocation.call(this, program._|0, name+'')
-    if(loc > 0) {
+    if(loc >= 0) {
       return new WebGLUniformLocation(loc, program)
     } else {
       return null
@@ -1000,26 +1052,25 @@ function makeUniforms() {
 }
 makeUniforms()
 
-function checkProgramDelete(context, program) {
-  var active = context._activeProgram
-  if(active && active._pendingDelete && active !== program) {
-    var id = active._
-    if(id in context._programs) {
-      delete context._programs[id]
-      active._ = 0
-    }
+function switchActive(active) {
+  if(active) {
+    active._refCount -= 1
+    checkDelete(active)
   }
 }
 
 var _useProgram = gl.useProgram
 gl.useProgram = function useProgram(program) {
   if(program === null) {
-    checkProgramDelete(this, program)
+    switchActive(this._activeProgram)
     this._activeProgram = null
     return _useProgram.call(this, 0)
   } else if(checkWrapper(this, program, WebGLProgram)) {
-    checkProgramDelete(this, program)
-    this._activeProgram = program
+    if(this._activeProgram !== program) {
+      switchActive(this._activeProgram)
+      this._activeProgram = program
+      program._refCount += 1
+    }
     return _useProgram.call(this, program._|0)
   }
 }
