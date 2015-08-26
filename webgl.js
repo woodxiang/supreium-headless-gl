@@ -499,9 +499,7 @@ gl.bufferData = function bufferData(target, data, usage) {
         var active = getActiveBuffer(this, target)
         active._size = u8Data.length
         if(target === gl.ELEMENT_ARRAY_BUFFER) {
-          //Update element data
-          active._elements = new Uint16Array(u8Data.length >>> 1)
-          ;(new Uint8Array(active._elements.buffer)).set(u8Data)
+          active._elements = new Uint8Array(u8Data)
         }
       }
       restoreError(this, bufError)
@@ -544,7 +542,7 @@ gl.bufferSubData = function bufferSubData(target, offset, data) {
     if(target === gl.ELEMENT_ARRAY_BUFFER) {
       var buffer = this._activeElementArrayBuffer
       if(target + u8Data.length <= buffer._size) {
-        (new Uint8Array(buffer._elements.buffer)).set(offset, u8Data)
+        buffer._elements.set(offset, u8Data)
       }
     }
     _bufferSubData.call(
@@ -743,24 +741,35 @@ gl.drawElements = function drawElements(mode, count, type, offset) {
   type    |= 0
   offset  |= 0
 
-  if(type !== gl.UNSIGNED_SHORT) {
-    setError(this, gl.INVALID_ENUM)
-    return
-  }
-
   var elementBuffer = this._activeElementArrayBuffer
   if(!elementBuffer) {
     setError(this, gl.INVALID_OPERATION)
     return
   }
 
-  var elementData = elementBuffer._elements
+  //Unpack element data
+  var elementData = null
+  if(type === gl.UNSIGNED_SHORT) {
+    if(offset % 2) {
+      setError(this, gl.INVALID_VALUE)
+      return
+    }
+    offset >>= 1
+    elementData = new Uint16Array(elementBuffer._elements.buffer)
+  } else if(type === gl.UNSIGNED_BYTE) {
+    elementData = elementBuffer._elements
+  } else {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
   if(count + offset > elementData.length) {
     setError(this, gl.INVALID_VALUE)
     return
   }
 
-  var maxIndex = 0
+  //Compute max index
+  var maxIndex = -1
   for(var i=offset; i<offset+count; ++i) {
     maxIndex = Math.max(maxIndex, elementData[i])
   }
