@@ -1,7 +1,7 @@
 # gl
 `gl` lets you create a WebGL context in node.js without making a window or loading a full browser environment.
 
-It aspires to be fully conformant to the WebGL 1.0.2 specification.
+It aspires to fully conform to the [WebGL 1.0.3 specification](https://www.khronos.org/registry/webgl/specs/1.0.3/).
 
 ## Example
 
@@ -19,9 +19,9 @@ gl.clear(gl.COLOR_BUFFER_BIT)
 var pixels = new Uint8Array(width * height * 4)
 gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
 process.stdout.write(['P3\n# gl.ppm\n', width, " ", height, '\n255\n'].join(''))
-for(var i=0; i<pixels.length; i += 4) {
+for(var i=0; i<pixels.length; i+=4) {
   for(var j=0; j<3; ++j) {
-    process.stdout.write(pixels[i + j] + ' ')
+    process.stdout.write(pixels[i+j] + ' ')
   }
 }
 ```
@@ -123,6 +123,7 @@ None at the moment
 * `npm` stuff
 * `node-gyp` building
 * Fast rebuild
+* Prebuilt binaries?
 
 TODO
 
