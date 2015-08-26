@@ -1341,28 +1341,30 @@ function makeUniforms() {
     var native = gl[func]
 
     gl[func] = function(location, transpose, v) {
+      if(!!transpose ||
+        typeof v !== 'object' ||
+        v === null ||
+        v.length !== i*i) {
+        setError(this, gl.INVALID_VALUE)
+        return
+      }
       if(location === null) {
         return
       }
       if(!checkLocationActive(this, location)) {
         return
       }
-      if(typeof v === 'object' &&
-         v !== null &&
-         v.length === i*i) {
-         if(v instanceof Float32Array) {
-           return native.call(this,
-             location._|0,
-             !!transpose,
-             new Float32Array(v.buffer))
-         } else {
-           return native.call(this,
-             location._|0,
-             !!transpose,
-             new Float32Array(v))
-         }
+      if(v instanceof Float32Array) {
+        return native.call(this,
+         location._|0,
+         !!transpose,
+         new Float32Array(v.buffer))
+      } else {
+        return native.call(this,
+         location._|0,
+         !!transpose,
+         new Float32Array(v))
       }
-      setError(this, gl.INVALID_VALUE)
     }
   }
 
