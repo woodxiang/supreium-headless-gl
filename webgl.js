@@ -1341,6 +1341,9 @@ function makeUniforms() {
     var native = gl[func]
 
     gl[func] = function(location, transpose, v) {
+      if(location === null) {
+        return
+      }
       if(!checkLocationActive(this, location)) {
         return
       }
