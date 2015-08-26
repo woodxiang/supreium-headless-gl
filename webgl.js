@@ -233,6 +233,10 @@ gl.getExtension = function getExtension(name) {
 
 var _activeTexture = gl.activeTexture
 gl.activeTexture = function activeTexture(texture) {
+  var texNum = texture - gl.TEXTURE0
+  if(0 <= texNum && texNum < this._activeTextures.length) {
+    this._activeTextureUnit = texNum|0
+  }
   return _activeTexture.call(this, texture|0)
 }
 
@@ -263,7 +267,51 @@ gl.bindAttribLocation = function bindAttribLocation(program, index, name) {
   }
 }
 
-function bindObject(method, wrapper) {
+
+function switchActiveBuffer(active, buffer) {
+  if(!active || active === buffer) {
+    return false
+  }
+  active._refCount -= 1
+  checkDelete(active)
+}
+
+var _bindBuffer = gl.bindBuffer
+gl.bindBuffer = function bindBuffer(target, buffer) {
+  target |= 0
+  if(target !== gl.ARRAY_BUFFER &&
+     target !== gl.ELEMENT_ARRAY_BUFFER) {
+    setError(this, gl.INVALID_ENUM)
+  } else if(buffer === null) {
+    if(target === gl.ARRAY_BUFFER) {
+      switchActiveBuffer(this._activeArrayBuffer, null)
+      this._activeArrayBuffer = null
+    } else {
+      switchActiveBuffer(this._activeElementArrayBuffer, null)
+      this._activeElementArrayBuffer = null
+    }
+    return _bindBuffer.call(this, target, 0)
+  } else if(checkWrapper(this, buffer, WebGLBuffer)) {
+    //Check buffer binding
+    if(buffer._binding === 0) {
+      buffer._binding = target|0
+    } else if(buffer._binding !== target) {
+      setError(this, gl.INVALID_OPERATION)
+      return
+    }
+    //Check ref count on active buffer
+    if(target === gl.ARRAY_BUFFER) {
+      switchActiveBuffer(this._activeArrayBuffer, buffer)
+      this._activeArrayBuffer = buffer
+    } else {
+      switchActiveBuffer(this._activeElementArrayBuffer, buffer)
+      this._activeElementArrayBuffer = buffer
+    }
+    return _bindBuffer.call(this, target, buffer._|0)
+  }
+}
+
+function bindObject(method, wrapper, binding) {
   var native = gl[method]
   gl[method] = function(target, object) {
     if(object === null) {
@@ -271,9 +319,7 @@ function bindObject(method, wrapper) {
         this,
         target|0,
         0)
-    } else if(checkWrapper(this, object, wrapper) &&
-       !(object._binding && object._binding != target)) {
-      object._binding = target
+    } else if(checkWrapper(this, object, wrapper)) {
       return native.call(
         this,
         target|0,
@@ -282,10 +328,8 @@ function bindObject(method, wrapper) {
   }
 }
 
-bindObject('bindBuffer',        WebGLBuffer)
-bindObject('bindFramebuffer',   WebGLFramebuffer)
-bindObject('bindRenderbuffer',  WebGLRenderbuffer)
-bindObject('bindTexture',       WebGLTexture)
+bindObject('bindFramebuffer', WebGLFramebuffer, '_activeFramebuffer')
+bindObject('bindRenderbuffer', WebGLRenderbuffer, '_activeRenderbuffer')
 
 var _blendColor = gl.blendColor
 gl.blendColor = function blendColor(red, green, blue, alpha) {
@@ -1052,7 +1096,7 @@ function makeUniforms() {
 }
 makeUniforms()
 
-function switchActive(active) {
+function switchActiveProgram(active) {
   if(active) {
     active._refCount -= 1
     checkDelete(active)
@@ -1062,12 +1106,12 @@ function switchActive(active) {
 var _useProgram = gl.useProgram
 gl.useProgram = function useProgram(program) {
   if(program === null) {
-    switchActive(this._activeProgram)
+    switchActiveProgram(this._activeProgram)
     this._activeProgram = null
     return _useProgram.call(this, 0)
   } else if(checkWrapper(this, program, WebGLProgram)) {
     if(this._activeProgram !== program) {
-      switchActive(this._activeProgram)
+      switchActiveProgram(this._activeProgram)
       this._activeProgram = program
       program._refCount += 1
     }
