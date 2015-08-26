@@ -101,9 +101,6 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   static NAN_METHOD(SetError);
   static NAN_METHOD(GetError);
 
-  //Buffer state
-  GLuint activeArrayBuffer, activeElementArrayBuffer;
-
   //Display resizing
   static NAN_METHOD(Resize);
 

@@ -91,9 +91,7 @@ WebGLRenderingContext::WebGLRenderingContext(
   state(GLCONTEXT_STATE_INIT),
   next(NULL),
   prev(NULL),
-  lastError(GL_NO_ERROR),
-  activeArrayBuffer(0),
-  activeElementArrayBuffer(0) {
+  lastError(GL_NO_ERROR) {
 
   //Get display
   if(!HAS_DISPLAY) {
@@ -872,19 +870,6 @@ GL_METHOD(BindBuffer) {
 
   GLenum target = (GLenum)args[0]->Int32Value();
   GLuint buffer = (GLuint)args[1]->Uint32Value();
-
-  bool error = false;
-
-  //WebGL requires we track buffer binding state
-  if(target == GL_ARRAY_BUFFER) {
-    inst->activeArrayBuffer = buffer;
-  } else if(target == GL_ELEMENT_ARRAY_BUFFER) {
-    inst->activeElementArrayBuffer = buffer;
-  } else {
-    inst->setError(GL_INVALID_ENUM);
-    error = true;
-  }
-
   glBindBuffer(target,buffer);
 
   NanReturnUndefined();
@@ -1005,54 +990,23 @@ GL_METHOD(EnableVertexAttribArray) {
   NanReturnUndefined();
 }
 
-int getGLTypeSize(GLenum type) {
-  switch(type) {
-    case GL_UNSIGNED_BYTE:
-    case GL_BYTE:
-      return 1;
-    case GL_SHORT:
-    case GL_UNSIGNED_SHORT:
-      return 2;
-    case GL_INT:
-    case GL_UNSIGNED_INT:
-    case GL_FLOAT:
-      return 4;
-  }
-  return 0xffffffff;
-}
-
 GL_METHOD(VertexAttribPointer) {
   GL_BOILERPLATE;
 
-  if(inst->activeArrayBuffer == 0) {
-    inst->setError(GL_INVALID_OPERATION);
-  } else {
-    int indx = args[0]->Int32Value();
-    int size = args[1]->Int32Value();
-    int type = args[2]->Int32Value();
-    int normalized = args[3]->BooleanValue();
-    int stride = args[4]->Int32Value();
-    long offset = args[5]->Int32Value();
+  int indx = args[0]->Int32Value();
+  int size = args[1]->Int32Value();
+  int type = args[2]->Int32Value();
+  int normalized = args[3]->BooleanValue();
+  int stride = args[4]->Int32Value();
+  long offset = args[5]->Int32Value();
 
-    int typeSize = getGLTypeSize((GLenum)type);
-
-    if(type == GL_FIXED) {
-      inst->setError(GL_INVALID_ENUM);
-    } else if((stride % typeSize) ||
-              (offset % typeSize)) {
-      inst->setError(GL_INVALID_OPERATION);
-    } else if(stride > 255) {
-      inst->setError(GL_INVALID_VALUE);
-    } else {
-      glVertexAttribPointer(
-        indx,
-        size,
-        type,
-        normalized,
-        stride,
-        (const GLvoid *)offset);
-    }
-  }
+  glVertexAttribPointer(
+    indx,
+    size,
+    type,
+    normalized,
+    stride,
+    (const GLvoid *)offset);
 
   NanReturnUndefined();
 }
@@ -1341,7 +1295,7 @@ GL_METHOD(StencilOp) {
   GLenum zfail = args[1]->Int32Value();
   GLenum zpass = args[2]->Int32Value();
   glStencilOp(fail, zfail, zpass);
-  
+
   NanReturnUndefined();
 }
 
