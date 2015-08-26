@@ -79,7 +79,7 @@ function createContext(width, height, options) {
   var numAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS)
   gl._vertexAttribs = new Array(numAttribs)
   for(var i=0; i<numAttribs; ++i) {
-    gl._vertexAttribs[i] = new webgl.WebGLVertexAttribute(this, i)
+    gl._vertexAttribs[i] = new webgl.WebGLVertexAttribute(gl, i)
     gl.disableVertexAttribArray(i)
     gl.vertexAttrib4f(i, 0, 0, 0, 1)
   }

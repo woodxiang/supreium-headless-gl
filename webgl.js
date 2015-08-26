@@ -38,6 +38,7 @@ function WebGLBuffer(_, ctx) {
   this._pendingDelete = false
   this._references    = []
   this._refCount      = 0
+  this._elements      = null
 }
 exports.WebGLBuffer = WebGLBuffer
 
@@ -255,18 +256,23 @@ function checkVertexAttribState(context, maxIndex) {
     setError(context, gl.INVALID_OPERATION)
     return false
   }
-  var attribs = program._attributes
+  var attribs = context._vertexAttribs
   for(var i=0; i<attribs.length; ++i) {
-    var idx    = attribs[i]
-    var attrib = context._vertexAttribs[idx]
+    var attrib = attribs[i]
     if(attrib._isPointer) {
       var buffer = attrib._pointerBuffer
-      var maxByte = attrib._pointerStride * (maxIndex - 1) +
-                    attrib._pointerSize +
-                    attrib._pointerOffset
-      if(!buffer || maxByte > buffer._size) {
+      if(!buffer) {
         setError(context, gl.INVALID_OPERATION)
         return false
+      }
+      if(program._attributes.indexOf(i) >= 0) {
+        var maxByte = attrib._pointerStride * maxIndex +
+                      attrib._pointerSize +
+                      attrib._pointerOffset
+        if(maxByte > buffer._size) {
+          setError(context, gl.INVALID_OPERATION)
+          return false
+        }
       }
     }
   }
@@ -490,7 +496,13 @@ gl.bufferData = function bufferData(target, data, usage) {
         usage)
       var bufError = this.getError()
       if(bufError === gl.NO_ERROR) {
-        getActiveBuffer(this, target)._size = u8Data.length
+        var active = getActiveBuffer(this, target)
+        active._size = u8Data.length
+        if(target === gl.ELEMENT_ARRAY_BUFFER) {
+          //Update element data
+          active._elements = new Uint16Array(u8Data.length >>> 1)
+          ;(new Uint8Array(active._elements.buffer)).set(u8Data)
+        }
       }
       restoreError(this, bufError)
       return
@@ -520,19 +532,26 @@ gl.bufferSubData = function bufferSubData(target, offset, data) {
   target |= 0
   offset |= 0
   if(data != null && typeof data === 'object') {
+    var u8Data = null
     if(data.buffer) {
-      return _bufferSubData.call(
-        this,
-        target,
-        offset,
-        new Uint8Array(data.buffer))
+      u8Data = new Uint8Array(data.buffer)
     } else if(data instanceof ArrayBuffer) {
-      return _bufferSubData.call(
-        this,
-        target,
-        offset,
-        new Uint8Array(data))
+      u8Data = new Uint8Array(data)
+    } else {
+      setError(this, gl.INVALID_VALUE)
+      return
     }
+    if(target === gl.ELEMENT_ARRAY_BUFFER) {
+      var buffer = this._activeElementArrayBuffer
+      if(target + u8Data.length <= buffer._size) {
+        (new Uint8Array(buffer._elements.buffer)).set(offset, u8Data)
+      }
+    }
+    _bufferSubData.call(
+      this,
+      target,
+      offset,
+      u8Data)
   }
 }
 
@@ -712,14 +731,43 @@ var _drawArrays = gl.drawArrays
 gl.drawArrays = function drawArrays(mode, first, count) {
   first |= 0
   count |= 0
-  if(checkVertexAttribState(this, count + first)) {
+  if(checkVertexAttribState(this, count + first - 1)) {
     return _drawArrays.call(this, mode|0, first, count)
   }
 }
 
 var _drawElements = gl.drawElements
 gl.drawElements = function drawElements(mode, count, type, offset) {
-  return _drawElements.call(this, mode|0, count|0, type|0, offset|0)
+  mode    |= 0
+  count   |= 0
+  type    |= 0
+  offset  |= 0
+
+  if(type !== gl.UNSIGNED_SHORT) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  var elementBuffer = this._activeElementArrayBuffer
+  if(!elementBuffer) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
+  var elementData = elementBuffer._elements
+  if(count + offset > elementData.length) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  var maxIndex = 0
+  for(var i=offset; i<offset+count; ++i) {
+    maxIndex = Math.max(maxIndex, elementData[i])
+  }
+
+  if(checkVertexAttribState(this, maxIndex)) {
+    return _drawElements.call(this, mode, count, type, offset)
+  }
 }
 
 var _enable = gl.enable
@@ -1313,6 +1361,11 @@ gl.vertexAttribPointer = function vertexAttribPointer(
   normalized,
   stride,
   offset) {
+
+  if(+stride < 0 || +offset < 0) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
 
   indx   |= 0
   size   |= 0

@@ -9,7 +9,7 @@ It aspires to fully conform to the [WebGL 1.0.3 specification](https://www.khron
 //Create context
 var width   = 64
 var height  = 64
-var gl = require('gl')(width, height)
+var gl = require('gl')(width, height, { preserveDrawingBuffer: true })
 
 //Clear screen to red
 gl.clearColor(1, 0, 0, 1)
