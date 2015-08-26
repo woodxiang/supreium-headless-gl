@@ -410,6 +410,9 @@ gl.bufferData = function bufferData(target, data, usage) {
           new Uint8Array(data),
           usage)
       }
+    } else {
+      setError(this, gl.INVALID_VALUE)
+      return
     }
   } else {
     return _bufferData.call(
@@ -1187,7 +1190,7 @@ gl.vertexAttribPointer = function vertexAttribPointer(
   offset) {
 
   //FIXME Implement validation logic here
-  
+
   return _vertexAttribPointer.call(this,
     indx|0,
     size|0,
