@@ -269,11 +269,16 @@ gl.bindAttribLocation = function bindAttribLocation(program, index, name) {
 
 
 function switchActiveBuffer(active, buffer) {
-  if(!active || active === buffer) {
+  if(active === buffer) {
     return false
   }
-  active._refCount -= 1
-  checkDelete(active)
+  if(active) {
+    active._refCount -= 1
+    checkDelete(active)
+  }
+  if(buffer) {
+    buffer._refCount += 1
+  }
 }
 
 var _bindBuffer = gl.bindBuffer
@@ -311,15 +316,30 @@ gl.bindBuffer = function bindBuffer(target, buffer) {
   }
 }
 
-function bindObject(method, wrapper, binding) {
+function bindObject(method, wrapper, activeProp) {
   var native = gl[method]
+  function swapActive(context, object) {
+    var active = context[activeProp]
+    if(active !== object) {
+      if(active) {
+        active._refCount -= 1
+        checkDelete(active)
+      }
+      if(object) {
+        object._refCount += 1
+      }
+    }
+    context[activeProp] = object
+  }
   gl[method] = function(target, object) {
     if(object === null) {
+      swapActive(this, object)
       return native.call(
         this,
         target|0,
         0)
     } else if(checkWrapper(this, object, wrapper)) {
+      swapActive(this, object)
       return native.call(
         this,
         target|0,
@@ -328,8 +348,14 @@ function bindObject(method, wrapper, binding) {
   }
 }
 
-bindObject('bindFramebuffer', WebGLFramebuffer, '_activeFramebuffer')
+bindObject('bindFramebuffer',  WebGLFramebuffer, '_activeFramebuffer')
 bindObject('bindRenderbuffer', WebGLRenderbuffer, '_activeRenderbuffer')
+
+var _bindTexture = gl.bindTexture
+gl.bindTexture = function bindTexture(target, texture) {
+  //FIXME: Validate and ref count texture for active texture unit
+  return _bindTexture.call(texture|0, texture._|0)
+}
 
 var _blendColor = gl.blendColor
 gl.blendColor = function blendColor(red, green, blue, alpha) {
@@ -1159,6 +1185,9 @@ gl.vertexAttribPointer = function vertexAttribPointer(
   normalized,
   stride,
   offset) {
+
+  //FIXME Implement validation logic here
+  
   return _vertexAttribPointer.call(this,
     indx|0,
     size|0,
