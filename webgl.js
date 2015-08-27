@@ -228,9 +228,6 @@ function glSize(type) {
 }
 
 function link(a, b) {
-  if(a._references.indexOf(b) >= 0) {
-    return false
-  }
   a._references.push(b)
   b._refCount += 1
   return true
@@ -241,10 +238,13 @@ function unlink(a, b) {
   if(idx < 0) {
     return false
   }
-  a._references[idx] = a._references[a._references.length-1]
-  a._references.pop()
-  b._refCount -= 1
-  checkDelete(b)
+  while(idx >= 0) {
+    a._references[idx] = a._references[a._references.length-1]
+    a._references.pop()
+    b._refCount -= 1
+    checkDelete(b)
+    idx = a._references.indexOf(b)
+  }
   return true
 }
 
