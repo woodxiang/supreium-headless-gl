@@ -294,12 +294,10 @@ function checkLocation(context, location) {
 
 function checkLocationActive(context, location) {
   if(!location) {
-    setError(context, gl.INVALID_OPERATION)
     return false
   } else if(!checkLocation(context, location)) {
     return false
   } else if(location._program !== context._activeProgram) {
-    setError(context, gl.INVALID_OPERATION)
     return false
   }
   return true
@@ -511,6 +509,8 @@ gl.bindBuffer = function bindBuffer(target, buffer) {
 
   if(!buffer) {
     _bindBuffer.call(this, target, 0)
+  } else if(buffer._pendingDelete) {
+    return
   } else if(checkWrapper(this, buffer, WebGLBuffer)) {
     if(buffer._binding && buffer._binding !== target) {
       setError(this, gl.INVALID_OPERATION)
@@ -543,6 +543,8 @@ function bindObject(method, wrapper, activeProp) {
         this,
         target|0,
         0)
+    } else if(object._pendingDelete) {
+      return
     } else if(checkWrapper(this, object, wrapper)) {
       native.call(
         this,
@@ -909,10 +911,51 @@ function deleteObject(name, type, refset) {
   }
 }
 
-deleteObject('deleteBuffer',      WebGLBuffer,      '_buffers')
 deleteObject('deleteFramebuffer', WebGLFramebuffer, '_framebuffers')
 deleteObject('deleteProgram',     WebGLProgram,     '_programs')
 deleteObject('deleteShader',      WebGLShader,      '_shaders')
+
+
+var _deleteBuffer = gl.deleteBuffer
+WebGLBuffer.prototype._performDelete = function() {
+  var ctx = this._ctx
+  delete ctx._buffers[this._|0]
+  _deleteBuffer.call(ctx, this._|0)
+}
+
+gl.deleteBuffer = function deleteBuffer(buffer) {
+  if(!checkObject(buffer)) {
+    throw new TypeError('deleteBuffer(WebGLBuffer)')
+  }
+
+  if(!(buffer instanceof WebGLBuffer &&
+       checkOwns(this, buffer))) {
+    setError(this, gl.INVALID_OPERATION)
+  }
+
+
+  if(this._activeArrayBuffer === buffer) {
+    this.bindBuffer(gl.ARRAY_BUFFER, null)
+  }
+  if(this._activeElementArrayBuffer === buffer) {
+    this.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)
+  }
+
+  for(var i=0; i<this._vertexAttribs.length; ++i) {
+    var attrib = this._vertexAttribs[i]
+    if(attrib._pointerBuffer === buffer) {
+      attrib._pointerBuffer = null
+      attrib._pointerStride = 0
+      attrib._pointerOffset = 0
+      attrib._pointerSize   = 4
+      buffer._refCount -= 1
+    }
+  }
+
+  buffer._pendingDelete = true
+  checkDelete(buffer)
+}
+
 
 //Need to handle textures and render buffers as a special case:
 // When a texture gets deleted, we need to do the following extra steps:
@@ -925,6 +968,45 @@ deleteObject('deleteShader',      WebGLShader,      '_shaders')
 //
 // After this, proceed with the usual deletion algorithm
 //
+var _deleteRenderbuffer = gl.deleteRenderbuffer
+WebGLRenderbuffer.prototype._performDelete = function() {
+  var ctx = this._ctx
+  delete ctx._renderbuffers[this._|0]
+  _deleteRenderbuffer.call(ctx, this._|0)
+}
+
+gl.deleteRenderbuffer = function deleteRenderbuffer(renderbuffer) {
+  if(!checkObject(renderbuffer)) {
+    throw new TypeError('deleteRenderbuffer(WebGLRenderbuffer)')
+  }
+
+  if(!(renderbuffer instanceof WebGLRenderbuffer &&
+       checkOwns(this, renderbuffer))) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
+  var framebuffer = this._activeFramebuffer
+  if(framebuffer && linked(framebuffer, renderbuffer)) {
+    var attachments = Object.keys(framebuffer._attachments)
+    for(var i=0; i<attachments.length; ++i) {
+      if(framebuffer._attachments[attachments[i]] === renderbuffer) {
+        this.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          attachments[i]|0,
+          gl.TEXTURE_2D,
+          null)
+      }
+    }
+  }
+
+  if(this._activeRenderbuffer === renderbuffer) {
+    this.bindRenderbuffer(gl.RENDERBUFFER, null)
+  }
+
+  renderbuffer._pendingDelete = true
+  checkDelete(renderbuffer)
+}
 
 var _deleteTexture = gl.deleteTexture
 WebGLTexture.prototype._performDelete = function() {
@@ -981,45 +1063,6 @@ gl.deleteTexture = function deleteTexture(texture) {
   checkDelete(texture)
 }
 
-var _deleteRenderbuffer = gl.deleteRenderbuffer
-WebGLRenderbuffer.prototype._performDelete = function() {
-  var ctx = this._ctx
-  delete ctx._renderbuffers[this._|0]
-  _deleteRenderbuffer.call(ctx, this._|0)
-}
-
-gl.deleteRenderbuffer = function deleteRenderbuffer(renderbuffer) {
-  if(!checkObject(renderbuffer)) {
-    throw new TypeError('deleteRenderbuffer(WebGLRenderbuffer)')
-  }
-
-  if(!(renderbuffer instanceof WebGLRenderbuffer &&
-       checkOwns(this, renderbuffer))) {
-    setError(this, gl.INVALID_OPERATION)
-    return
-  }
-
-  var framebuffer = this._activeFramebuffer
-  if(framebuffer && linked(framebuffer, renderbuffer)) {
-    var attachments = Object.keys(framebuffer._attachments)
-    for(var i=0; i<attachments.length; ++i) {
-      if(framebuffer._attachments[attachments[i]] === renderbuffer) {
-        this.framebufferTexture2D(
-          gl.FRAMEBUFFER,
-          attachments[i]|0,
-          gl.TEXTURE_2D,
-          null)
-      }
-    }
-  }
-
-  if(this._activeRenderbuffer === renderbuffer) {
-    this.bindRenderbuffer(gl.RENDERBUFFER, null)
-  }
-
-  renderbuffer._pendingDelete = true
-  checkDelete(renderbuffer)
-}
 
 var _depthFunc = gl.depthFunc
 gl.depthFunc = function depthFunc(func) {
@@ -1332,20 +1375,24 @@ gl.getActiveUniform = function getActiveUniform(program, index) {
 
 var _getAttachedShaders = gl.getAttachedShaders
 gl.getAttachedShaders = function getAttachedShaders(program) {
-  if(!checkObject(program)) {
+  if(!checkObject(program) ||
+     (typeof program === 'object' &&
+      program !== null &&
+      !(program instanceof WebGLProgram))) {
     throw new TypeError('getAttachedShaders(WebGLProgram)')
   }
   if(!program) {
     setError(this, gl.INVALID_VALUE)
   } else if(checkWrapper(this, program, WebGLProgram)) {
     var shaderArray = _getAttachedShaders.call(this, program._|0)
-    if(shaderArray) {
-      var unboxedShaders = new Array(shaderArray.length)
-      for(var i=0; i<shaderArray.length; ++i) {
-        unboxedShaders[i] = this._shaders[shaderArray[i]]
-      }
-      return unboxedShaders
+    if(!shaderArray) {
+      return null
     }
+    var unboxedShaders = new Array(shaderArray.length)
+    for(var i=0; i<shaderArray.length; ++i) {
+      unboxedShaders[i] = this._shaders[shaderArray[i]]
+    }
+    return unboxedShaders
   }
   return null
 }
