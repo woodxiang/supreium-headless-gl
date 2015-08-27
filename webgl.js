@@ -242,6 +242,10 @@ function unlink(a, b) {
   return true
 }
 
+function linked(a, b) {
+  return a._references.indexOf(b) >= 0
+}
+
 function checkDelete(obj) {
   if(obj._refCount <= 0 &&
      obj._pendingDelete &&
@@ -892,8 +896,9 @@ gl.detachShader = function detachShader(program, shader) {
   }
   if(checkWrapper(this, program, WebGLProgram) &&
      checkWrapper(this, shader, WebGLShader)) {
-    if(unlink(program, shader)) {
+    if(linked(program, shader)) {
       _detachShader.call(this, program._, shader._)
+      unlink(program, shader)
     } else {
       setError(this, gl.INVALID_OPERATION)
     }
