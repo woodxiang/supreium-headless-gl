@@ -153,6 +153,23 @@ function activeTexture(context, target) {
   return null
 }
 
+function getTexImage(context, target) {
+  var unit = activeTextureUnit(context)
+  if(target === gl.TEXTURE_2D) {
+    return unit._bind2D
+  } else if(
+    target === gl.TEXTURE_CUBE_MAP_POSITIVE_X ||
+    target === gl.TEXTURE_CUBE_MAP_NEGATIVE_X ||
+    target === gl.TEXTURE_CUBE_MAP_POSITIVE_Y ||
+    target === gl.TEXTURE_CUBE_MAP_NEGATIVE_Y ||
+    target === gl.TEXTURE_CUBE_MAP_POSITIVE_Z ||
+    target === gl.TEXTURE_CUBE_MAP_NEGATIVE_Z) {
+    return unit._bindCube
+  }
+  setError(context, gl.INVALID_ENUM)
+  return null
+}
+
 function checkObject(object) {
   return typeof object === 'object' ||
          object === void 0
@@ -168,6 +185,24 @@ function validFramebufferAttachment(attachment) {
 function validTextureTarget(target) {
   return target === gl.TEXTURE_2D ||
          target === gl.TEXTURE_CUBE
+}
+
+function checkTextureTarget(context, target) {
+  var unit = activeTextureUnit(context)
+  var tex = null
+  if(target === gl.TEXTURE_2D) {
+    tex = unit._bind2D
+  } else if(target === gl.TEXTURE_CUBE) {
+    tex = unit._bindCube
+  } else {
+    setError(context, gl.INVALID_ENUM)
+    return false
+  }
+  if(!tex) {
+    setError(context, gl.INVALID_OPERATION)
+    return false
+  }
+  return true
 }
 
 function glSize(type) {
@@ -376,7 +411,9 @@ gl.attachShader = function attachShader(program, shader) {
      !checkObject(shader)) {
     throw new TypeError('attachShader(WebGLProgram, WebGLShader)')
   }
-  if(program instanceof WebGLProgram &&
+  if(!program || !shader) {
+    setError(this, gl.INVALID_VALUE)
+  } else if(program instanceof WebGLProgram &&
      shader instanceof WebGLShader &&
      checkOwns(this, program) &&
      checkOwns(this, shader)) {
@@ -386,8 +423,9 @@ gl.attachShader = function attachShader(program, shader) {
         program._|0,
         shader._|0)
     }
+  } else {
+    setError(this, gl.INVALID_OPERATION)
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _bindAttribLocation = gl.bindAttribLocation;
@@ -730,6 +768,13 @@ gl.copyTexImage2D = function copyTexImage2D(
   internalformat,
   x, y, width, height,
   border) {
+
+  var texture = getTexImage(this, target)
+  if(!texture) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
   return _copyTexImage2D.call(
     this,
     target|0,
@@ -749,6 +794,13 @@ gl.copyTexSubImage2D = function copyTexSubImage2D(
   xoffset,
   yoffset,
   x, y, width, height) {
+
+  var texture = getTexImage(this, target)
+  if(!texture) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
   return _copyTexSubImage2D.call(
     this,
     target|0,
@@ -1293,8 +1345,7 @@ gl.getTexParameter = function getTexParameter(target, pname) {
   target |= 0
   pname  |= 0
 
-  if(!validTextureTarget(target)) {
-    setError(this, gl.INVALID_ENUM)
+  if(!checkTextureTarget(this, target)) {
     return null
   }
 
@@ -1322,7 +1373,10 @@ gl.getUniform = function getUniform(program, location) {
   if(!checkObject(program) ||
      !checkObject(location)) {
     throw new TypeError('getUniform(WebGLProgram, WebGLUniformLocation)')
-  } else if(!location || !program) {
+  } else if(!program) {
+    setError(this, gl.INVALID_VALUE)
+    return null
+  } else if(!location) {
     return null
   } else if(checkWrapper(this, program, WebGLProgram) &&
      checkUniform(program, location)) {
@@ -1597,9 +1651,12 @@ gl.scissor = function scissor(x, y, width, height) {
 
 var _shaderSource = gl.shaderSource
 gl.shaderSource = function shaderSource(shader, source) {
-  if(!checkObject(shader) ||
-     typeof source !== 'string') {
+  if(!checkObject(shader)) {
     throw new TypeError('shaderSource(WebGLShader, String)')
+  }
+  if(!shader || (!source && typeof source !== 'string')) {
+    setError(this, gl.INVALID_VALUE)
+    return
   }
   source += ''
   if(!isValidString(source)) {
@@ -1643,6 +1700,13 @@ gl.stencilOpSeparate = function stencilOpSeparate(face, fail, zfail, zpass) {
 var _texImage2D = gl.texImage2D
 gl.texImage2D = function texImage2D(
   target, level, internalformat, width, height, border, format, type, pixels) {
+
+  var texture = getTexImage(this, target)
+  if(!texture) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
   if(pixels instanceof Uint8Array) {
     return _texImage2D.call(
       this,
@@ -1676,10 +1740,9 @@ gl.texParameterf = function texParameterf(target, pname, param) {
   target |= 0
   pname  |= 0
   param  = +param
-  if(validTextureTarget(target)) {
+  if(checkTextureTarget(this, target)) {
     return _texParameterf.call(this, target, pname, param)
   }
-  setError(this, gl.INVALID_ENUM)
 }
 
 var _texParameteri = gl.texParameteri
@@ -1687,15 +1750,21 @@ gl.texParameteri = function texParameteri(target, pname, param) {
   target |= 0
   pname  |= 0
   param  |= 0
-  if(validTextureTarget(target)) {
+  if(checkTextureTarget(this, target)) {
     return _texParameteri.call(this, target, pname, param)
   }
-  setError(this, gl.INVALID_ENUM)
 }
 
 var _texSubImage2D = gl.texSubImage2D
 gl.texSubImage2D = function texSubImage2D(
   target, level, xoffset, yoffset, width, height, format, type, pixels) {
+
+  var texture = getTexImage(this, target)
+  if(!texture) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
   if(pixels instanceof Uint8Array) {
     return _texSubImage2D.call(
       this,
