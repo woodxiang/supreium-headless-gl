@@ -298,6 +298,7 @@ function checkLocationActive(context, location) {
   } else if(!checkLocation(context, location)) {
     return false
   } else if(location._program !== context._activeProgram) {
+    setError(context, gl.INVALID_OPERATION)
     return false
   }
   return true
