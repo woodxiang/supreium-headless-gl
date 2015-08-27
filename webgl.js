@@ -4,6 +4,11 @@ var nativeGL = require('bindings')('webgl')
 
 var HEADLESS_VERSION = require('./package.json').version
 
+
+//We need to wrap some of the native WebGL functions to handle certain error codes and check input values
+var gl = nativeGL.WebGLRenderingContext.prototype
+gl.VERSION = 0x1F02
+
 //Hook clean up
 process.on('exit', nativeGL.cleanup)
 
@@ -44,12 +49,13 @@ function WebGLBuffer(_, ctx) {
 exports.WebGLBuffer = WebGLBuffer
 
 function WebGLFramebuffer(_, ctx) {
-  this._        = _
-  this._ctx     = ctx
-  this._binding = 0
+  this._              = _
+  this._ctx           = ctx
+  this._binding       = 0
   this._pendingDelete = false
   this._references    = []
   this._refCount      = 0
+  this._attachments   = {}
 }
 exports.WebGLFramebuffer = WebGLFramebuffer
 
@@ -130,9 +136,6 @@ function WebGLTextureUnit(ctx, idx) {
 }
 exports.WebGLTextureUnit = WebGLTextureUnit
 
-//We need to wrap some of the native WebGL functions to handle certain error codes and check input values
-var gl = nativeGL.WebGLRenderingContext.prototype
-gl.VERSION = 0x1F02
 
 //'"', '$', '`', '@', '\\', "'"
 function isValidString(str) {
@@ -147,23 +150,26 @@ function activeTexture(context, target) {
   var activeUnit = activeTextureUnit(context)
   if(target === gl.TEXTURE_2D) {
     return activeUnit._bind2D
-  } else if(target === gl.TEXTURE_CUBE) {
+  } else if(target === gl.TEXTURE_CUBE_MAP) {
     return activeUnit._bindCube
   }
   return null
+}
+
+function validCubeTarget(target) {
+  return  target === gl.TEXTURE_CUBE_MAP_POSITIVE_X ||
+          target === gl.TEXTURE_CUBE_MAP_NEGATIVE_X ||
+          target === gl.TEXTURE_CUBE_MAP_POSITIVE_Y ||
+          target === gl.TEXTURE_CUBE_MAP_NEGATIVE_Y ||
+          target === gl.TEXTURE_CUBE_MAP_POSITIVE_Z ||
+          target === gl.TEXTURE_CUBE_MAP_NEGATIVE_Z
 }
 
 function getTexImage(context, target) {
   var unit = activeTextureUnit(context)
   if(target === gl.TEXTURE_2D) {
     return unit._bind2D
-  } else if(
-    target === gl.TEXTURE_CUBE_MAP_POSITIVE_X ||
-    target === gl.TEXTURE_CUBE_MAP_NEGATIVE_X ||
-    target === gl.TEXTURE_CUBE_MAP_POSITIVE_Y ||
-    target === gl.TEXTURE_CUBE_MAP_NEGATIVE_Y ||
-    target === gl.TEXTURE_CUBE_MAP_POSITIVE_Z ||
-    target === gl.TEXTURE_CUBE_MAP_NEGATIVE_Z) {
+  } else if(validCubeTarget(target)) {
     return unit._bindCube
   }
   setError(context, gl.INVALID_ENUM)
@@ -184,7 +190,7 @@ function validFramebufferAttachment(attachment) {
 
 function validTextureTarget(target) {
   return target === gl.TEXTURE_2D ||
-         target === gl.TEXTURE_CUBE
+         target === gl.TEXTURE_CUBE_MAP
 }
 
 function checkTextureTarget(context, target) {
@@ -192,7 +198,7 @@ function checkTextureTarget(context, target) {
   var tex = null
   if(target === gl.TEXTURE_2D) {
     tex = unit._bind2D
-  } else if(target === gl.TEXTURE_CUBE) {
+  } else if(target === gl.TEXTURE_CUBE_MAP) {
     tex = unit._bindCube
   } else {
     setError(context, gl.INVALID_ENUM)
@@ -365,6 +371,38 @@ function checkVertexAttribState(context, maxIndex) {
   return true
 }
 
+function clearFramebufferAttachment(framebuffer, attachment) {
+  var object = framebuffer._attachments[attachment]
+  if(!object) {
+    return
+  }
+  framebuffer._attachments[attachment] = null
+  unlink(framebuffer, object)
+}
+
+function setFramebufferAttachment(framebuffer, object, attachment) {
+  if(attachment === gl.DEPTH_ATTACHMENT ||
+     attachment === gl.STENCIL_ATTACHMENT) {
+    clearFramebufferAttachment(framebuffer, gl.DEPTH_STENCIL_ATTACHMENT)
+  } else if(attachment === gl.DEPTH_STENCIL_ATTACHMENT) {
+    clearFramebufferAttachment(framebuffer, gl.DEPTH_ATTACHMENT)
+    clearFramebufferAttachment(framebuffer, gl.STENCIL_ATTACHMENT)
+  }
+
+  var prevObject = framebuffer._attachments[attachment]
+  if(prevObject === object) {
+    return
+  }
+
+  clearFramebufferAttachment(framebuffer, attachment)
+  if(!object) {
+    return
+  }
+
+  framebuffer._attachments[attachment] = object
+  link(framebuffer, object)
+}
+
 var _resize = gl.resize
 gl.resize = function(width, height) {
   width = width | 0
@@ -402,6 +440,7 @@ gl.getExtension = function getExtension(name) {
 
 var _activeTexture = gl.activeTexture
 gl.activeTexture = function activeTexture(texture) {
+  texture |= 0
   var texNum = texture - gl.TEXTURE0
   if(0 <= texNum && texNum < this._textureUnits.length) {
     this._activeTextureUnit = texNum|0
@@ -547,16 +586,15 @@ gl.bindTexture = function bindTexture(target, texture) {
     return
   }
 
-  var activeUnit = activeTextureUnit(this)
-  var activeTex  = activeTexture(this)
-
+  //Get texture id
+  var texture_id = 0
   if(!texture) {
-    _bindTexture.call(
-      this,
-      target,
-      0)
+    texture = null
+  } else if(texture instanceof WebGLTexture &&
+            texture._ === 0) {
+    //Special case: error codes for textures don't get set for some dumb reason
+    return
   } else if(checkWrapper(this, texture, WebGLTexture)) {
-
     //Check binding mode of texture
     if(texture._binding && texture._binding !== target) {
       setError(this, gl.INVALID_OPERATION)
@@ -564,18 +602,30 @@ gl.bindTexture = function bindTexture(target, texture) {
     }
     texture._binding = target
 
-    _bindTexture.call(
-      this,
-      target,
-      texture._|0)
+    texture_id = texture._|0
   } else {
     return
   }
 
+  saveError(this)
+  _bindTexture.call(
+    this,
+    target,
+    texture_id)
+  var error = this.getError()
+  restoreError(this, error)
+
+  if(error !== gl.NO_ERROR) {
+    return
+  }
+
+  var activeUnit = activeTextureUnit(this)
+  var activeTex  = activeTexture(this, target)
+
   //Update references
   if(activeTex !== texture) {
     if(activeTex) {
-      activerTex._refCount -= 1
+      activeTex._refCount -= 1
       checkDelete(activeTex)
     }
     if(texture) {
@@ -585,7 +635,7 @@ gl.bindTexture = function bindTexture(target, texture) {
 
   if(target === gl.TEXTURE_2D) {
     activeUnit._bind2D   = texture
-  } else if(target === gl.TEXTURE_CUBE) {
+  } else if(target === gl.TEXTURE_CUBE_MAP) {
     activeUnit._bindCube = texture
   }
 }
@@ -855,9 +905,8 @@ function deleteObject(name, type, refset) {
     if(!checkObject(object)) {
       throw new TypeError(name + '(' + type.name + ')')
     }
-    if(checkOwns(this, object) &&
-       object instanceof type) {
-      var id = object._
+    if(object instanceof type &&
+       checkOwns(this, object)) {
       object._pendingDelete = true
       checkDelete(object)
       return
@@ -871,7 +920,69 @@ deleteObject('deleteFramebuffer',  WebGLFramebuffer, '_framebuffers')
 deleteObject('deleteProgram',      WebGLProgram, '_programs')
 deleteObject('deleteRenderbuffer', WebGLRenderbuffer, '_renderbuffers')
 deleteObject('deleteShader',       WebGLShader, '_shaders')
-deleteObject('deleteTexture',      WebGLTexture, '_textures')
+
+//Need to handle textures as a special case:
+// When a texture gets deleted, we need to do the following extra steps:
+//  1. Is it bound to the current texture unit?
+//     If so, then unbind it
+//  2. Is it attached to the active fbo?
+//     If so, then detach it
+//
+// After this, proceed with the usual deletion algorithm
+//
+
+var _deleteTexture = gl.deleteTexture
+WebGLTexture.prototype._performDelete = function() {
+  var ctx = this._ctx
+  delete ctx._textures[this._|0]
+  _deleteTexture.call(ctx, this._|0)
+}
+
+gl.deleteTexture = function deleteTexture(texture) {
+  if(!checkObject(texture)) {
+    throw new TypeError('deleteTexture(WebGLTexture)')
+  }
+
+  if(!(texture instanceof WebGLTexture &&
+       checkOwns(this, texture))) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
+  //Unbind from all texture units
+  var curActive = this._activeTextureUnit
+  for(var i=0; i<this._textureUnits.length; ++i) {
+    var unit = this._textureUnits[i]
+    if(unit._bind2D === texture) {
+      this.activeTexture(gl.TEXTURE0 + i)
+      this.bindTexture(gl.TEXTURE_2D, null)
+    } else if(unit._bindCube === texture) {
+      this.activeTexture(gl.TEXTURE0 + i)
+      this.bindTexture(gl.TEXTURE_CUBE_MAP, null)
+    }
+  }
+  this.activeTexture(gl.TEXTURE0 + curActive)
+
+  var framebuffer = this._activeFramebuffer
+  if(framebuffer && linked(framebuffer, texture)) {
+    var attachments = Object.keys(framebuffer._attachments)
+    for(var i=0; i<attachments.length; ++i) {
+      if(framebuffer._attachments[attachments[i]] === texture) {
+        this.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          attachments[i]|0,
+          gl.TEXTURE_2D,
+          null)
+      }
+    }
+  }
+
+  //Mark texture for deletion
+  texture._pendingDelete = true
+
+  checkDelete(texture)
+}
+
 
 var _depthFunc = gl.depthFunc
 gl.depthFunc = function depthFunc(func) {
@@ -910,7 +1021,7 @@ gl.disable = function disable(cap) {
   cap |= 0
   _disable.call(this, cap)
   if(cap === gl.TEXTURE_2D ||
-     cap === gl.TEXTURE_CUBE) {
+     cap === gl.TEXTURE_CUBE_MAP) {
     var active = activeTextureUnit(this)
     if(active._mode === cap) {
       active._mode = 0
@@ -989,7 +1100,7 @@ gl.enable = function enable(cap) {
   cap |= 0
   _enable.call(this, cap)
   if(cap === gl.TEXTURE_2D ||
-     cap === gl.TEXTURE_CUBE) {
+     cap === gl.TEXTURE_CUBE_MAP) {
     activeTextureUnit(this)._mode = cap
   }
 }
@@ -1044,19 +1155,77 @@ gl.framebufferTexture2D = function framebufferTexture2D(
   textarget,
   texture,
   level) {
+
+  target     |= 0
+  attachment |= 0
+  textarget  |= 0
+  level      |= 0
   if(!checkObject(texture)) {
     throw new TypeError('framebufferTexture2D(GLenum, GLenum, GLenum, WebGLTexture, GLint)')
-  } else if(!texture) {
-    setError(this, gl.INVALID_OPERATION)
-  } else if(checkWrapper(this, texture, WebGLTexture)) {
-    return _framebufferTexture2D.call(
-      this,
-      target|0,
-      attachment|0,
-      textarget|0,
-      texture._|0,
-      level|0)
   }
+
+
+
+  //Check parameters are ok
+  if(target !== gl.FRAMEBUFFER ||
+     !validFramebufferAttachment(attachment)) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  //Check object ownership
+  if(texture && !checkWrapper(this, texture, WebGLTexture)) {
+    return
+  }
+
+  //Check texture target is ok
+  if(textarget === gl.TEXTURE_2D) {
+    if(texture && texture._binding !== gl.TEXTURE_2D) {
+      setError(this, gl.INVALID_OPERATION)
+      return
+    }
+  } else if(validCubeTarget(textarget)) {
+    if(texture && texture._binding !== gl.TEXTURE_CUBE_MAP) {
+      setError(this, gl.INVALID_OPERATION)
+      return
+    }
+  } else {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  //Check a framebuffer is actually bound
+  var framebuffer = this._activeFramebuffer
+  if(!framebuffer) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
+  //Get texture id
+  var texture_id = 0
+  if(texture) {
+    texture_id = texture._|0
+  } else {
+    texture = null
+  }
+
+  //Try setting attachment
+  saveError(this)
+  _framebufferTexture2D.call(
+    this,
+    target,
+    attachment,
+    textarget,
+    texture_id,
+    level)
+  var error = this.getError()
+  restoreError(this, error)
+  if(error != gl.NO_ERROR) {
+    return
+  }
+
+  //Success, now update references
+  setFramebufferAttachment(framebuffer, texture, attachment)
 }
 
 var _frontFace = gl.frontFace
@@ -1356,7 +1525,7 @@ gl.getTexParameter = function getTexParameter(target, pname) {
 
   var unit = activeTextureUnit(this)
   if((target === gl.TEXTURE_2D && !unit._bind2D) ||
-     (target === gl.TEXTURE_CUBE && !unit._bindCube)) {
+     (target === gl.TEXTURE_CUBE_MAP && !unit._bindCube)) {
     setError(this, gl.INVALID_OPERATION)
     return null
   }
