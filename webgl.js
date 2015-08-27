@@ -456,19 +456,26 @@ gl.attachShader = function attachShader(program, shader) {
   }
   if(!program || !shader) {
     setError(this, gl.INVALID_VALUE)
+    return
   } else if(program instanceof WebGLProgram &&
      shader instanceof WebGLShader &&
      checkOwns(this, program) &&
      checkOwns(this, shader)) {
-    if(link(program, shader)) {
-      return _attachShader.call(
+    if(!linked(program, shader)) {
+      saveError(this)
+      _attachShader.call(
         this,
         program._|0,
         shader._|0)
+      var error = this.getError()
+      restoreError(this, error)
+      if(error === gl.NO_ERROR) {
+        link(program, shader)
+      }
+      return
     }
-  } else {
-    setError(this, gl.INVALID_OPERATION)
   }
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _bindAttribLocation = gl.bindAttribLocation;
@@ -591,8 +598,8 @@ gl.bindTexture = function bindTexture(target, texture) {
   if(!texture) {
     texture = null
   } else if(texture instanceof WebGLTexture &&
-            texture._ === 0) {
-    //Special case: error codes for textures don't get set for some dumb reason
+            texture._pendingDelete) {
+    //Special case: error codes for deleted textures don't get set for some dumb reason
     return
   } else if(checkWrapper(this, texture, WebGLTexture)) {
     //Check binding mode of texture
@@ -963,6 +970,9 @@ gl.deleteTexture = function deleteTexture(texture) {
   }
   this.activeTexture(gl.TEXTURE0 + curActive)
 
+
+  //FIXME: Does the texture get unbound from *all* framebuffers, or just the
+  //active FBO?
   var framebuffer = this._activeFramebuffer
   if(framebuffer && linked(framebuffer, texture)) {
     var attachments = Object.keys(framebuffer._attachments)
