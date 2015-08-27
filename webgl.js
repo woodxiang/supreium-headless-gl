@@ -1549,7 +1549,7 @@ gl.renderbufferStorage = function renderbufferStorage(
 
 var _sampleCoverage = gl.sampleCoverage
 gl.sampleCoverage = function sampleCoverage(value, invert) {
-  return _sampleCoverage.call(this, +value, +invert)
+  return _sampleCoverage.call(this, +value, !!invert)
 }
 
 var _scissor = gl.scissor
