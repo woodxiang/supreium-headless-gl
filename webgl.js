@@ -399,9 +399,9 @@ function setFramebufferAttachment(framebuffer, object, attachment) {
 
 var _resize = gl.resize
 gl.resize = function(width, height) {
-  width = width | 0
+  width  = width | 0
   height = height | 0
-  if(!(width >= 0 && height >= 0)) {
+  if(!(width > 0 && height > 0)) {
     throw new Error("Invalid surface dimensions")
   } else if(width  !== this.drawingBufferWidth ||
             height !== this.drawingBufferHeight) {

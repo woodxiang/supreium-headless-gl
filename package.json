@@ -11,7 +11,7 @@
     "node": ">=0.7.0"
   },
   "scripts": {
-    "test": "node-gyp rebuild && tape test/run_test.js",
+    "test": "tape test/*.js",
     "build": "node-gyp rebuild --verbose",
     "install": "node-gyp rebuild"
   },
