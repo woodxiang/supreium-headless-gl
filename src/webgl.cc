@@ -196,14 +196,12 @@ WebGLRenderingContext::WebGLRenderingContext(
 
 bool WebGLRenderingContext::setActive() {
   if(state != GLCONTEXT_STATE_OK) {
-    printf("context is in error state\n");
     return false;
   }
   if(this == ACTIVE) {
     return true;
   }
   if(!eglMakeCurrent(DISPLAY, surface, surface, context)) {
-    printf("eglMakeCurrent failed\n");
     state = GLCONTEXT_STATE_ERROR;
     return false;
   }
@@ -653,18 +651,10 @@ GL_METHOD(GetShaderParameter) {
   int shader = args[0]->Int32Value();
   int pname = args[1]->Int32Value();
   int value = 0;
-  switch (pname) {
-    case GL_DELETE_STATUS:
-    case GL_COMPILE_STATUS:
-      glGetShaderiv(shader, pname, &value);
-      NanReturnValue(NanNew<v8::Boolean>(static_cast<bool>(value!=0)));
-    case GL_SHADER_TYPE:
-      glGetShaderiv(shader, pname, &value);
-      NanReturnValue(NanNew<v8::Integer>(value));
-    default:
-      inst->setError(GL_INVALID_ENUM);
-  }
-  NanReturnNull();
+
+  glGetShaderiv(shader, pname, &value);
+
+  NanReturnValue(NanNew<v8::Integer>(value));
 }
 
 GL_METHOD(GetShaderInfoLog) {
@@ -715,25 +705,11 @@ GL_METHOD(GetProgramParameter) {
 
   GLint program = args[0]->Int32Value();
   GLenum pname  = (GLenum)(args[1]->Int32Value());
-
   GLint value = 0;
-  switch (pname) {
-    case GL_DELETE_STATUS:
-    case GL_LINK_STATUS:
-    case GL_VALIDATE_STATUS:
-      glGetProgramiv(program, pname, &value);
-      NanReturnValue(NanNew<v8::Boolean>(value != 0));
 
-    case GL_ATTACHED_SHADERS:
-    case GL_ACTIVE_ATTRIBUTES:
-    case GL_ACTIVE_UNIFORMS:
-      glGetProgramiv(program, pname, &value);
-      NanReturnValue(NanNew<v8::Integer>(value));
+  glGetProgramiv(program, pname, &value);
 
-    default:
-      inst->setError(GL_INVALID_ENUM);
-  }
-  NanReturnNull();
+  NanReturnValue(NanNew<v8::Integer>(value));
 }
 
 
@@ -1569,13 +1545,15 @@ GL_METHOD(GetActiveAttrib) {
 GL_METHOD(GetActiveUniform) {
   GL_BOILERPLATE;
   GLuint program = args[0]->Int32Value();
-  GLuint index = args[1]->Int32Value();
+  GLuint index   = args[1]->Int32Value();
+
   //TODO: Check max attribute length
   char name[1024];
   GLsizei length=0;
-  GLenum type;
+  GLenum  type;
   GLsizei size;
   glGetActiveUniform(program, index, 1024, &length, &size, &type, name);
+
   if(length > 0) {
     v8::Local<v8::Object> activeInfo = NanNew<v8::Object>();
     activeInfo->Set(NanNew<v8::String>("size"), NanNew<v8::Integer>(size));
@@ -1756,12 +1734,13 @@ GL_METHOD(GetBufferParameter) {
 GL_METHOD(GetFramebufferAttachmentParameter) {
   GL_BOILERPLATE;
 
-  GLenum target = args[0]->Int32Value();
+  GLenum target     = args[0]->Int32Value();
   GLenum attachment = args[1]->Int32Value();
-  GLenum pname = args[2]->Int32Value();
+  GLenum pname      = args[2]->Int32Value();
 
   GLint params;
-  glGetFramebufferAttachmentParameteriv(target,attachment, pname,&params);
+  glGetFramebufferAttachmentParameteriv(target, attachment, pname, &params);
+
   NanReturnValue(NanNew<v8::Integer>(params));
 }
 
@@ -1838,7 +1817,7 @@ GL_METHOD(GetVertexAttrib) {
   default:
     inst->setError(GL_INVALID_ENUM);
   }
-  NanReturnUndefined();
+  NanReturnNull();
 }
 
 GL_METHOD(GetSupportedExtensions) {

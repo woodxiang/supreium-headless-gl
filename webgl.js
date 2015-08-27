@@ -18,6 +18,7 @@ function WebGLProgram(_, ctx) {
   this._references    = []
   this._refCount      = 0
   this._attributes    = []
+  this._uniforms      = []
 }
 exports.WebGLProgram = WebGLProgram
 
@@ -146,6 +147,13 @@ function activeTexture(context, target) {
     return activeUnit._bindCube
   }
   return null
+}
+
+function validFramebufferAttachment(attachment) {
+  return attachment === gl.COLOR_ATTACHMENT0  ||
+         attachment === gl.DEPTH_ATTACHMENT   ||
+         attachment === gl.STENCIL_ATTACHMENT ||
+         attachment === gl.DEPTH_STENCIL_ATTACHMENT
 }
 
 function validTextureTarget(target) {
@@ -978,7 +986,9 @@ gl.getActiveUniform = function getActiveUniform(program, index) {
 
 var _getAttachedShaders = gl.getAttachedShaders
 gl.getAttachedShaders = function getAttachedShaders(program) {
-  if(checkWrapper(this, program, WebGLProgram)) {
+  if(program && !(program instanceof WebGLProgram)) {
+    throw new Error('Argument to getAttachedShaders must be a shader object')
+  } else if(checkWrapper(this, program, WebGLProgram)) {
     var shaderArray = _getAttachedShaders.call(this, program._|0)
     if(shaderArray) {
       var unboxedShaders = new Array(shaderArray.length)
@@ -1050,7 +1060,22 @@ gl.getParameter = function getParameter(pname) {
 
 var _getBufferParameter = gl.getBufferParameter
 gl.getBufferParameter = function getBufferParameter(target, pname) {
-  return _getBufferParameter.call(this, target|0, pname|0);
+  target |= 0
+  pname  |= 0
+  if(target !== gl.ARRAY_BUFFER &&
+     target !== gl.ELEMENT_ARRAY_BUFFER) {
+    setError(this, gl.INVALID_ENUM)
+    return null
+  }
+
+  switch(pname) {
+    case gl.BUFFER_SIZE:
+    case gl.BUFFER_USAGE:
+      return _getBufferParameter.call(this, target|0, pname|0)
+    default:
+      setError(this, gl.INVALID_ENUM)
+      return null
+  }
 }
 
 var _getError = gl.getError
@@ -1060,18 +1085,65 @@ gl.getError = function getError() {
 
 var _getFramebufferAttachmentParameter = gl.getFramebufferAttachmentParameter
 gl.getFramebufferAttachmentParameter = function getFramebufferAttachmentParameter(target, attachment, pname) {
-  return _getFramebufferAttachmentParameter.call(
-    this,
-    target|0,
-    attachment|0,
-    pname|0)
+  target     |= 0
+  attachment |= 0
+  pname      |= 0
+  if(target !== gl.FRAMEBUFFER ||
+     !validFramebufferAttachment(attachment)) {
+    setError(this, gl.INVALID_ENUM)
+    return null
+  }
+  var type = _getFramebufferAttachmentParameter.call(
+    this, target, attachment, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE)
+  switch(pname) {
+    case gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME:
+      if(type !== gl.NONE) {
+        var id = _getFramebufferAttachmentParameter.call(
+          this, target, attachment, pname)
+        if(type === gl.TEXTURE) {
+          return this._textures[id]
+        } else if(type === gl.RENDERBUFFER) {
+          return this._renderbuffers[id]
+        }
+      }
+    break
+
+    case gl.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE:
+      return type
+
+    case gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL:
+    case gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE:
+      if(type === gl.TEXTURE) {
+        return _getFramebufferAttachmentParameter.call(
+          this, target, attachment, pname)
+      }
+    break
+  }
+
+  setError(this, gl.INVALID_ENUM)
+  return null
 }
 
 var _getProgramParameter = gl.getProgramParameter
 gl.getProgramParameter = function getProgramParameter(program, pname) {
+  pname |= 0
   if(checkWrapper(this, program, WebGLProgram)) {
-    return _getProgramParameter.call(this, program._|0, pname|0)
+    switch(pname) {
+      case gl.DELETE_STATUS:
+        return program._pendingDelete
+
+      case gl.LINK_STATUS:
+      case gl.VALIDATE_STATUS:
+        return !!_getProgramParameter.call(this, program._, pname)
+
+      case gl.ATTACHED_SHADERS:
+      case gl.ACTIVE_ATTRIBUTES:
+      case gl.ACTIVE_UNIFORMS:
+        return _getProgramParameter.call(this, program._, pname)
+    }
+    setError(this, gl.INVALID_ENUM)
   }
+  return null
 }
 
 var _getProgramInfoLog = gl.getProgramInfoLog
@@ -1079,18 +1151,48 @@ gl.getProgramInfoLog = function getProgramInfoLog(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
     return _getProgramInfoLog.call(this, program._|0)
   }
+  return null
 }
 
 var _getRenderbufferParameter = gl.getRenderbufferParameter
 gl.getRenderbufferParameter = function getRenderbufferParameter(target, pname) {
-  return _getRenderbufferParameter.call(this, target|0, pname|0)
+  target |= 0
+  pname  |= 0
+  if(target !== gl.RENDERBUFFER) {
+    setError(this, gl.INVALID_ENUM)
+    return null
+  }
+  switch(pname) {
+    case gl.RENDERBUFFER_WIDTH:
+    case gl.RENDERBUFFER_HEIGHT:
+    case gl.RENDERBUFFER_INTERNAL_FORMAT:
+    case gl.RENDERBUFFER_SIZE:
+    case gl.RENDERBUFFER_RED_SIZE:
+    case gl.RENDERBUFFER_GREEN_SIZE:
+    case gl.RENDERBUFFER_BLUE_SIZE:
+    case gl.RENDERBUFFER_ALPHA_SIZE:
+    case gl.RENDERBUFFER_DEPTH_SIZE:
+      return _getRenderbufferParameter.call(this, target, pname)
+  }
+  setError(this, gl.INVALID_ENUM)
+  return null
 }
 
 var _getShaderParameter = gl.getShaderParameter
 gl.getShaderParameter = function getShaderParameter(shader, pname) {
+  pname |= 0
   if(checkWrapper(this, shader, WebGLShader)) {
-    return _getShaderParameter.call(this, shader._|0, pname|0)
+    switch(pname) {
+      case gl.DELETE_STATUS:
+        return shader._pendingDelete
+      case gl.COMPILE_STATUS:
+        return !!_getShaderParameter.call(this, shader._, pname)
+      case gl.SHADER_TYPE:
+        return _getShaderParameter.call(this, shader._, pname)|0
+    }
+    setError(this, gl.INVALID_ENUM)
   }
+  return null
 }
 
 var _getShaderInfoLog = gl.getShaderInfoLog
@@ -1098,6 +1200,7 @@ gl.getShaderInfoLog = function getShaderInfoLog(shader) {
   if(checkWrapper(this, shader, WebGLShader)) {
     return _getShaderInfoLog.call(this, shader._|0)
   }
+  return null
 }
 
 var _getShaderSource = gl.getShaderSource
@@ -1105,11 +1208,36 @@ gl.getShaderSource = function getShaderSource(shader) {
   if(checkWrapper(this, shader, WebGLShader)) {
     return _getShaderSource.call(this, shader._|0)
   }
+  return null
 }
 
 var _getTexParameter = gl.getTexParameter
 gl.getTexParameter = function getTexParameter(target, pname) {
-  return _getTexParameter.call(this, target|0, pname|0)
+  target |= 0
+  pname  |= 0
+
+  if(!validTextureTarget(target)) {
+    setError(this, gl.INVALID_ENUM)
+    return null
+  }
+
+  var unit = activeTextureUnit(this)
+  if((target === gl.TEXTURE_2D && !unit._bind2D) ||
+     (target === gl.TEXTURE_CUBE && !unit._bindCube)) {
+    setError(this, gl.INVALID_OPERATION)
+    return null
+  }
+
+  switch(pname) {
+    case gl.TEXTURE_MAG_FILTER:
+    case gl.TEXTURE_MIN_FILTER:
+    case gl.TEXTURE_WRAP_S:
+    case gl.TEXTURE_WRAP_T:
+      return _getTexParameter.call(this, target, pname)
+  }
+
+  setError(this, gl.INVALID_ENUM)
+  return null
 }
 
 var _getUniform = gl.getUniform
@@ -1170,27 +1298,27 @@ gl.getUniformLocation = function getUniformLocation(program, name) {
     name = name + ''
     var loc = _getUniformLocation.call(this, program._|0, name)
     if(loc >= 0) {
-      var info = null
-      saveError(this)
+      var searchName = name
       if(/\[\d+\]$/.test(name)) {
-        var reducedName = name.replace(/\[\d+\]$/, '')
-        var reducedLoc = _getUniformLocation.call(this,
-          program._|0,
-          reducedName)
-        info = _getActiveUniform.call(this,
-          program._|0,
-          reducedLoc)
-        if(info !== null) {
-          info.name = name
-        }
-      } else {
-        info = _getActiveUniform.call(this, program._|0, loc)
+        searchName = name.replace(/\[\d+\]$/, '[0]')
       }
-      this.getError()
-      restoreError(this, gl.NO_ERROR)
+
+      var info = null
+      for(var i=0; i<program._uniforms.length; ++i) {
+        var infoItem = program._uniforms[i]
+        if(infoItem.name === searchName) {
+          info = {
+            size: infoItem.size,
+            type: infoItem.type,
+            name: infoItem.name
+          }
+        }
+      }
       if(info === null) {
+        console.log("WARNING! SCREWED UP UNIFORM")
         return null
       }
+
       var result = new WebGLUniformLocation(
         loc,
         program,
@@ -1299,6 +1427,12 @@ gl.linkProgram = function linkProgram(program) {
         program._attributes[i] = this.getAttribLocation(
             program,
             this.getActiveAttrib(program, i).name)|0
+      }
+
+      var numUniforms = this.getProgramParameter(program, gl.ACTIVE_UNIFORMS)
+      program._uniforms.length = numUniforms
+      for(var i=0; i<numUniforms; ++i) {
+        program._uniforms[i] = this.getActiveUniform(program, i)
       }
     }
     restoreError(this, error)
