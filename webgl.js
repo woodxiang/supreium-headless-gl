@@ -90,6 +90,7 @@ function WebGLShaderPrecisionFormat(_) {
   this.rangeMax = _.rangeMax
   this.precision = _.precision
 }
+exports.WebGLShaderPrecisionFormat = WebGLShaderPrecisionFormat
 
 function WebGLUniformLocation(_, program, info) {
   this._           = _
@@ -1494,12 +1495,15 @@ gl.getParameter = function getParameter(pname) {
 }
 
 var _getShaderPrecisionFormat = gl.getShaderPrecisionFormat
-gl.shaderPrecisionFormat = function(shaderType, precisionType) {
+gl.getShaderPrecisionFormat = function getShaderPrecisionFormat(
+  shaderType,
+  precisionType) {
+
   shaderType    |= 0
   precisionType |= 0
 
   if(!(shaderType === gl.FRAGMENT_SHADER ||
-       shaderType === gl.VERTEX_SHADER) &&
+       shaderType === gl.VERTEX_SHADER) ||
      !(precisionType === gl.LOW_FLOAT    ||
        precisionType === gl.MEDIUM_FLOAT ||
        precisionType === gl.HIGH_FLOAT   ||
