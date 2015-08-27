@@ -194,6 +194,8 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   static NAN_METHOD(LineWidth);
   static NAN_METHOD(PolygonOffset);
 
+  static NAN_METHOD(GetShaderPrecisionFormat);
+
   static NAN_METHOD(StencilFunc);
   static NAN_METHOD(StencilFuncSeparate);
   static NAN_METHOD(StencilMask);

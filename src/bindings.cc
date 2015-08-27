@@ -170,6 +170,8 @@ void init(v8::Handle<v8::Object> exports)
   JS_GL_METHOD("getExtension", GetExtension);
   JS_GL_METHOD("checkFramebufferStatus", CheckFramebufferStatus);
 
+  JS_GL_METHOD("getShaderPrecisionFormat", GetShaderPrecisionFormat);
+
   JS_GL_METHOD("frontFace", FrontFace);
   JS_GL_METHOD("sampleCoverage", SampleCoverage);
   JS_GL_METHOD("destroy", Destroy);

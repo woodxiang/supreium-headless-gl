@@ -85,6 +85,12 @@ function WebGLActiveInfo(_) {
 }
 exports.WebGLActiveInfo = WebGLActiveInfo
 
+function WebGLShaderPrecisionFormat(_) {
+  this.rangeMin = _.rangeMin
+  this.rangeMax = _.rangeMax
+  this.precision = _.precision
+}
+
 function WebGLUniformLocation(_, program, info) {
   this._           = _
   this._program    = program
@@ -1461,6 +1467,32 @@ gl.getParameter = function getParameter(pname) {
   }
 }
 
+var _getShaderPrecisionFormat = gl.getShaderPrecisionFormat
+gl.shaderPrecisionFormat = function(shaderType, precisionType) {
+  shaderType    |= 0
+  precisionType |= 0
+
+  if(!(shaderType === gl.FRAGMENT_SHADER ||
+       shaderType === gl.VERTEX_SHADER) &&
+     !(precisionType === gl.LOW_FLOAT    ||
+       precisionType === gl.MEDIUM_FLOAT ||
+       precisionType === gl.HIGH_FLOAT   ||
+       precisionType === gl.LOW_INT      ||
+       precisionType === gl.MEDIUM_INT   ||
+       precisionType === gl.HIGH_INT) ) {
+     setError(this, gl.INVALID_ENUM)
+     return
+  }
+
+  var format = _getShaderPrecisionFormat.call(this, shaderType, precisionType)
+  if(!format) {
+    return null
+  }
+
+  return new WebGLShaderPrecisionFormat(format)
+}
+
+
 var _getBufferParameter = gl.getBufferParameter
 gl.getBufferParameter = function getBufferParameter(target, pname) {
   target |= 0
@@ -1932,6 +1964,7 @@ var _scissor = gl.scissor
 gl.scissor = function scissor(x, y, width, height) {
   return _scissor.call(this, x|0, y|0, width|0, height|0)
 }
+
 
 var _shaderSource = gl.shaderSource
 gl.shaderSource = function shaderSource(shader, source) {

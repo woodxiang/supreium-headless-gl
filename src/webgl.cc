@@ -1755,6 +1755,29 @@ GL_METHOD(GetProgramInfoLog) {
   NanReturnValue(NanNew<v8::String>(Error));
 }
 
+GL_METHOD(GetShaderPrecisionFormat) {
+  GL_BOILERPLATE;
+
+  GLenum shaderType    = args[0]->Int32Value();
+  GLenum precisionType = args[1]->Int32Value();
+
+  GLint range[2];
+  GLint precision;
+
+  glGetShaderPrecisionFormat(shaderType, precisionType, range, &precision);
+
+  v8::Local<v8::Object> result = NanNew<v8::Object>();
+
+  result->Set(NanNew<v8::String>("rangeMin"),
+    NanNew<v8::Integer>(range[0]));
+  result->Set(NanNew<v8::String>("rangeMax"),
+    NanNew<v8::Integer>(range[1]));
+  result->Set(NanNew<v8::String>("precision"),
+    NanNew<v8::Integer>(precision));
+
+  NanReturnValue(result);
+}
+
 GL_METHOD(GetRenderbufferParameter) {
   GL_BOILERPLATE;
 
