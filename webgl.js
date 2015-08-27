@@ -918,10 +918,8 @@ function deleteObject(name, type, refset) {
   }
 }
 
-deleteObject('deleteFramebuffer', WebGLFramebuffer, '_framebuffers')
 deleteObject('deleteProgram',     WebGLProgram,     '_programs')
 deleteObject('deleteShader',      WebGLShader,      '_shaders')
-
 
 var _deleteBuffer = gl.deleteBuffer
 WebGLBuffer.prototype._performDelete = function() {
@@ -938,8 +936,8 @@ gl.deleteBuffer = function deleteBuffer(buffer) {
   if(!(buffer instanceof WebGLBuffer &&
        checkOwns(this, buffer))) {
     setError(this, gl.INVALID_OPERATION)
+    return
   }
-
 
   if(this._activeArrayBuffer === buffer) {
     this.bindBuffer(gl.ARRAY_BUFFER, null)
@@ -962,6 +960,34 @@ gl.deleteBuffer = function deleteBuffer(buffer) {
   buffer._pendingDelete = true
   checkDelete(buffer)
 }
+
+
+var _deleteFramebuffer = gl.deleteFramebuffer
+WebGLFramebuffer.prototype._performDelete = function() {
+  var ctx = this._ctx
+  delete ctx._framebuffers[this._|0]
+  _deleteFramebuffer.call(ctx, this._|0)
+}
+
+gl.deleteFramebuffer = function deleteFramebuffer(framebuffer) {
+  if(!checkObject(framebuffer)) {
+    throw new TypeError('deleteFramebuffer(WebGLFramebuffer)')
+  }
+
+  if(!(framebuffer instanceof WebGLFramebuffer &&
+       checkOwns(this, framebuffer))) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
+  if(this._activeFramebuffer === framebuffer) {
+    this.bindFramebuffer(gl.FRAMEBUFFER, null)
+  }
+
+  framebuffer._pendingDelete = true
+  checkDelete(framebuffer)
+}
+
 
 
 //Need to handle textures and render buffers as a special case:
