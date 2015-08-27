@@ -4,7 +4,6 @@ var nativeGL = require('bindings')('webgl')
 
 var HEADLESS_VERSION = require('./package.json').version
 
-
 //We need to wrap some of the native WebGL functions to handle certain error codes and check input values
 var gl = nativeGL.WebGLRenderingContext.prototype
 gl.VERSION = 0x1F02
@@ -60,9 +59,9 @@ function WebGLFramebuffer(_, ctx) {
 exports.WebGLFramebuffer = WebGLFramebuffer
 
 function WebGLRenderbuffer(_, ctx) {
-  this._        = _
-  this._ctx     = ctx
-  this._binding = 0
+  this._              = _
+  this._ctx           = ctx
+  this._binding       = 0
   this._pendingDelete = false
   this._references    = []
   this._refCount      = 0
@@ -70,9 +69,9 @@ function WebGLRenderbuffer(_, ctx) {
 exports.WebGLRenderbuffer = WebGLRenderbuffer
 
 function WebGLTexture(_, ctx) {
-  this._        = _
-  this._ctx     = ctx
-  this._binding = 0
+  this._              = _
+  this._ctx           = ctx
+  this._binding       = 0
   this._pendingDelete = false
   this._references    = []
   this._refCount      = 0
@@ -104,22 +103,21 @@ function WebGLContextAttributes(
   preserveDrawingBuffer,
   preferLowPowerToHighPerformance,
   failIfMajorPerformanceCaveat) {
-    this.alpha = alpha
-    this.depth = depth
-    this.stencil = stencil
-    this.antialias = antialias
-    this.premultipliedAlpha = premultipliedAlpha
-    this.preserveDrawingBuffer = preserveDrawingBuffer
-    this.preferLowPowerToHighPerformance = preferLowPowerToHighPerformance
-    this.failIfMajorPerformanceCaveat = failIfMajorPerformanceCaveat
+    this.alpha                            = alpha
+    this.depth                            = depth
+    this.stencil                          = stencil
+    this.antialias                        = antialias
+    this.premultipliedAlpha               = premultipliedAlpha
+    this.preserveDrawingBuffer            = preserveDrawingBuffer
+    this.preferLowPowerToHighPerformance  = preferLowPowerToHighPerformance
+    this.failIfMajorPerformanceCaveat     = failIfMajorPerformanceCaveat
 }
 exports.WebGLContextAttributes = WebGLContextAttributes
 
 function WebGLVertexAttribute(ctx, idx) {
-  this._ctx         = ctx
-  this._idx         = idx
-  this._isPointer   = false
-
+  this._ctx           = ctx
+  this._idx           = idx
+  this._isPointer     = false
   this._pointerBuffer = null
   this._pointerOffset = 0
   this._pointerSize   = 0
@@ -131,13 +129,12 @@ function WebGLTextureUnit(ctx, idx) {
   this._ctx       = ctx
   this._idx       = idx
   this._mode      = 0
-  this._bind2D   = null
-  this._bindCube = null
+  this._bind2D    = null
+  this._bindCube  = null
 }
 exports.WebGLTextureUnit = WebGLTextureUnit
 
-
-//'"', '$', '`', '@', '\\', "'"
+//Don't allow: ", $, `, @, \, ', \0
 function isValidString(str) {
     return /^[\x01-!#%&(-?A-[\]-_a-\x7F]*$/.test(str);
 }
@@ -178,7 +175,7 @@ function getTexImage(context, target) {
 
 function checkObject(object) {
   return typeof object === 'object' ||
-         object === void 0
+         object        === void 0
 }
 
 function validFramebufferAttachment(attachment) {
@@ -189,7 +186,7 @@ function validFramebufferAttachment(attachment) {
 }
 
 function validTextureTarget(target) {
-  return target === gl.TEXTURE_2D ||
+  return target === gl.TEXTURE_2D       ||
          target === gl.TEXTURE_CUBE_MAP
 }
 
@@ -308,7 +305,6 @@ function checkLocationActive(context, location) {
   return true
 }
 
-
 function checkWrapper(context, object, wrapper) {
   if(!checkValid(object, wrapper)) {
     setError(context, gl.INVALID_VALUE)
@@ -381,14 +377,6 @@ function clearFramebufferAttachment(framebuffer, attachment) {
 }
 
 function setFramebufferAttachment(framebuffer, object, attachment) {
-  if(attachment === gl.DEPTH_ATTACHMENT ||
-     attachment === gl.STENCIL_ATTACHMENT) {
-    clearFramebufferAttachment(framebuffer, gl.DEPTH_STENCIL_ATTACHMENT)
-  } else if(attachment === gl.DEPTH_STENCIL_ATTACHMENT) {
-    clearFramebufferAttachment(framebuffer, gl.DEPTH_ATTACHMENT)
-    clearFramebufferAttachment(framebuffer, gl.STENCIL_ATTACHMENT)
-  }
-
   var prevObject = framebuffer._attachments[attachment]
   if(prevObject === object) {
     return
@@ -577,7 +565,7 @@ function bindObject(method, wrapper, activeProp) {
   }
 }
 
-bindObject('bindFramebuffer',  WebGLFramebuffer, '_activeFramebuffer')
+bindObject('bindFramebuffer',  WebGLFramebuffer,  '_activeFramebuffer')
 bindObject('bindRenderbuffer', WebGLRenderbuffer, '_activeRenderbuffer')
 
 var _bindTexture = gl.bindTexture
@@ -852,8 +840,7 @@ var _copyTexSubImage2D = gl.copyTexSubImage2D
 gl.copyTexSubImage2D = function copyTexSubImage2D(
   target,
   level,
-  xoffset,
-  yoffset,
+  xoffset, yoffset,
   x, y, width, height) {
 
   var texture = getTexImage(this, target)
@@ -891,12 +878,12 @@ function createObject(method, wrapper, refset) {
     }
   }
 }
-createObject('createBuffer', WebGLBuffer, '_buffers')
-createObject('createFramebuffer', WebGLFramebuffer, '_framebuffers')
-createObject('createProgram', WebGLProgram, '_programs')
+createObject('createBuffer',       WebGLBuffer,       '_buffers')
+createObject('createFramebuffer',  WebGLFramebuffer,  '_framebuffers')
+createObject('createProgram',      WebGLProgram,      '_programs')
 createObject('createRenderbuffer', WebGLRenderbuffer, '_renderbuffers')
-createObject('createShader', WebGLShader, '_shaders')
-createObject('createTexture', WebGLTexture, '_textures')
+createObject('createShader',       WebGLShader,       '_shaders')
+createObject('createTexture',      WebGLTexture,      '_textures')
 
 //Generic object deletion method
 function deleteObject(name, type, refset) {
@@ -922,18 +909,19 @@ function deleteObject(name, type, refset) {
   }
 }
 
-deleteObject('deleteBuffer',       WebGLBuffer, '_buffers')
-deleteObject('deleteFramebuffer',  WebGLFramebuffer, '_framebuffers')
-deleteObject('deleteProgram',      WebGLProgram, '_programs')
-deleteObject('deleteRenderbuffer', WebGLRenderbuffer, '_renderbuffers')
-deleteObject('deleteShader',       WebGLShader, '_shaders')
+deleteObject('deleteBuffer',      WebGLBuffer,      '_buffers')
+deleteObject('deleteFramebuffer', WebGLFramebuffer, '_framebuffers')
+deleteObject('deleteProgram',     WebGLProgram,     '_programs')
+deleteObject('deleteShader',      WebGLShader,      '_shaders')
 
-//Need to handle textures as a special case:
+//Need to handle textures and render buffers as a special case:
 // When a texture gets deleted, we need to do the following extra steps:
 //  1. Is it bound to the current texture unit?
 //     If so, then unbind it
 //  2. Is it attached to the active fbo?
 //     If so, then detach it
+//
+// For renderbuffers only need to do second step
 //
 // After this, proceed with the usual deletion algorithm
 //
@@ -993,6 +981,45 @@ gl.deleteTexture = function deleteTexture(texture) {
   checkDelete(texture)
 }
 
+var _deleteRenderbuffer = gl.deleteRenderbuffer
+WebGLRenderbuffer.prototype._performDelete = function() {
+  var ctx = this._ctx
+  delete ctx._renderbuffers[this._|0]
+  _deleteRenderbuffer.call(ctx, this._|0)
+}
+
+gl.deleteRenderbuffer = function deleteRenderbuffer(renderbuffer) {
+  if(!checkObject(renderbuffer)) {
+    throw new TypeError('deleteRenderbuffer(WebGLRenderbuffer)')
+  }
+
+  if(!(renderbuffer instanceof WebGLRenderbuffer &&
+       checkOwns(this, renderbuffer))) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
+  var framebuffer = this._activeFramebuffer
+  if(framebuffer && linked(framebuffer, renderbuffer)) {
+    var attachments = Object.keys(framebuffer._attachments)
+    for(var i=0; i<attachments.length; ++i) {
+      if(framebuffer._attachments[attachments[i]] === renderbuffer) {
+        this.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          attachments[i]|0,
+          gl.TEXTURE_2D,
+          null)
+      }
+    }
+  }
+
+  if(this._activeRenderbuffer === renderbuffer) {
+    this.bindRenderbuffer(gl.RENDERBUFFER, null)
+  }
+
+  renderbuffer._pendingDelete = true
+  checkDelete(renderbuffer)
+}
 
 var _depthFunc = gl.depthFunc
 gl.depthFunc = function depthFunc(func) {
@@ -1144,18 +1171,45 @@ gl.framebufferRenderbuffer = function framebufferRenderbuffer(
   renderbuffertarget,
   renderbuffer) {
 
+  target             = target|0
+  attachment         = attachment|0
+  renderbuffertarget = renderbuffertarget|0
+
   if(!checkObject(renderbuffer)) {
     throw new TypeError('framebufferRenderbuffer(GLenum, GLenum, GLenum, WebGLRenderbuffer)')
-  } else if(!renderbuffer) {
-    setError(this, gl.INVALID_OPERATION)
-  } else if(checkWrapper(this, renderbuffer, WebGLRenderbuffer)) {
-    return _framebufferRenderbuffer.call(
-      this,
-      target|0,
-      attachment|0,
-      renderbuffertarget|0,
-      renderbuffer._|0)
   }
+
+  if(target !== gl.FRAMEBUFFER ||
+     !validFramebufferAttachment(attachment) ||
+     renderbuffertarget !== gl.RENDERBUFFER) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  var framebuffer = this._activeFramebuffer
+  if(!framebuffer || !renderbuffer) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
+  if(!checkWrapper(this, renderbuffer, WebGLRenderbuffer)) {
+    return
+  }
+
+  saveError(this)
+  _framebufferRenderbuffer.call(
+    this,
+    target|0,
+    attachment|0,
+    renderbuffertarget|0,
+    renderbuffer._|0)
+  var error = this.getError()
+  restoreError(this, error)
+
+  if(error !== gl.NO_ERROR) {
+    return
+  }
+  setFramebufferAttachment(framebuffer, renderbuffer, attachment)
 }
 
 var _framebufferTexture2D = gl.framebufferTexture2D
@@ -1173,8 +1227,6 @@ gl.framebufferTexture2D = function framebufferTexture2D(
   if(!checkObject(texture)) {
     throw new TypeError('framebufferTexture2D(GLenum, GLenum, GLenum, WebGLTexture, GLint)')
   }
-
-
 
   //Check parameters are ok
   if(target !== gl.FRAMEBUFFER ||
