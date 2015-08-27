@@ -149,6 +149,11 @@ function activeTexture(context, target) {
   return null
 }
 
+function checkObject(object) {
+  return typeof object === 'object' ||
+         object === void 0
+}
+
 function validFramebufferAttachment(attachment) {
   return attachment === gl.COLOR_ATTACHMENT0  ||
          attachment === gl.DEPTH_ATTACHMENT   ||
@@ -363,10 +368,14 @@ gl.activeTexture = function activeTexture(texture) {
 
 var _attachShader = gl.attachShader
 gl.attachShader = function attachShader(program, shader) {
-  if(checkOwns(this, program) &&
-     checkOwns(this, shader) &&
-     program instanceof WebGLProgram &&
-     shader instanceof WebGLShader) {
+  if(!checkObject(program) ||
+     !checkObject(shader)) {
+    throw new TypeError('attachShader(WebGLProgram, WebGLShader)')
+  }
+  if(program instanceof WebGLProgram &&
+     shader instanceof WebGLShader &&
+     checkOwns(this, program) &&
+     checkOwns(this, shader)) {
     if(link(program, shader)) {
       return _attachShader.call(
         this,
@@ -379,7 +388,10 @@ gl.attachShader = function attachShader(program, shader) {
 
 var _bindAttribLocation = gl.bindAttribLocation;
 gl.bindAttribLocation = function bindAttribLocation(program, index, name) {
-  if(checkWrapper(this, program, WebGLProgram)) {
+  if(!checkObject(program) ||
+     typeof name !== 'string') {
+    throw new TypeError('bindAttribLocation(WebGLProgram, GLint, String)')
+  } else if(checkWrapper(this, program, WebGLProgram)) {
     return _bindAttribLocation.call(
       this,
       program._|0,
@@ -403,6 +415,9 @@ function switchActiveBuffer(active, buffer) {
 var _bindBuffer = gl.bindBuffer
 gl.bindBuffer = function bindBuffer(target, buffer) {
   target |= 0
+  if(!checkObject(buffer)) {
+    throw new TypeError('bindBuffer(GLenum, WebGLBuffer)')
+  }
   if(target !== gl.ARRAY_BUFFER &&
      target !== gl.ELEMENT_ARRAY_BUFFER) {
     setError(this, gl.INVALID_ENUM)
@@ -435,6 +450,9 @@ gl.bindBuffer = function bindBuffer(target, buffer) {
 function bindObject(method, wrapper, activeProp) {
   var native = gl[method]
   gl[method] = function(target, object) {
+    if(!checkObject(object)) {
+      throw new TypeError(method + '(GLenum, ' + wrapper.name + ')')
+    }
     if(object === null) {
       native.call(
         this,
@@ -468,6 +486,10 @@ bindObject('bindRenderbuffer', WebGLRenderbuffer, '_activeRenderbuffer')
 var _bindTexture = gl.bindTexture
 gl.bindTexture = function bindTexture(target, texture) {
   target |= 0
+
+  if(!checkObject(texture)) {
+    throw new TypeError('bindTexture(GLenum, WebGLTexture)')
+  }
 
   if(!validTextureTarget(target)) {
     setError(this, gl.INVALID_ENUM)
@@ -684,6 +706,9 @@ gl.colorMask = function colorMask(red, green, blue, alpha) {
 
 var _compileShader = gl.compileShader
 gl.compileShader = function compileShader(shader) {
+  if(!checkObject(shader)) {
+    throw new TypeError('compileShader(WebGLShader)')
+  }
   if(checkWrapper(this, shader, WebGLShader)) {
     return _compileShader.call(this, shader._)
   }
@@ -762,6 +787,9 @@ function deleteObject(name, type, refset) {
   }
 
   gl[name] = function(object) {
+    if(!checkObject(object)) {
+      throw new TypeError(name + '(' + type.name + ')')
+    }
     if(checkOwns(this, object) &&
        object instanceof type) {
       var id = object._
@@ -797,6 +825,10 @@ gl.depthRange = function depthRange(zNear, zFar) {
 
 var _detachShader = gl.detachShader
 gl.detachShader = function detachShader(program, shader) {
+  if(!checkObject(program) ||
+     !checkObject(shader)) {
+    throw new TypeError('detachShader(WebGLProgram, WebGLShader)')
+  }
   if(checkWrapper(this, program, WebGLProgram) &&
      checkWrapper(this, shader, WebGLShader)) {
     if(unlink(program, shader)) {
@@ -924,7 +956,10 @@ gl.framebufferRenderbuffer = function framebufferRenderbuffer(
   attachment,
   renderbuffertarget,
   renderbuffer) {
-  if(checkWrapper(this, renderbuffer, WebGLRenderbuffer)) {
+
+  if(!checkObject(renderbuffer)) {
+    throw new TypeError('framebufferRenderbuffer(GLenum, GLenum, GLenum, WebGLRenderbuffer)')
+  } else if(checkWrapper(this, renderbuffer, WebGLRenderbuffer)) {
     return _framebufferRenderbuffer.call(
       this,
       target|0,
@@ -941,7 +976,9 @@ gl.framebufferTexture2D = function framebufferTexture2D(
   textarget,
   texture,
   level) {
-  if(checkWrapper(this, texture, WebGLTexture)) {
+  if(!checkObject(texture)) {
+    throw new TypeError('framebufferTexture2D(GLenum, GLenum, GLenum, WebGLTexture, GLint)')
+  } else if(checkWrapper(this, texture, WebGLTexture)) {
     return _framebufferTexture2D.call(
       this,
       target|0,
@@ -1127,7 +1164,9 @@ gl.getFramebufferAttachmentParameter = function getFramebufferAttachmentParamete
 var _getProgramParameter = gl.getProgramParameter
 gl.getProgramParameter = function getProgramParameter(program, pname) {
   pname |= 0
-  if(checkWrapper(this, program, WebGLProgram)) {
+  if(!checkObject(program)) {
+    throw new TypeError('getProgramParameter(WebGLProgram, GLenum)')
+  } else if(checkWrapper(this, program, WebGLProgram)) {
     switch(pname) {
       case gl.DELETE_STATUS:
         return program._pendingDelete
@@ -1148,10 +1187,12 @@ gl.getProgramParameter = function getProgramParameter(program, pname) {
 
 var _getProgramInfoLog = gl.getProgramInfoLog
 gl.getProgramInfoLog = function getProgramInfoLog(program) {
-  if(checkWrapper(this, program, WebGLProgram)) {
+  if(!checkObject(program)) {
+    throw new TypeError('getProgramInfoLog(WebGLProgram)')
+  } else if(checkWrapper(this, program, WebGLProgram)) {
     return _getProgramInfoLog.call(this, program._|0)
   }
-  return null
+  return ''
 }
 
 var _getRenderbufferParameter = gl.getRenderbufferParameter
@@ -1181,7 +1222,9 @@ gl.getRenderbufferParameter = function getRenderbufferParameter(target, pname) {
 var _getShaderParameter = gl.getShaderParameter
 gl.getShaderParameter = function getShaderParameter(shader, pname) {
   pname |= 0
-  if(checkWrapper(this, shader, WebGLShader)) {
+  if(!checkObject(shader)) {
+    throw new TypeError('getShaderParameter(WebGLShader, GLenum)')
+  } else if(checkWrapper(this, shader, WebGLShader)) {
     switch(pname) {
       case gl.DELETE_STATUS:
         return shader._pendingDelete
@@ -1197,18 +1240,22 @@ gl.getShaderParameter = function getShaderParameter(shader, pname) {
 
 var _getShaderInfoLog = gl.getShaderInfoLog
 gl.getShaderInfoLog = function getShaderInfoLog(shader) {
-  if(checkWrapper(this, shader, WebGLShader)) {
+  if(!checkObject(shader)) {
+    throw new TypeError('getShaderInfoLog(WebGLShader)')
+  } else if(checkWrapper(this, shader, WebGLShader)) {
     return _getShaderInfoLog.call(this, shader._|0)
   }
-  return null
+  return ''
 }
 
 var _getShaderSource = gl.getShaderSource
 gl.getShaderSource = function getShaderSource(shader) {
-  if(checkWrapper(this, shader, WebGLShader)) {
+  if(!checkObject(shader)) {
+    throw new TypeError('Input to getShaderSource must be an object')
+  } else if(checkWrapper(this, shader, WebGLShader)) {
     return _getShaderSource.call(this, shader._|0)
   }
-  return null
+  return ''
 }
 
 var _getTexParameter = gl.getTexParameter
@@ -1242,10 +1289,12 @@ gl.getTexParameter = function getTexParameter(target, pname) {
 
 var _getUniform = gl.getUniform
 gl.getUniform = function getUniform(program, location) {
-  if(location === null) {
+  if(!checkObject(program) ||
+     !checkObject(location)) {
+    throw new TypeError('getUniform(WebGLProgram, WebGLUniformLocation)')
+  } else if(location === null) {
     return null
-  }
-  if(checkWrapper(this, program, WebGLProgram) &&
+  } else if(checkWrapper(this, program, WebGLProgram) &&
      checkUniform(program, location)) {
     var data = _getUniform.call(this, program._|0, location._|0)
     if(!data) {
@@ -1294,7 +1343,9 @@ gl.getUniform = function getUniform(program, location) {
 
 var _getUniformLocation = gl.getUniformLocation
 gl.getUniformLocation = function getUniformLocation(program, name) {
-  if(checkWrapper(this, program, WebGLProgram)) {
+  if(!checkObject(program)) {
+    throw new TypeError('getUniformLocation(WebGLProgram, String)')
+  } else if(checkWrapper(this, program, WebGLProgram)) {
     name = name + ''
     var loc = _getUniformLocation.call(this, program._|0, name)
     if(loc >= 0) {
@@ -1345,10 +1396,9 @@ gl.getUniformLocation = function getUniformLocation(program, name) {
         result._array = arrayLocs
       }
       return result
-    } else {
-      return null
     }
   }
+  return null
 }
 
 var _getVertexAttrib = gl.getVertexAttrib
@@ -1411,6 +1461,9 @@ gl.lineWidth = function lineWidth(width) {
 
 var _linkProgram = gl.linkProgram
 gl.linkProgram = function linkProgram(program) {
+  if(!checkObject(program)) {
+    throw new TypeError('linkProgram(WebGLProgram)')
+  }
   if(checkWrapper(this, program, WebGLProgram)) {
     program._linkCount += 1
     program._attributes = []
@@ -1506,7 +1559,10 @@ gl.scissor = function scissor(x, y, width, height) {
 
 var _shaderSource = gl.shaderSource
 gl.shaderSource = function shaderSource(shader, source) {
-  if(checkWrapper(this, shader, WebGLShader)) {
+  if(!checkObject(shader) ||
+     typeof source !== 'string') {
+    throw new TypeError('shaderSource(WebGLShader, String)')
+  } else if(checkWrapper(this, shader, WebGLShader)) {
     return _shaderSource.call(this, shader._|0, source+'')
   }
 }
@@ -1620,7 +1676,10 @@ function makeUniforms() {
     var native = gl[func]
 
     gl[func] = function(location, transpose, v) {
-      if(!!transpose ||
+      if(!checkObject(location) ||
+         typeof v !== 'object') {
+        throw new TypeError(func + '(WebGLUniformLocation, Boolean, Array)')
+      } else if(!!transpose ||
         typeof v !== 'object' ||
         v === null ||
         v.length !== i*i) {
@@ -1658,25 +1717,26 @@ function makeUniforms() {
       var native = gl[func]
 
       gl[func] = function(location, x, y, z, w) {
-        if(location === null) {
+        if(!checkObject(location)) {
+          throw new TypeError(func + '(WebGLUniformLocation, ...)')
+        } else if(location === null) {
           return
-        }
-        if(checkLocationActive(this, location)) {
+        } else if(checkLocationActive(this, location)) {
           return native.call(this, location._|0, x, y, z, w)
         }
       }
 
       gl[func + 'v'] = function(location, v) {
-        if(location === null) {
+        if(!checkObject(location) ||
+           !checkObject(v)) {
+          throw new TypeError(func + 'v(WebGLUniformLocation, Array)')
+        } else if(location === null) {
           return
-        }
-        if(!checkLocationActive(this, location)) {
+        } else if(!checkLocationActive(this, location)) {
           return
-        }
-        if(typeof v !== 'object' || v === null || typeof v.length !== 'number') {
+        } else if(typeof v !== 'object' || v === null || typeof v.length !== 'number') {
           throw new TypeError('Second argument to ' + func + 'v must be array')
-        }
-        if(v.length >= i &&
+        } else if(v.length >= i &&
            v.length % i === 0) {
           if(location._array) {
             var arrayLocs = location._array
@@ -1723,7 +1783,9 @@ function switchActiveProgram(active) {
 
 var _useProgram = gl.useProgram
 gl.useProgram = function useProgram(program) {
-  if(program === null) {
+  if(!checkObject(program)) {
+    throw new TypeError('useProgram(WebGLProgram)')
+  } else if(program === null) {
     switchActiveProgram(this._activeProgram)
     this._activeProgram = null
     return _useProgram.call(this, 0)
