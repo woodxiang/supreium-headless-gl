@@ -16,9 +16,10 @@
     "install": "node-gyp rebuild"
   },
   "dependencies": {
-    "node-gyp": "^2.0.2",
+    "bindings": "^1.2.1",
+    "bit-twiddle": "^1.0.2",
     "nan": "^1.6.2",
-    "bindings": "^1.2.1"
+    "node-gyp": "^2.0.2"
   },
   "devDependencies": {
     "gl-conformance": "^1.0.0",

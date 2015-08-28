@@ -215,7 +215,7 @@ function checkTextureTarget(context, target) {
   return true
 }
 
-function glSize(type) {
+function typeSize(type) {
   switch(type) {
     case gl.UNSIGNED_BYTE:
     case gl.BYTE:
@@ -226,6 +226,21 @@ function glSize(type) {
     case gl.UNSIGNED_INT:
     case gl.INT:
     case gl.FLOAT:
+      return 4
+  }
+  return 0
+}
+
+function formatSize(internalformat) {
+  switch(internalformat) {
+    case gl.ALPHA:
+    case gl.LUMINANCE:
+      return 1
+    case gl.LUMINANCE_ALPHA:
+      return 2
+    case gl.RGB:
+      return 3
+    case gl.RGBA:
       return 4
   }
   return 0
@@ -853,22 +868,41 @@ gl.copyTexImage2D = function copyTexImage2D(
   x, y, width, height,
   border) {
 
+  target |= 0
+  level  |= 0
+  internalformat |= 0
+  x |= 0
+  y |= 0
+  width |= 0
+  height |= 0
+  border |= 0
+
   var texture = getTexImage(this, target)
   if(!texture) {
     setError(this, gl.INVALID_OPERATION)
     return
   }
 
-  return _copyTexImage2D.call(
+  if(target !== gl.TEXTURE_2D && !validCubeTarget(target)) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  if(level < 0 || x < 0 || y < 0 || width < 0 || height < 0) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  _copyTexImage2D.call(
     this,
-    target|0,
-    level|0,
-    internalformat|0,
-    x|0,
-    y|0,
-    width|0,
-    height|0,
-    border|0)
+    target,
+    level,
+    internalformat,
+    x,
+    y,
+    width,
+    height,
+    border)
 }
 
 var _copyTexSubImage2D = gl.copyTexSubImage2D
@@ -1013,7 +1047,6 @@ gl.deleteFramebuffer = function deleteFramebuffer(framebuffer) {
   framebuffer._pendingDelete = true
   checkDelete(framebuffer)
 }
-
 
 
 //Need to handle textures and render buffers as a special case:
@@ -2028,7 +2061,25 @@ gl.linkProgram = function linkProgram(program) {
 
 var _pixelStorei = gl.pixelStorei
 gl.pixelStorei = function pixelStorei(pname, param) {
-  return _pixelStorei.call(this, pname|0, param|0)
+  pname |= 0
+  param |= 0
+  if(pname === gl.UNPACK_ALIGNMENT) {
+    if(param === 1 ||
+       param === 2 ||
+       param === 4 ||
+       param === 8) {
+      this._unpackAlignment = param
+    } else {
+      setError(this, gl.INVALID_VALUE)
+      return
+    }
+  } else if(pname === gl.UNPACK_COLORSPACE_CONVERSION_WEBGL) {
+    if(!(param === gl.NONE || param === gl.BROWSER_DEFAULT_WEBGL)) {
+      setError(this, gl.INVALID_VALUE)
+      return
+    }
+  }
+  return _pixelStorei.call(this, pname, param)
 }
 
 var _polygonOffset = gl.polygonOffset
@@ -2140,9 +2191,173 @@ gl.stencilOpSeparate = function stencilOpSeparate(face, fail, zfail, zpass) {
   return _stencilOpSeparate.call(this, face|0, fail|0, zfail|0, zpass|0)
 }
 
+function computePixelSize(context, type, internalformat) {
+  var pixelSize = formatSize(internalformat)
+  if(pixelSize === 0) {
+    setError(contex, gl.INVALID_ENUM)
+    return 0
+  }
+  switch(type) {
+    case gl.UNSIGNED_BYTE:
+      return pixelSize
+    case gl.UNSIGND_SHORT_5_6_5:
+      if(internalformat !== gl.RGB) {
+        setError(this, gl.INVALID_OPERATION)
+        break
+      }
+      return 2
+    case gl.UNSIGNED_SHORT_4_4_4_4:
+    case gl.UNSIGNED_SHORT_5_5_5_1:
+      if(internalformat !== gl.RGBA) {
+        setError(this, gl.INVALID_OPERATION)
+        break
+      }
+      return 2
+  }
+  setError(context, gl.INVALID_ENUM)
+  return 0
+}
+
+function checkDimensions(
+  context,
+  target,
+  width,
+  height,
+  level) {
+  if(level  < 0  ||
+     width  < 0  ||
+     height < 0) {
+    setError(context, gl.INVALID_VALUE)
+    return false
+  }
+  if(target === gl.TEXTURE_2D) {
+    if(width  > context._maxTextureSize ||
+       height > context._maxTextureSize ||
+       level  > context._maxTextureLevel) {
+      setError(context, gl.INVALID_VALUE)
+      return false
+    }
+  } else if(validCubeTarget(target)) {
+    if(width !== height ||
+       width > context._maxCubeMapSize ||
+       level > context._maxCubeMapLevel) {
+      setError(context, gl.INVALID_VALUE)
+      return false
+    }
+  } else {
+    setError(context, gl.INVALID_ENUM)
+    return false
+  }
+  return true
+}
+
+function convertPixels(pixels) {
+  if(typeof pixels === 'object' && pixels !== null) {
+    if(pixels instanceof ArrayBuffer) {
+      return new Uint8Array(pixels)
+    } else if(pixels.buffer) {
+      return new Uint8Array(pixels.buffer)
+    }
+  }
+  return null
+}
+
+function computeRowStride(context, width, pixelSize) {
+  var rowStride = width * pixelSize
+  if(rowStride % context._unpackAlignment) {
+    rowStride += context._unpackAlignment - (rowStride % context._unpackAlignment)
+  }
+  return rowStride
+}
+
 var _texImage2D = gl.texImage2D
 gl.texImage2D = function texImage2D(
-  target, level, internalformat, width, height, border, format, type, pixels) {
+  target,
+  level,
+  internalformat,
+  width,
+  height,
+  border,
+  format,
+  type,
+  pixels) {
+
+  target         |= 0
+  level          |= 0
+  internalformat |= 0
+  width          |= 0
+  height         |= 0
+  border         |= 0
+  type           |= 0
+
+  var texture = getTexImage(this, target)
+  if(!texture ||
+     format !== internalformat) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
+  var pixelSize = computePixelSize(this, type, format)
+  if(pixelSize === 0) {
+    return
+  }
+
+  if(!checkDimensions(
+      this,
+      target,
+      width,
+      height,
+      level)) {
+    return
+  }
+
+  if(border !== 0) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  var data = convertPixels(pixels)
+  var rowStride = computeRowStride(this, width, pixelSize)
+  var imageSize = rowStride * height
+
+  if(data && data.length !== imageSize) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  _texImage2D.call(
+    this,
+    target,
+    level,
+    internalformat,
+    width,
+    height,
+    border,
+    format,
+    type,
+    data)
+}
+
+var _texSubImage2D = gl.texSubImage2D
+gl.texSubImage2D = function texSubImage2D(
+    target,
+    level,
+    xoffset,
+    yoffset,
+    width,
+    height,
+    format,
+    type,
+    pixels) {
+
+  target   |= 0
+  level    |= 0
+  xoffset  |= 0
+  yoffset  |= 0
+  width    |= 0
+  height   |= 0
+  format   |= 0
+  type     |= 0
 
   var texture = getTexImage(this, target)
   if(!texture) {
@@ -2150,32 +2365,45 @@ gl.texImage2D = function texImage2D(
     return
   }
 
-  if(pixels instanceof Uint8Array) {
-    return _texImage2D.call(
-      this,
-      target|0,
-      level|0,
-      internalformat|0,
-      width|0,
-      height|0,
-      border|0,
-      format|0,
-      type|0,
-      new Uint8Array(pixels.buffer))
-  } else if(!pixels) {
-    return _texImage2D.call(
-      this,
-      target|0,
-      level|0,
-      internalformat|0,
-      width|0,
-      height|0,
-      border|0,
-      format|0,
-      type|0,
-      null)
+  var pixelSize = computePixelSize(this, type, format)
+  if(pixelSize === 0) {
+    return
   }
-  setError(this, gl.INVALID_OPERATION)
+
+  if(!checkDimensions(
+      this,
+      target,
+      width,
+      height,
+      level)) {
+    return
+  }
+
+  if(xoffset < 0 || yoffset < 0) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  var data = convertPixels(pixels)
+  var rowStride = computeRowStride(this, width, pixelSize)
+  var imageSize = rowStride * height
+
+  if(!data || data.length !== imageSize) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  _texSubImage2D.call(
+    this,
+    target,
+    level,
+    xoffset,
+    yoffset,
+    width,
+    height,
+    format,
+    type,
+    data)
 }
 
 var _texParameterf = gl.texParameterf
@@ -2196,32 +2424,6 @@ gl.texParameteri = function texParameteri(target, pname, param) {
   if(checkTextureTarget(this, target)) {
     return _texParameteri.call(this, target, pname, param)
   }
-}
-
-var _texSubImage2D = gl.texSubImage2D
-gl.texSubImage2D = function texSubImage2D(
-  target, level, xoffset, yoffset, width, height, format, type, pixels) {
-
-  var texture = getTexImage(this, target)
-  if(!texture) {
-    setError(this, gl.INVALID_OPERATION)
-    return
-  }
-
-  if(pixels instanceof Uint8Array) {
-    return _texSubImage2D.call(
-      this,
-      target|0,
-      level|0,
-      xoffset|0,
-      yoffset|0,
-      width|0,
-      height|0,
-      format|0,
-      type|0,
-      new Uint8Array(pixels.buffer))
-  }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 //Generate uniform binding code
@@ -2413,7 +2615,7 @@ gl.vertexAttribPointer = function vertexAttribPointer(
   }
 
   //fixed, int and unsigned int aren't allowed in WebGL
-  var byteSize = glSize(type)
+  var byteSize = typeSize(type)
   if(byteSize === 0 ||
      type === gl.INT  ||
      type === gl.UNSIGNED_INT) {

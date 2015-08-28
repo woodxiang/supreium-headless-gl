@@ -1,5 +1,6 @@
 'use strict'
 
+var bits = require('bit-twiddle')
 var webgl = require('./webgl')
 
 var CONTEXT_COUNTER = 0
@@ -84,8 +85,20 @@ function createContext(width, height, options) {
     gl.vertexAttrib4f(i, 0, 0, 0, 1)
   }
 
+  //Store limits
+  gl._maxTextureSize  = gl.getParameter(gl.MAX_TEXTURE_SIZE)
+  gl._maxTextureLevel = bits.log2(bits.nextPow2(gl._maxTextureSize))
+  gl._maxCubeMapSize  = gl.getParameter(gl.MAX_CUBE_MAP_TEXTURE_SIZE)
+  gl._maxCubeMapLevel = bits.log2(bits.nextPow2(gl._maxCubeMapLevels))
+
+  //Unpack alignment
+  gl._unpackAlignment = 4
+
+  //Initialize defaults
   gl.bindBuffer(gl.ARRAY_BUFFER, null)
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+  gl.bindRenderbuffer(gl.RENDERBUFFER, null)
 
   gl.disable(gl.DEPTH_TEST)
   gl.disable(gl.STENCIL_TEST)

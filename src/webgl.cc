@@ -93,6 +93,7 @@ WebGLRenderingContext::WebGLRenderingContext(
   unpack_flip_y(false),
   unpack_premultiply_alpha(false),
   unpack_colorspace_conversion(0x9244),
+  unpack_alignment(4),
 
   next(NULL),
   prev(NULL),
@@ -474,6 +475,11 @@ GL_METHOD(PixelStorei) {
       inst->unpack_colorspace_conversion = param;
     break;
 
+    case GL_UNPACK_ALIGNMENT:
+      inst->unpack_alignment = param;
+      glPixelStorei(pname, param);
+    break;
+
     default:
       glPixelStorei(pname, param);
     break;
@@ -784,6 +790,123 @@ GL_METHOD(BindTexture) {
   NanReturnUndefined();
 }
 
+unsigned char* WebGLRenderingContext::unpackPixels(
+  GLenum type,
+  GLenum format,
+  GLint width,
+  GLint height,
+  unsigned char* pixels) {
+
+
+  //Compute pixel size
+  GLint pixelSize = 1;
+  if(type == GL_UNSIGNED_BYTE || type == GL_FLOAT) {
+    if(type == GL_FLOAT) {
+      pixelSize = 4;
+    }
+    switch(format) {
+      case GL_ALPHA:
+      case GL_LUMINANCE:
+      break;
+      case GL_LUMINANCE_ALPHA:
+        pixelSize *= 2;
+      break;
+      case GL_RGB:
+        pixelSize *= 3;
+      break;
+      case GL_RGBA:
+        pixelSize *= 4;
+      break;
+    }
+  } else {
+    pixelSize = 2;
+  }
+
+  //Compute row stride
+  GLint rowStride = pixelSize * width;
+  if((rowStride % unpack_alignment) != 0) {
+    rowStride += unpack_alignment - (rowStride % unpack_alignment);
+  }
+
+  GLint imageSize = rowStride * height;
+  unsigned char* unpacked = new unsigned char[imageSize];
+
+  if(unpack_flip_y) {
+    for(int i=0,j=height-1; j>=0; ++i, --j) {
+      memcpy(
+        (void*)(unpacked + j*rowStride),
+        (void*)(pixels   + i*rowStride),
+        width * pixelSize);
+    }
+  } else {
+    memcpy((void*)unpacked, (void*)pixels, imageSize);
+  }
+
+  //Premultiply alpha unpacking
+  if(unpack_premultiply_alpha &&
+     (format == GL_LUMINANCE_ALPHA ||
+      format == GL_RGBA)) {
+
+    for(int row=0; row<height; ++row) {
+      for(int col=0; col<width; ++col) {
+        unsigned char* pixel = unpacked + (row*rowStride) + (col*pixelSize);
+        if(format == GL_LUMINANCE_ALPHA) {
+          pixel[0] *= pixel[1] / 255.0;
+        } else if(type == GL_UNSIGNED_BYTE) {
+          float scale = pixel[3] / 255.0;
+          pixel[0] *= scale;
+          pixel[1] *= scale;
+          pixel[2] *= scale;
+        } else if(type == GL_UNSIGNED_SHORT_4_4_4_4) {
+          int r = pixel[0]&0x0f;
+          int g = pixel[0]>>4;
+          int b = pixel[1]&0x0f;
+          int a = pixel[1]>>4;
+
+          float scale = a / 15.0;
+          r *= scale;
+          g *= scale;
+          b *= scale;
+
+          pixel[0] = r + (g<<4);
+          pixel[1] = b + (a<<4);
+        } else if(type == GL_UNSIGNED_SHORT_5_5_5_1) {
+          if((pixel[0]&1) == 0) {
+            pixel[0] = 1; //why does this get set 1?!?!?!
+            pixel[1] = 0;
+          }
+        }
+      }
+    }
+  }
+
+  /*
+  printf("pixels:\n");
+  for(int i=0; i<height; ++i) {
+    for(int j=0; j<width; ++j) {
+      printf("|");
+      for(int k=0; k<pixelSize; ++k) {
+        printf("%02x", pixels[i*rowStride + pixelSize*j + k]);
+      }
+    }
+    printf("|\n");
+  }
+
+  printf("unpacked:\n");
+  for(int i=0; i<height; ++i) {
+    for(int j=0; j<width; ++j) {
+      printf("|");
+      for(int k=0; k<pixelSize; ++k) {
+        printf("%02x", unpacked[i*rowStride + pixelSize*j + k]);
+      }
+    }
+    printf("|\n");
+  }
+  fflush(stdout);
+  */
+
+  return unpacked;
+}
 
 GL_METHOD(TexImage2D) {
   GL_BOILERPLATE;
@@ -798,19 +921,87 @@ GL_METHOD(TexImage2D) {
   int type           = args[7]->Int32Value();
   void *pixels       = getImageData(args[8]);
 
-  glTexImage2D(
-    target,
-    level,
-    internalformat,
-    width,
-    height,
-    border,
-    format,
-    type,
-    pixels);
+  if(pixels && (
+      inst->unpack_flip_y ||
+      inst->unpack_premultiply_alpha)) {
+    unsigned char* unpacked = inst->unpackPixels(
+      type,
+      format,
+      width, height,
+      (unsigned char*)pixels);
+    glTexImage2D(
+      target,
+      level,
+      internalformat,
+      width,
+      height,
+      border,
+      format,
+      type,
+      (void*)unpacked);
+    delete[] unpacked;
+  } else {
+    glTexImage2D(
+      target,
+      level,
+      internalformat,
+      width,
+      height,
+      border,
+      format,
+      type,
+      pixels);
+  }
 
   NanReturnUndefined();
 }
+
+GL_METHOD(TexSubImage2D) {
+  GL_BOILERPLATE;
+  GLenum target   = args[0]->Int32Value();
+  GLint level     = args[1]->Int32Value();
+  GLint xoffset   = args[2]->Int32Value();
+  GLint yoffset   = args[3]->Int32Value();
+  GLsizei width   = args[4]->Int32Value();
+  GLsizei height  = args[5]->Int32Value();
+  GLenum format   = args[6]->Int32Value();
+  GLenum type     = args[7]->Int32Value();
+  void *pixels    = getImageData(args[8]);
+
+  if(inst->unpack_flip_y ||
+     inst->unpack_premultiply_alpha) {
+    unsigned char* unpacked = inst->unpackPixels(
+      type,
+      format,
+      width, height,
+      (unsigned char*)pixels);
+    glTexSubImage2D(
+      target,
+      level,
+      xoffset,
+      yoffset,
+      width,
+      height,
+      format,
+      type,
+      (void*)unpacked);
+    delete[] unpacked;
+  } else {
+    glTexSubImage2D(
+      target,
+      level,
+      xoffset,
+      yoffset,
+      width,
+      height,
+      format,
+      type,
+      pixels);
+  }
+
+  NanReturnUndefined();
+}
+
 
 
 GL_METHOD(TexParameteri) {
@@ -1471,25 +1662,6 @@ GL_METHOD(GetShaderSource) {
 GL_METHOD(ValidateProgram) {
   GL_BOILERPLATE;
   glValidateProgram(args[0]->Int32Value());
-  NanReturnUndefined();
-}
-
-GL_METHOD(TexSubImage2D) {
-  GL_BOILERPLATE;
-  GLenum target   = args[0]->Int32Value();
-  GLint level     = args[1]->Int32Value();
-  GLint xoffset   = args[2]->Int32Value();
-  GLint yoffset   = args[3]->Int32Value();
-  GLsizei width   = args[4]->Int32Value();
-  GLsizei height  = args[5]->Int32Value();
-  GLenum format   = args[6]->Int32Value();
-  GLenum type     = args[7]->Int32Value();
-  void *pixels    = getImageData(args[8]);
-  if(!pixels) {
-    inst->setError(GL_INVALID_VALUE);
-  } else {
-    glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
-  }
   NanReturnUndefined();
 }
 
