@@ -231,6 +231,31 @@ function glSize(type) {
   return 0
 }
 
+function vertexCount(primitive, count) {
+  switch(primitive) {
+    case gl.TRIANGLES:
+      return count - (count % 3)
+    case gl.LINES:
+      return count - (count % 2)
+    case gl.LINE_LOOP:
+    case gl.POINTS:
+      return count
+    case gl.TRIANGLE_FAN:
+    case gl.LINE_STRIP:
+      if(count < 2) {
+        return 0
+      }
+      return count
+    case gl.TRIANGLE_STRIP:
+      if(count < 3) {
+        return 0
+      }
+      return count
+    default:
+      return -1
+  }
+}
+
 function link(a, b) {
   a._references.push(b)
   b._refCount += 1
@@ -1110,7 +1135,10 @@ gl.depthMask = function depthMask(flag) {
 
 var _depthRange = gl.depthRange
 gl.depthRange = function depthRange(zNear, zFar) {
-  return _depthRange.call(this, +zNear, +zFar)
+  if(zNear <= zFar) {
+    return _depthRange.call(this, +zNear, +zFar)
+  }
+  setError(this, gl.INVALID_OPERATION)
 }
 
 var _detachShader = gl.detachShader
@@ -1157,10 +1185,30 @@ gl.disableVertexAttribArray = function disableVertexAttribArray(index) {
 
 var _drawArrays = gl.drawArrays
 gl.drawArrays = function drawArrays(mode, first, count) {
+  mode  |= 0
   first |= 0
   count |= 0
-  if(checkVertexAttribState(this, count + first - 1)) {
-    return _drawArrays.call(this, mode|0, first, count)
+
+  if(first < 0 || count < 0) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  var reducedCount = vertexCount(mode, count)
+  if(reducedCount < 0) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+  if(count === 0) {
+    return
+  }
+
+  var maxIndex = first
+  if(reducedCount > 0) {
+    maxIndex = (reducedCount + first - 1)>>>0
+  }
+  if(checkVertexAttribState(this, maxIndex)) {
+    return _drawArrays.call(this, mode, first, reducedCount)
   }
 }
 
@@ -1170,6 +1218,11 @@ gl.drawElements = function drawElements(mode, count, type, offset) {
   count   |= 0
   type    |= 0
   offset  |= 0
+
+  if(count < 0 || offset < 0) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
 
   var elementBuffer = this._activeElementArrayBuffer
   if(!elementBuffer) {
@@ -1193,8 +1246,47 @@ gl.drawElements = function drawElements(mode, count, type, offset) {
     return
   }
 
-  if(count + offset > elementData.length) {
-    setError(this, gl.INVALID_VALUE)
+  switch(mode) {
+    case gl.TRIANGLES:
+      if(count % 3) {
+        setError(this, gl.INVALID_OPERATION)
+        return
+      }
+    break
+    case gl.LINES:
+      if(count % 2) {
+        setError(this, gl.INVALID_OPERATION)
+        return
+      }
+    break
+    case gl.POINTS:
+    break
+    case gl.LINE_LOOP:
+    case gl.LINE_STRIP:
+      if(count < 2) {
+        setError(this, gl.INVALID_OPERATION)
+        return
+      }
+    break
+    case gl.TRIANGLE_FAN:
+    case gl.TRIANGLE_STRIP:
+      if(count < 3) {
+        setError(this, gl.INVALID_OPERATION)
+        return
+      }
+    break
+    default:
+      setError(this, gl.INVALID_ENUM)
+      return
+  }
+
+  if(count === 0) {
+    checkVertexAttribState(this, 0)
+    return
+  }
+
+  if((count + offset)>>>0 > elementData.length) {
+    setError(this, gl.INVALID_OPERATION)
     return
   }
 
@@ -1202,6 +1294,11 @@ gl.drawElements = function drawElements(mode, count, type, offset) {
   var maxIndex = -1
   for(var i=offset; i<offset+count; ++i) {
     maxIndex = Math.max(maxIndex, elementData[i])
+  }
+
+  if(maxIndex < 0) {
+    checkVertexAttribState(this, 0)
+    return
   }
 
   if(checkVertexAttribState(this, maxIndex)) {
@@ -1803,7 +1900,6 @@ gl.getUniformLocation = function getUniformLocation(program, name) {
         }
       }
       if(!info) {
-        console.log("WARNING! SCREWED UP UNIFORM")
         return null
       }
 
