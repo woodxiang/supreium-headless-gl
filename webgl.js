@@ -2200,7 +2200,7 @@ function computePixelSize(context, type, internalformat) {
   switch(type) {
     case gl.UNSIGNED_BYTE:
       return pixelSize
-    case gl.UNSIGND_SHORT_5_6_5:
+    case gl.UNSIGNED_SHORT_5_6_5:
       if(internalformat !== gl.RGB) {
         setError(this, gl.INVALID_OPERATION)
         break
@@ -2295,8 +2295,7 @@ gl.texImage2D = function texImage2D(
   }
 
   var texture = getTexImage(this, target)
-  if(!texture ||
-     format !== internalformat) {
+  if(!texture || format !== internalformat) {
     setError(this, gl.INVALID_OPERATION)
     return
   }
@@ -2324,7 +2323,7 @@ gl.texImage2D = function texImage2D(
   var rowStride = computeRowStride(this, width, pixelSize)
   var imageSize = rowStride * height
 
-  if(data && data.length !== imageSize) {
+  if(data && data.length < imageSize) {
     setError(this, gl.INVALID_VALUE)
     return
   }
