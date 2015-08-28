@@ -2194,7 +2194,7 @@ gl.stencilOpSeparate = function stencilOpSeparate(face, fail, zfail, zpass) {
 function computePixelSize(context, type, internalformat) {
   var pixelSize = formatSize(internalformat)
   if(pixelSize === 0) {
-    setError(contex, gl.INVALID_ENUM)
+    setError(context, gl.INVALID_ENUM)
     return 0
   }
   switch(type) {
@@ -2290,6 +2290,10 @@ gl.texImage2D = function texImage2D(
   border         |= 0
   type           |= 0
 
+  if(typeof pixels !== 'object') {
+    throw new TypeError('texImage2D(GLenum, GLint, GLenum, GLint, GLint, GLint, GLenum, GLenum, Uint8Array)')
+  }
+
   var texture = getTexImage(this, target)
   if(!texture ||
      format !== internalformat) {
@@ -2349,6 +2353,10 @@ gl.texSubImage2D = function texSubImage2D(
     format,
     type,
     pixels) {
+
+  if(typeof pixels !== 'object') {
+    throw new TypeError('texSubImage2D(GLenum, GLint, GLint, GLint, GLint, GLint, GLenum, GLenum, Uint8Array)')
+  }
 
   target   |= 0
   level    |= 0
@@ -2412,7 +2420,16 @@ gl.texParameterf = function texParameterf(target, pname, param) {
   pname  |= 0
   param  = +param
   if(checkTextureTarget(this, target)) {
-    return _texParameterf.call(this, target, pname, param)
+    switch(pname) {
+      case gl.TEXTURE_MIN_FILTER:
+      case gl.TEXTURE_MAG_FILTER:
+      case gl.TEXTURE_WRAP_S:
+      case gl.TEXTURE_WRAP_T:
+        return _texParameterf.call(this, target, pname, param)
+    }
+
+    setError(this, gl.INVALID_ENUM)
+    return
   }
 }
 
@@ -2422,7 +2439,16 @@ gl.texParameteri = function texParameteri(target, pname, param) {
   pname  |= 0
   param  |= 0
   if(checkTextureTarget(this, target)) {
-    return _texParameteri.call(this, target, pname, param)
+    switch(pname) {
+      case gl.TEXTURE_MIN_FILTER:
+      case gl.TEXTURE_MAG_FILTER:
+      case gl.TEXTURE_WRAP_S:
+      case gl.TEXTURE_WRAP_T:
+        return _texParameterf.call(this, target, pname, param)
+    }
+
+    setError(this, gl.INVALID_ENUM)
+    return
   }
 }
 
