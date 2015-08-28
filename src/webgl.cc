@@ -879,32 +879,7 @@ unsigned char* WebGLRenderingContext::unpackPixels(
       }
     }
   }
-
-  /*
-  printf("pixels:\n");
-  for(int i=0; i<height; ++i) {
-    for(int j=0; j<width; ++j) {
-      printf("|");
-      for(int k=0; k<pixelSize; ++k) {
-        printf("%02x", pixels[i*rowStride + pixelSize*j + k]);
-      }
-    }
-    printf("|\n");
-  }
-
-  printf("unpacked:\n");
-  for(int i=0; i<height; ++i) {
-    for(int j=0; j<width; ++j) {
-      printf("|");
-      for(int k=0; k<pixelSize; ++k) {
-        printf("%02x", unpacked[i*rowStride + pixelSize*j + k]);
-      }
-    }
-    printf("|\n");
-  }
-  fflush(stdout);
-  */
-
+  
   return unpacked;
 }
 

@@ -89,7 +89,7 @@ function createContext(width, height, options) {
   gl._maxTextureSize  = gl.getParameter(gl.MAX_TEXTURE_SIZE)
   gl._maxTextureLevel = bits.log2(bits.nextPow2(gl._maxTextureSize))
   gl._maxCubeMapSize  = gl.getParameter(gl.MAX_CUBE_MAP_TEXTURE_SIZE)
-  gl._maxCubeMapLevel = bits.log2(bits.nextPow2(gl._maxCubeMapLevels))
+  gl._maxCubeMapLevel = bits.log2(bits.nextPow2(gl._maxCubeMapSize))
 
   //Unpack alignment
   gl._unpackAlignment = 4

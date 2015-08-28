@@ -2238,9 +2238,9 @@ function checkDimensions(
       return false
     }
   } else if(validCubeTarget(target)) {
-    if(width !== height ||
-       width > context._maxCubeMapSize ||
-       level > context._maxCubeMapLevel) {
+    if(width  > context._maxCubeMapSize ||
+       height > context._maxCubeMapSize ||
+       level  > context._maxCubeMapLevel) {
       setError(context, gl.INVALID_VALUE)
       return false
     }
@@ -2314,7 +2314,8 @@ gl.texImage2D = function texImage2D(
     return
   }
 
-  if(border !== 0) {
+  if(border !== 0 ||
+    (validCubeTarget(target) && width !== height)) {
     setError(this, gl.INVALID_VALUE)
     return
   }
@@ -2395,7 +2396,7 @@ gl.texSubImage2D = function texSubImage2D(
   var rowStride = computeRowStride(this, width, pixelSize)
   var imageSize = rowStride * height
 
-  if(!data || data.length !== imageSize) {
+  if(!data || data.length < imageSize) {
     setError(this, gl.INVALID_VALUE)
     return
   }
