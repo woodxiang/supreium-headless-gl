@@ -522,6 +522,9 @@ gl.bindAttribLocation = function bindAttribLocation(program, index, name) {
   if(!isValidString(name)) {
     setError(this, gl.INVALID_VALUE)
     return
+  } else if(/^_?webgl_a/.test(name)) {
+    setError(this, gl.INVALID_OPERATION)
+    return
   } else if(checkWrapper(this, program, WebGLProgram)) {
     return _bindAttribLocation.call(
       this,
@@ -1399,6 +1402,17 @@ gl.framebufferRenderbuffer = function framebufferRenderbuffer(
     return
   }
 
+  if(!renderbuffer) {
+    //For null renderbuffers, we use framebufferTexture2D instead
+    this.framebufferTexture2D(
+      target,
+      attachment,
+      gl.TEXTURE_2D,
+      null,
+      0)
+    return
+  }
+
   if(!checkWrapper(this, renderbuffer, WebGLRenderbuffer)) {
     return
   }
@@ -1406,9 +1420,9 @@ gl.framebufferRenderbuffer = function framebufferRenderbuffer(
   saveError(this)
   _framebufferRenderbuffer.call(
     this,
-    target|0,
-    attachment|0,
-    renderbuffertarget|0,
+    target,
+    attachment,
+    renderbuffertarget,
     renderbuffer._|0)
   var error = this.getError()
   restoreError(this, error)
