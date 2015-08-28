@@ -797,7 +797,6 @@ unsigned char* WebGLRenderingContext::unpackPixels(
   GLint height,
   unsigned char* pixels) {
 
-
   //Compute pixel size
   GLint pixelSize = 1;
   if(type == GL_UNSIGNED_BYTE || type == GL_FLOAT) {
@@ -879,7 +878,7 @@ unsigned char* WebGLRenderingContext::unpackPixels(
       }
     }
   }
-  
+
   return unpacked;
 }
 
