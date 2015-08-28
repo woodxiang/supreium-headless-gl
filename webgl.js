@@ -65,6 +65,8 @@ function WebGLRenderbuffer(_, ctx) {
   this._pendingDelete = false
   this._references    = []
   this._refCount      = 0
+  this._width         = 0
+  this._height        = 0
 }
 exports.WebGLRenderbuffer = WebGLRenderbuffer
 
@@ -75,6 +77,8 @@ function WebGLTexture(_, ctx) {
   this._pendingDelete = false
   this._references    = []
   this._refCount      = 0
+  this._levelWidth    = new Int32Array(32)
+  this._levelHeight   = new Int32Array(32)
 }
 exports.WebGLTexture = WebGLTexture
 
@@ -1397,7 +1401,7 @@ gl.framebufferRenderbuffer = function framebufferRenderbuffer(
   }
 
   var framebuffer = this._activeFramebuffer
-  if(!framebuffer || !renderbuffer) {
+  if(!framebuffer) {
     setError(this, gl.INVALID_OPERATION)
     return
   }
@@ -2087,6 +2091,16 @@ gl.pixelStorei = function pixelStorei(pname, param) {
       setError(this, gl.INVALID_VALUE)
       return
     }
+  } else if(pname === gl.PACK_ALIGNMENT) {
+    if(param === 1 ||
+       param === 2 ||
+       param === 4 ||
+       param === 8) {
+      this._packAlignment = param
+    } else {
+      setError(this, gl.INVALID_VALUE)
+      return
+    }
   } else if(pname === gl.UNPACK_COLORSPACE_CONVERSION_WEBGL) {
     if(!(param === gl.NONE || param === gl.BROWSER_DEFAULT_WEBGL)) {
       setError(this, gl.INVALID_VALUE)
@@ -2103,33 +2117,59 @@ gl.polygonOffset = function polygonOffset(factor, units) {
 
 var _readPixels = gl.readPixels
 gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
-  width = width|0
-  height = height|0
+  x       |= 0
+  y       |= 0
+  width   |= 0
+  height  |= 0
   if(format === gl.RGB ||
-     format === gl.ALPHA) {
-    //Special case: gl.RGB reports invalid operation
+     format === gl.ALPHA ||
+     type   !== gl.UNSIGNED_BYTE) {
     setError(this, gl.INVALID_OPERATION)
+    return
   } else if(format !== gl.RGBA) {
     setError(this, gl.INVALID_ENUM)
-  } else if(width < 0 || height < 0) {
+    return
+  } else if(
+    width  < 0 ||
+    height < 0 ||
+    !(pixels instanceof Uint8Array)) {
     setError(this, gl.INVALID_VALUE)
-  } else if(pixels instanceof Uint8Array &&
-    width * height * 4 <= pixels.length) {
-    if(width * height > 0) {
-      return _readPixels.call(
-        this,
-        x|0,
-        y|0,
-        width,
-        height,
-        format|0,
-        type|0,
-        new Uint8Array(pixels.buffer))
-    }
-  } else {
-    //Default unspecified error
-    setError(this, gl.INVALID_OPERATION)
+    return
   }
+
+  var rowStride = width * 4
+  if(rowStride % this._packAlignment !== 0) {
+    rowStride += this._packAlignment - (rowStride % this._packAlignment)
+  }
+
+  var imageSize = rowStride * (height-1) + width*4
+  if(imageSize <= 0) {
+    return
+  }
+
+  if(pixels.length < imageSize) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  var framebuffer  = this._activeFramebuffer
+  if(framebuffer) {
+    var colors = framebuffer._attachments[gl.COLOR_ATTACHMENT0]
+    if(!colors || this.checkFramebufferStatus() !== gl.FRAMEBUFFER_COMPLETE) {
+      setError(this, gl.INVALID_FRAMEBUFFER_OPERATION)
+      return
+    }
+  }
+
+  _readPixels.call(
+    this,
+    x,
+    y,
+    width,
+    height,
+    format,
+    type,
+    new Uint8Array(pixels.buffer))
 }
 
 var _renderbufferStorage = gl.renderbufferStorage
@@ -2138,12 +2178,38 @@ gl.renderbufferStorage = function renderbufferStorage(
   internalformat,
   width,
   height) {
-  return _renderbufferStorage.call(
+
+  target         |= 0
+  internalformat |= 0
+  width          |= 0
+  height         |= 0
+
+  if(target !== gl.RENDERBUFFER) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  var renderbuffer = this._activeRenderbuffer
+  if(!renderbuffer) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
+  saveError(this)
+  _renderbufferStorage.call(
     this,
-    target|0,
-    internalformat|0,
-    width|0,
-    height|0)
+    target,
+    internalformat,
+    width,
+    height)
+  var error = this.getError()
+  restoreError(this, error)
+  if(error !== gl.NO_ERROR) {
+    return
+  }
+
+  renderbuffer._width  = width
+  renderbuffer._height = height
 }
 
 var _sampleCoverage = gl.sampleCoverage
@@ -2343,6 +2409,7 @@ gl.texImage2D = function texImage2D(
     return
   }
 
+  saveError(this)
   _texImage2D.call(
     this,
     target,
@@ -2354,6 +2421,15 @@ gl.texImage2D = function texImage2D(
     format,
     type,
     data)
+  var error = this.getError()
+  restoreError(this, error)
+  if(error !== gl.NO_ERROR) {
+    return
+  }
+
+  //Save width and height at level
+  texture._levelWidth[level]  = width
+  texture._levelHeight[level] = height
 }
 
 var _texSubImage2D = gl.texSubImage2D

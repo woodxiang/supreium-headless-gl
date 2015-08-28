@@ -93,6 +93,7 @@ function createContext(width, height, options) {
 
   //Unpack alignment
   gl._unpackAlignment = 4
+  gl._packAlignment   = 4
 
   //Initialize defaults
   gl.bindBuffer(gl.ARRAY_BUFFER, null)
