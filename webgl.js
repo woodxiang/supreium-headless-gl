@@ -50,7 +50,7 @@ function WebGLBuffer(_, ctx) {
   this._pendingDelete = false
   this._references    = []
   this._refCount      = 0
-  this._elements      = null
+  this._elements      = new Uint8Array(0)
 }
 exports.WebGLBuffer = WebGLBuffer
 
@@ -171,9 +171,27 @@ function WebGLTextureUnit(ctx, idx) {
 }
 exports.WebGLTextureUnit = WebGLTextureUnit
 
+function unpackTypedArray(array) {
+  return (new Uint8Array(array.buffer)).subarray(
+      array.byteOffset,
+      array.byteLength)
+}
+
 //Don't allow: ", $, `, @, \, ', \0
 function isValidString(str) {
     return /^[\x01-!#%&(-?A-[\]-_a-\x7F]*$/.test(str);
+}
+
+function isTypedArray(data) {
+  return data instanceof Uint8Array ||
+         data instanceof Uint8ClampedArray ||
+         data instanceof Int8Array ||
+         data instanceof Uint16Array ||
+         data instanceof Int16Array ||
+         data instanceof Uint32Array ||
+         data instanceof Int32Array ||
+         data instanceof Float32Array ||
+         data instanceof Float64Array
 }
 
 function activeTextureUnit(context) {
@@ -933,49 +951,72 @@ gl.bufferData = function bufferData(target, data, usage) {
     setError(this, gl.INVALID_ENUM)
     return
   }
+
+  if(target !== gl.ARRAY_BUFFER &&
+     target !== gl.ELEMENT_ARRAY_BUFFER) {
+    setError(this, gl.INVALID_ENUM)
+  }
+
+  var active = getActiveBuffer(this, target)
+  if(!active) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
   if(typeof data === 'object') {
-    if(data) {
-      var u8Data = null
-      if(data.buffer) {
-        u8Data = new Uint8Array(data.buffer)
-      } else if(data instanceof ArrayBuffer) {
-        u8Data = new Uint8Array(data)
-      } else {
-        setError(this, gl.INVALID_VALUE)
-        return
-      }
-      saveError(this)
-      _bufferData.call(
-        this,
-        target,
-        u8Data,
-        usage)
-      var bufError = this.getError()
-      if(bufError === gl.NO_ERROR) {
-        var active = getActiveBuffer(this, target)
-        active._size = u8Data.length
-        if(target === gl.ELEMENT_ARRAY_BUFFER) {
-          active._elements = new Uint8Array(u8Data)
-        }
-      }
-      restoreError(this, bufError)
-      return
+    var u8Data = null
+    if(isTypedArray(data)) {
+      u8Data = unpackTypedArray(data)
+    } else if(data instanceof ArrayBuffer) {
+      u8Data = new Uint8Array(data)
     } else {
       setError(this, gl.INVALID_VALUE)
       return
     }
-  } else {
+
+
     saveError(this)
     _bufferData.call(
       this,
       target,
-      data|0,
+      u8Data,
       usage)
-    var bufError = this.getError()
-    if(bufError === gl.NO_ERROR) {
-      getActiveBuffer(this, target)._size = data|0
+    var error = this.getError()
+    restoreError(this, error)
+    if(error !== gl.NO_ERROR) {
+      return
     }
-    restoreError(this, bufError)
+
+    active._size = u8Data.length
+    if(target === gl.ELEMENT_ARRAY_BUFFER) {
+      active._elements = new Uint8Array(u8Data)
+    }
+
+    return
+  } else {
+    var size = data|0
+    if(size < 0) {
+      setError(this, gl.INVALID_VALUE)
+      return
+    }
+
+    saveError(this)
+    _bufferData.call(
+      this,
+      target,
+      size,
+      usage)
+    var error = this.getError()
+    restoreError(this, error)
+    if(error !== gl.NO_ERROR) {
+      return
+    }
+
+    active._size = size
+    if(target === gl.ELEMENT_ARRAY_BUFFER) {
+      active._elements = new Uint8Array(size)
+    }
+
     return
   }
   setError(this, gl.INVALID_OPERATION)
@@ -985,28 +1026,51 @@ var _bufferSubData = gl.bufferSubData
 gl.bufferSubData = function bufferSubData(target, offset, data) {
   target |= 0
   offset |= 0
-  if(data != null && typeof data === 'object') {
-    var u8Data = null
-    if(data.buffer) {
-      u8Data = new Uint8Array(data.buffer)
-    } else if(data instanceof ArrayBuffer) {
-      u8Data = new Uint8Array(data)
-    } else {
-      setError(this, gl.INVALID_VALUE)
-      return
-    }
-    if(target === gl.ELEMENT_ARRAY_BUFFER) {
-      var buffer = this._activeElementArrayBuffer
-      if(target + u8Data.length <= buffer._size) {
-        buffer._elements.set(offset, u8Data)
-      }
-    }
-    _bufferSubData.call(
-      this,
-      target,
-      offset,
-      u8Data)
+
+  if(target !== gl.ARRAY_BUFFER &&
+     target !== gl.ELEMENT_ARRAY_BUFFER) {
+    setError(this, gl.INVALID_ENUM)
   }
+
+  if(!data || typeof data !== 'object') {
+    return
+  }
+
+  var active = getActiveBuffer(this, target)
+  if(!active) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
+  if(offset < 0 || offset >= active._size) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  var u8Data = null
+  if(isTypedArray(data)) {
+    u8Data = unpackTypedArray(data)
+  } else if(data instanceof ArrayBuffer) {
+    u8Data = new Uint8Array(data)
+  } else {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  if(offset + u8Data.length > active._size) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
+  if(target === gl.ELEMENT_ARRAY_BUFFER) {
+    active._elements.set(u8Data, offset)
+  }
+
+  _bufferSubData.call(
+    this,
+    target,
+    offset,
+    u8Data)
 }
 
 var _checkFramebufferStatus = gl.checkFramebufferStatus
@@ -2508,7 +2572,7 @@ gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
     height,
     format,
     type,
-    new Uint8Array(pixels.buffer))
+    unpackTypedArray(pixels))
 }
 
 var _renderbufferStorage = gl.renderbufferStorage
@@ -2689,8 +2753,8 @@ function convertPixels(pixels) {
   if(typeof pixels === 'object' && pixels !== null) {
     if(pixels instanceof ArrayBuffer) {
       return new Uint8Array(pixels)
-    } else if(pixels.buffer) {
-      return new Uint8Array(pixels.buffer)
+    } else if(pixels instanceof Uint8Array) {
+      return unpackTypedArray(pixels)
     }
   }
   return null
