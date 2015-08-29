@@ -26,31 +26,18 @@ static GLuint ToGLuint(const void* ptr) {
   return static_cast<GLuint>(reinterpret_cast<size_t>(ptr));
 }
 
-static int SizeOfArrayElementForType(v8::ExternalArrayType type) {
-  switch (type) {
-  case v8::kExternalByteArray:
-  case v8::kExternalUnsignedByteArray:
-    return 1;
-  case v8::kExternalShortArray:
-  case v8::kExternalUnsignedShortArray:
-    return 2;
-  case v8::kExternalIntArray:
-  case v8::kExternalUnsignedIntArray:
-  case v8::kExternalFloatArray:
-    return 4;
-  default:
-    return 0;
-  }
-}
-
 inline void *getImageData(v8::Local<v8::Value> arg) {
   void *pixels = NULL;
   if (!arg->IsNull()) {
-    v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(arg);
-    if (!obj->IsObject()) {
+    v8::Local<v8::Object> array = v8::Local<v8::Object>::Cast(arg);
+    if (!array->IsObject()) {
       return NULL;
     }
-    pixels = obj->GetIndexedPropertiesExternalArrayData();
+
+    unsigned int offset = array->Get(
+      NanNew<v8::String>("byteOffset"))->Uint32Value();
+
+    pixels = (void*) &((char*) array->GetIndexedPropertiesExternalArrayData())[offset];
   }
   return pixels;
 }
@@ -1086,15 +1073,18 @@ GL_METHOD(BufferData) {
   GLenum usage = args[2]->Int32Value();
 
   if(args[1]->IsObject()) {
-    v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(args[1]);
+    v8::Local<v8::Object> array = v8::Local<v8::Object>::Cast(args[1]);
 
-    int element_size = SizeOfArrayElementForType(
-      obj->GetIndexedPropertiesExternalArrayDataType());
-    GLsizeiptr size = obj->GetIndexedPropertiesExternalArrayDataLength() * element_size;
-    void* data = obj->GetIndexedPropertiesExternalArrayData();
+    unsigned int offset = array->Get(
+      NanNew<v8::String>("byteOffset"))->Uint32Value();
+    int length = array->Get(
+      NanNew<v8::String>("byteLength"))->Uint32Value();
+    void* ptr = (void*) &((char*) array->GetIndexedPropertiesExternalArrayData())[offset];
 
-    glBufferData(target, size, data, usage);
+    glBufferData(target, length, ptr, usage);
+
   } else if(args[1]->IsNumber()) {
+
     int size = args[1]->Int32Value();
     if(size < 0) {
       inst->setError(GL_INVALID_VALUE);
@@ -1112,13 +1102,15 @@ GL_METHOD(BufferSubData) {
 
   int target = args[0]->Int32Value();
   int offset = args[1]->Int32Value();
-  v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(args[2]);
+  v8::Local<v8::Object> array = v8::Local<v8::Object>::Cast(args[2]);
 
-  int element_size = SizeOfArrayElementForType( obj->GetIndexedPropertiesExternalArrayDataType());
-  int size = obj->GetIndexedPropertiesExternalArrayDataLength() * element_size;
-  void* data = obj->GetIndexedPropertiesExternalArrayData();
+  unsigned int a_offset = array->Get(
+    NanNew<v8::String>("byteOffset"))->Uint32Value();
+  int a_length = array->Get(
+    NanNew<v8::String>("byteLength"))->Uint32Value();
+  void* a_ptr = (void*) &((char*) array->GetIndexedPropertiesExternalArrayData())[a_offset];
 
-  glBufferSubData(target, offset, size, data);
+  glBufferSubData(target, offset, a_length, a_ptr);
 
   NanReturnUndefined();
 }

@@ -174,7 +174,7 @@ exports.WebGLTextureUnit = WebGLTextureUnit
 function unpackTypedArray(array) {
   return (new Uint8Array(array.buffer)).subarray(
       array.byteOffset,
-      array.byteLength)
+      array.byteLength + array.byteOffset)
 }
 
 //Don't allow: ", $, `, @, \, ', \0
@@ -1579,7 +1579,7 @@ gl.drawElements = function drawElements(mode, count, type, offset) {
   var elementData = null
   if(type === gl.UNSIGNED_SHORT) {
     if(offset % 2) {
-      setError(this, gl.INVALID_VALUE)
+      setError(this, gl.INVALID_OPERATION)
       return
     }
     offset >>= 1
@@ -2998,17 +2998,10 @@ function makeUniforms() {
       if(!checkLocationActive(this, location)) {
         return
       }
-      if(v instanceof Float32Array) {
-        return native.call(this,
-         location._|0,
-         !!transpose,
-         new Float32Array(v.buffer))
-      } else {
-        return native.call(this,
-         location._|0,
-         !!transpose,
-         new Float32Array(v))
-      }
+      return native.call(this,
+        location._|0,
+        !!transpose,
+        new Float32Array(v))
     }
   }
 
