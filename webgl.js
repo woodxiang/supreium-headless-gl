@@ -589,9 +589,10 @@ gl.activeTexture = function activeTexture(texture) {
   texture |= 0
   var texNum = texture - gl.TEXTURE0
   if(0 <= texNum && texNum < this._textureUnits.length) {
-    this._activeTextureUnit = texNum|0
+    this._activeTextureUnit = texNum
+    return _activeTexture.call(this, texture)
   }
-  return _activeTexture.call(this, texture|0)
+  setError(this, gl.INVALID_ENUM)
 }
 
 var _attachShader = gl.attachShader
@@ -865,9 +866,34 @@ gl.blendEquationSeparate = function blendEquationSeparate(modeRGB, modeAlpha) {
   setError(this, gl.INVALID_ENUM)
 }
 
+function validBlendFunc(factor) {
+  return factor === gl.ZERO ||
+         factor === gl.ONE  ||
+         factor === gl.SRC_COLOR ||
+         factor === gl.ONE_MINUS_SRC_COLOR ||
+         factor === gl.DST_COLOR ||
+         factor === gl.ONE_MINUS_DST_COLOR ||
+         factor === gl.SRC_ALPHA ||
+         factor === gl.ONE_MINUS_SRC_ALPHA ||
+         factor === gl.DST_ALPHA ||
+         factor === gl.ONE_MINUS_DST_ALPHA ||
+         factor === gl.SRC_ALPHA_SATURATE ||
+         factor === gl.CONSTANT_COLOR ||
+         factor === gl.ONE_MINUS_CONSTANT_COLOR ||
+         factor === gl.CONSTANT_ALPHA ||
+         factor === gl.ONE_MINUS_CONSTANT_ALPHA
+}
+
 var _blendFunc = gl.blendFunc
 gl.blendFunc = function blendFunc(sfactor, dfactor) {
-  return _blendFunc.call(this, sfactor|0, dfactor|0)
+  sfactor |= 0
+  dfactor |= 0
+  if(!validBlendFunc(sfactor) ||
+     !validBlendFunc(dfactor)) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+  _blendFunc.call(this, sfactor, dfactor)
 }
 
 var _blendFuncSeparate = gl.blendFuncSeparate
@@ -876,12 +902,25 @@ gl.blendFuncSeparate = function blendFuncSeparate(
   dstRGB,
   srcAlpha,
   dstAlpha) {
-  return _blendFuncSeparate.call(
-    this,
-    srcRGB|0,
-    dstRGB|0,
-    srcAlpha|0,
-    dstAlpha|0)
+
+  srcRGB |= 0
+  dstRGB |= 0
+  srcAlpha |= 0
+  dstAlpha |= 0
+
+  if(validBlendFunc(srcRGB) &&
+     validBlendFunc(dstRGB) &&
+     validBlendFunc(srcAlpha) &&
+     validBlendFunc(dstAlpha)) {
+    return _blendFuncSeparate.call(
+      this,
+      srcRGB,
+      dstRGB,
+      srcAlpha,
+      dstAlpha)
+  }
+
+  setError(this, gl.INVALID_ENUM)
 }
 
 var _bufferData = gl.bufferData
@@ -1346,7 +1385,21 @@ gl.deleteTexture = function deleteTexture(texture) {
 
 var _depthFunc = gl.depthFunc
 gl.depthFunc = function depthFunc(func) {
-  return _depthFunc.call(this, func|0)
+  func |= 0
+  switch(func) {
+    case gl.NEVER:
+    case gl.LESS:
+    case gl.EQUAL:
+    case gl.LEQUAL:
+    case gl.GREATER:
+    case gl.NOTEQUAL:
+    case gl.GEQUAL:
+    case gl.ALWAYS:
+      return _depthFunc.call(this, func)
+    default:
+      setError(this, gl.INVALID_ENUM)
+      return
+  }
 }
 
 var _depthMask = gl.depthMask
@@ -1356,8 +1409,10 @@ gl.depthMask = function depthMask(flag) {
 
 var _depthRange = gl.depthRange
 gl.depthRange = function depthRange(zNear, zFar) {
+  zNear = +zNear
+  zFar  = +zFar
   if(zNear <= zFar) {
-    return _depthRange.call(this, +zNear, +zFar)
+    return _depthRange.call(this, zNear, zFar)
   }
   setError(this, gl.INVALID_OPERATION)
 }
@@ -1714,11 +1769,10 @@ gl.framebufferTexture2D = function framebufferTexture2D(
     texture = null
   }
 
-  setFramebufferAttachment(framebuffer, texture, attachment)
-  updateFramebufferAttachments(framebuffer)
-
   framebuffer._attachmentLevel[attachment] = level
   framebuffer._attachmentFace[attachment]  = target
+  setFramebufferAttachment(framebuffer, texture, attachment)
+  updateFramebufferAttachments(framebuffer)
 }
 
 var _frontFace = gl.frontFace
@@ -1843,6 +1897,9 @@ gl.getParameter = function getParameter(pname) {
     case gl.COLOR_CLEAR_VALUE:
       return new Float32Array(_getParameter.call(this, pname))
 
+    case gl.COLOR_WRITEMASK:
+      return _getParameter.call(this, pname)
+
     case gl.DEPTH_CLEAR_VALUE:
     case gl.LINE_WIDTH:
     case gl.POLYGON_OFFSET_FACTOR:
@@ -1874,6 +1931,7 @@ gl.getParameter = function getParameter(pname) {
     case gl.BLUE_BITS:
     case gl.CULL_FACE_MODE:
     case gl.DEPTH_BITS:
+    case gl.DEPTH_FUNC:
     case gl.FRONT_FACE:
     case gl.GENERATE_MIPMAP_HINT:
     case gl.GREEN_BITS:
@@ -2005,7 +2063,11 @@ gl.getFramebufferAttachmentParameter = function getFramebufferAttachmentParamete
       case gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL:
         return framebuffer._attachmentLevel[attachment]
       case gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE:
-        return framebuffer._attachmentFace[attachment]
+        var face = framebuffer._attachmentFace[attachment]
+        if(face === gl.TEXTURE_2D) {
+          return 0
+        }
+        return face
     }
   } else if(object instanceof WebGLRenderbuffer) {
     switch(pname) {
