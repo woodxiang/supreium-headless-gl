@@ -8,6 +8,13 @@ var HEADLESS_VERSION = require('./package.json').version
 var gl = nativeGL.WebGLRenderingContext.prototype
 gl.VERSION = 0x1F02
 
+var ATTACHMENTS = [
+  gl.COLOR_ATTACHMENT0,
+  gl.DEPTH_ATTACHMENT,
+  gl.STENCIL_ATTACHMENT,
+  gl.DEPTH_STENCIL_ATTACHMENT
+]
+
 //Hook clean up
 process.on('exit', nativeGL.cleanup)
 
@@ -1561,14 +1568,6 @@ gl.flush = function flush() {
   return _flush.call(this)
 }
 
-
-var ATTACHMENTS = [
-  gl.COLOR_ATTACHMENT0,
-  gl.DEPTH_ATTACHMENT,
-  gl.STENCIL_ATTACHMENT,
-  gl.DEPTH_STENCIL_ATTACHMENT
-]
-
 function updateFramebufferAttachments(framebuffer) {
   var prevStatus  = framebuffer._status
   var ctx = framebuffer._ctx
@@ -1844,8 +1843,78 @@ gl.getParameter = function getParameter(pname) {
     case gl.COLOR_CLEAR_VALUE:
       return new Float32Array(_getParameter.call(this, pname))
 
+    case gl.DEPTH_CLEAR_VALUE:
+    case gl.LINE_WIDTH:
+    case gl.POLYGON_OFFSET_FACTOR:
+    case gl.POLYGON_OFFSET_UNITS:
+    case gl.SAMPLE_COVERAGE_VALUE:
+      return +_getParameter.call(this, pname)
+
+    case gl.BLEND:
+    case gl.CULL_FACE:
+    case gl.DEPTH_TEST:
+    case gl.DEPTH_WRITEMASK:
+    case gl.DITHER:
+    case gl.POLYGON_OFFSET_FILL:
+    case gl.SAMPLE_COVERAGE_INVERT:
+    case gl.SCISSOR_TEST:
+    case gl.STENCIL_TEST:
+    case gl.UNPACK_FLIP_Y_WEBGL:
+    case gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL:
+      return !!_getParameter.call(this, pname)
+
+    case gl.ACTIVE_TEXTURE:
+    case gl.ALPHA_BITS:
+    case gl.BLEND_DST_ALPHA:
+    case gl.BLEND_DST_RGB:
+    case gl.BLEND_EQUATION_ALPHA:
+    case gl.BLEND_EQUATION_RGB:
+    case gl.BLEND_SRC_ALPHA:
+    case gl.BLEND_SRC_RGB:
+    case gl.BLUE_BITS:
+    case gl.CULL_FACE_MODE:
+    case gl.DEPTH_BITS:
+    case gl.FRONT_FACE:
+    case gl.GENERATE_MIPMAP_HINT:
+    case gl.GREEN_BITS:
+    case gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS:
+    case gl.MAX_CUBE_MAP_TEXTURE_SIZE:
+    case gl.MAX_FRAGMENT_UNIFORM_VECTORS:
+    case gl.MAX_RENDERBUFFER_SIZE:
+    case gl.MAX_TEXTURE_IMAGE_UNITS:
+    case gl.MAX_TEXTURE_SIZE:
+    case gl.MAX_VARYING_VECTORS:
+    case gl.MAX_VERTEX_ATTRIBS:
+    case gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS:
+    case gl.MAX_VERTEX_UNIFORM_VECTORS:
+    case gl.PACK_ALIGNMENT:
+    case gl.RED_BITS:
+    case gl.SAMPLE_BUFFERS:
+    case gl.SAMPLES:
+    case gl.STENCIL_BACK_FAIL:
+    case gl.STENCIL_BACK_FUNC:
+    case gl.STENCIL_BACK_PASS_DEPTH_FAIL:
+    case gl.STENCIL_BACK_PASS_DEPTH_PASS:
+    case gl.STENCIL_BACK_REF:
+    case gl.STENCIL_BACK_VALUE_MASK:
+    case gl.STENCIL_BACK_WRITEMASK:
+    case gl.STENCIL_BITS:
+    case gl.STENCIL_CLEAR_VALUE:
+    case gl.STENCIL_FAIL:
+    case gl.STENCIL_FUNC:
+    case gl.STENCIL_PASS_DEPTH_FAIL:
+    case gl.STENCIL_PASS_DEPTH_PASS:
+    case gl.STENCIL_REF:
+    case gl.STENCIL_VALUE_MASK:
+    case gl.STENCIL_WRITEMASK:
+    case gl.SUBPIXEL_BITS:
+    case gl.UNPACK_ALIGNMENT:
+    case gl.UNPACK_COLORSPACE_CONVERSION_WEBGL:
+      return _getParameter.call(this, pname)|0
+
     default:
-      return _getParameter.call(this, pname)
+      setError(this, gl.INVALID_ENUM)
+      return null
   }
 }
 
@@ -2419,6 +2488,20 @@ gl.renderbufferStorage = function renderbufferStorage(
   renderbuffer._width  = width
   renderbuffer._height = height
   renderbuffer._format = internalformat
+
+
+  var activeFramebuffer = this._activeFramebuffer
+  if(activeFramebuffer) {
+    var needsUpdate = false
+    for(var i=0; i<ATTACHMENTS.length; ++i) {
+      if(activeFramebuffer._attachments[ATTACHMENTS[i]] === renderbuffer) {
+        needsUpdate = true
+      }
+    }
+    if(needsUpdate) {
+      updateFramebufferAttachments(this._activeFramebuffer)
+    }
+  }
 }
 
 var _sampleCoverage = gl.sampleCoverage
@@ -2643,14 +2726,16 @@ gl.texImage2D = function texImage2D(
   texture._type               = type
 
   var activeFramebuffer = this._activeFramebuffer
-  var needsUpdate = false
-  for(var i=0; i<ATTACHMENTS.length; ++i) {
-    if(activeFramebuffer._attachments[ATTACHMENTS[i]] === texture) {
-      needsUpdate = true
+  if(activeFramebuffer) {
+    var needsUpdate = false
+    for(var i=0; i<ATTACHMENTS.length; ++i) {
+      if(activeFramebuffer._attachments[ATTACHMENTS[i]] === texture) {
+        needsUpdate = true
+      }
     }
-  }
-  if(needsUpdate) {
-    updateFramebufferAttachments(this._activeFramebuffer)
+    if(needsUpdate) {
+      updateFramebufferAttachments(this._activeFramebuffer)
+    }
   }
 }
 
