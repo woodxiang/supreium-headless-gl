@@ -722,9 +722,44 @@ function bindObject(method, wrapper, activeProp) {
     this[activeProp] = object
   }
 }
-
-bindObject('bindFramebuffer',  WebGLFramebuffer,  '_activeFramebuffer')
 bindObject('bindRenderbuffer', WebGLRenderbuffer, '_activeRenderbuffer')
+
+var _bindFramebuffer = gl.bindFramebuffer
+gl.bindFramebuffer = function bindFramebuffer(target, framebuffer) {
+  if(!checkObject(framebuffer)) {
+    throw new TypeError('bindFramebuffer(GLenum, WebGLFramebuffer)')
+  }
+  if(target !== gl.FRAMEBUFFER) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+  if(!framebuffer) {
+    _bindFramebuffer.call(this, gl.FRAMEBUFFER, 0)
+  } else if(framebuffer._pendingDelete) {
+    return
+  } else if(checkWrapper(this, framebuffer, WebGLFramebuffer)) {
+    _bindFramebuffer.call(
+      this,
+      gl.FRAMEBUFFER,
+      framebuffer._|0)
+  } else {
+    return
+  }
+  var activeFramebuffer = this._activeFramebuffer
+  if(activeFramebuffer !== framebuffer) {
+    if(activeFramebuffer) {
+      activeFramebuffer._refCount -= 1
+      checkDelete(activeFramebuffer)
+    }
+    if(framebuffer) {
+      framebuffer._refCount += 1
+    }
+  }
+  this._activeFramebuffer = framebuffer
+  if(framebuffer) {
+    updateFramebufferAttachments(framebuffer)
+  }
+}
 
 var _bindTexture = gl.bindTexture
 gl.bindTexture = function bindTexture(target, texture) {
@@ -948,7 +983,6 @@ gl.clear = function clear(mask) {
   if(!framebufferOk(this)) {
     return
   }
-
   return _clear.call(this, mask|0)
 }
 
@@ -989,6 +1023,8 @@ gl.copyTexImage2D = function copyTexImage2D(
   internalformat,
   x, y, width, height,
   border) {
+
+  console.warn('copyTexImage2D not supported')
 
   return
   /*
@@ -1037,6 +1073,8 @@ gl.copyTexSubImage2D = function copyTexSubImage2D(
   level,
   xoffset, yoffset,
   x, y, width, height) {
+
+  console.warn('copyTexSubImage2D not supported')
 
   return
   /*
@@ -1208,23 +1246,29 @@ gl.deleteRenderbuffer = function deleteRenderbuffer(renderbuffer) {
     return
   }
 
-  var framebuffer = this._activeFramebuffer
-  if(framebuffer && linked(framebuffer, renderbuffer)) {
-    var attachments = Object.keys(framebuffer._attachments)
-    for(var i=0; i<attachments.length; ++i) {
-      if(framebuffer._attachments[attachments[i]] === renderbuffer) {
-        this.framebufferTexture2D(
-          gl.FRAMEBUFFER,
-          attachments[i]|0,
-          gl.TEXTURE_2D,
-          null)
-      }
-    }
-  }
 
   if(this._activeRenderbuffer === renderbuffer) {
     this.bindRenderbuffer(gl.RENDERBUFFER, null)
   }
+
+  var ctx = this
+  var activeFramebuffer = this._activeFramebuffer
+  function tryDetach(framebuffer) {
+    if(framebuffer && linked(framebuffer, renderbuffer)) {
+      var attachments = Object.keys(framebuffer._attachments)
+      for(var i=0; i<ATTACHMENTS.length; ++i) {
+        if(framebuffer._attachments[ATTACHMENTS[i]] === renderbuffer) {
+          ctx.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            ATTACHMENTS[i]|0,
+            gl.TEXTURE_2D,
+            null)
+        }
+      }
+    }
+  }
+
+  tryDetach(activeFramebuffer)
 
   renderbuffer._pendingDelete = true
   checkDelete(renderbuffer)
@@ -1250,6 +1294,7 @@ gl.deleteTexture = function deleteTexture(texture) {
 
   //Unbind from all texture units
   var curActive = this._activeTextureUnit
+
   for(var i=0; i<this._textureUnits.length; ++i) {
     var unit = this._textureUnits[i]
     if(unit._bind2D === texture) {
@@ -1266,6 +1311,8 @@ gl.deleteTexture = function deleteTexture(texture) {
   //FIXME: Does the texture get unbound from *all* framebuffers, or just the
   //active FBO?
   var ctx = this
+  var activeFramebuffer = this._activeFramebuffer
+
   function tryDetach(framebuffer) {
     if(framebuffer && linked(framebuffer, texture)) {
       for(var i=0; i<ATTACHMENTS.length; ++i) {
@@ -1281,11 +1328,7 @@ gl.deleteTexture = function deleteTexture(texture) {
     }
   }
 
-//  tryDetach(this._activeFramebuffer)
-  var fbos = Object.keys(this._framebuffers)
-  for(var i=0; i<fbos.length; ++i) {
-    tryDetach(this._framebuffers[fbos[i]])
-  }
+  tryDetach(activeFramebuffer)
 
   //Mark texture for deletion
   texture._pendingDelete = true
@@ -2598,6 +2641,17 @@ gl.texImage2D = function texImage2D(
   texture._levelHeight[level] = height
   texture._format             = format
   texture._type               = type
+
+  var activeFramebuffer = this._activeFramebuffer
+  var needsUpdate = false
+  for(var i=0; i<ATTACHMENTS.length; ++i) {
+    if(activeFramebuffer._attachments[ATTACHMENTS[i]] === texture) {
+      needsUpdate = true
+    }
+  }
+  if(needsUpdate) {
+    updateFramebufferAttachments(this._activeFramebuffer)
+  }
 }
 
 var _texSubImage2D = gl.texSubImage2D
