@@ -55,6 +55,22 @@ function WebGLFramebuffer(_, ctx) {
   this._references    = []
   this._refCount      = 0
   this._attachments   = {}
+  this._attachments[gl.COLOR_ATTACHMENT0]        = null
+  this._attachments[gl.DEPTH_ATTACHMENT]         = null
+  this._attachments[gl.STENCIL_ATTACHMENT]       = null
+  this._attachments[gl.DEPTH_STENCIL_ATTACHMENT] = null
+
+  this._attachmentLevel  = {}
+  this._attachmentLevel[gl.COLOR_ATTACHMENT0]        = 0
+  this._attachmentLevel[gl.DEPTH_ATTACHMENT]         = 0
+  this._attachmentLevel[gl.STENCIL_ATTACHMENT]       = 0
+  this._attachmentLevel[gl.DEPTH_STENCIL_ATTACHMENT] = 0
+
+  this._attachmentFace  = {}
+  this._attachmentFace[gl.COLOR_ATTACHMENT0]        = 0
+  this._attachmentFace[gl.DEPTH_ATTACHMENT]         = 0
+  this._attachmentFace[gl.STENCIL_ATTACHMENT]       = 0
+  this._attachmentFace[gl.DEPTH_STENCIL_ATTACHMENT] = 0
 }
 exports.WebGLFramebuffer = WebGLFramebuffer
 
@@ -67,6 +83,7 @@ function WebGLRenderbuffer(_, ctx) {
   this._refCount      = 0
   this._width         = 0
   this._height        = 0
+  this._format        = 0
 }
 exports.WebGLRenderbuffer = WebGLRenderbuffer
 
@@ -79,6 +96,8 @@ function WebGLTexture(_, ctx) {
   this._refCount      = 0
   this._levelWidth    = new Int32Array(32)
   this._levelHeight   = new Int32Array(32)
+  this._format        = 0
+  this._type          = 0
 }
 exports.WebGLTexture = WebGLTexture
 
@@ -171,6 +190,88 @@ function validCubeTarget(target) {
           target === gl.TEXTURE_CUBE_MAP_NEGATIVE_Y ||
           target === gl.TEXTURE_CUBE_MAP_POSITIVE_Z ||
           target === gl.TEXTURE_CUBE_MAP_NEGATIVE_Z
+}
+
+function precheckFramebufferStatus(framebuffer) {
+  var attachments = framebuffer._attachments
+  var width  = -1
+  var height = -1
+
+  var depthStencilAttachment = attachments[gl.DEPTH_STENCIL_ATTACHMENT]
+  if(depthStencilAttachment instanceof WebGLTexture) {
+    return gl.FRAMEBUFFER_UNSUPPORTED
+  } else if(depthStencilAttachment instanceof WebGLRenderbuffer) {
+    if(depthStencilAttachment._format !== gl.DEPTH_STENCIL) {
+      return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+    }
+    width  = depthStencilAttachment._width
+    height = depthStencilAttachment._height
+  }
+
+  var depthAttachment = attachments[gl.DEPTH_ATTACHMENT]
+  if(depthAttachment && depthStencilAttachment) {
+    return gl.FRAMEBUFFER_UNSUPPORTED
+  } else if(depthAttachment instanceof WebGLTexture) {
+    return gl.FRAMEBUFFER_UNSUPPORTED
+  } else if(depthAttachment instanceof WebGLRenderbuffer) {
+    if(depthAttachment._format !== gl.DEPTH_COMPONENT16) {
+      return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+    }
+    width  = depthAttachment._width
+    height = depthAttachment._height
+  }
+
+  var stencilAttachment = attachments[gl.STENCIL_ATTACHMENT]
+  if(stencilAttachment) {
+    return gl.FRAMEBUFFER_UNSUPPORTED
+  }
+
+  var colorAttachment = attachments[gl.COLOR_ATTACHMENT0]
+  var colorWidth  = -1
+  var colorHeight = -1
+  if(colorAttachment instanceof WebGLTexture) {
+    if(colorAttachment._format !== gl.RGBA &&
+       colorAttachment._type   !== gl.UNSIGNED_BYTE) {
+      return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+    }
+    var level   = framebuffer._attachmentLevel[gl.COLOR_ATTACHMENT0]
+    colorWidth  = colorAttachment._levelWidth[level]
+    colorHeight = colorAttachment._levelHeight[level]
+  } else if(colorAttachment instanceof WebGLRenderbuffer) {
+    var format = colorAttachment._format
+    if(format !== gl.RGBA4 &&
+       format !== gl.RGB565 &&
+       format !== gl.RGB5_A1) {
+      return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+    }
+    colorWidth  = colorAttachment._width
+    colorHeight = colorAttachment._height
+  }
+
+  if(!colorAttachment && !depthAttachment && !depthStencilAttachment) {
+    return gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
+  }
+
+  if(!colorAttachment) {
+    return gl.FRAMEBUFFER_UNSUPPORTED
+  }
+
+  if((width >= 0 && height >=0) &&
+     (colorWidth !== width || colorHeight !== height)) {
+    return gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS
+  }
+
+  return gl.FRAMEBUFFER_COMPLETE
+}
+
+function framebufferOk(context) {
+  var framebuffer = context._activeFramebuffer
+  if(framebuffer &&
+     precheckFramebufferStatus(framebuffer) !== gl.FRAMEBUFFER_COMPLETE) {
+    setError(context, gl.INVALID_FRAMEBUFFER_OPERATION)
+    return false
+  }
+  return true
 }
 
 function getTexImage(context, target) {
@@ -829,11 +930,25 @@ gl.bufferSubData = function bufferSubData(target, offset, data) {
 
 var _checkFramebufferStatus = gl.checkFramebufferStatus
 gl.checkFramebufferStatus = function checkFramebufferStatus(target) {
-  return _checkFramebufferStatus.call(this, target|0)
+  if(target !== gl.FRAMEBUFFER) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  var framebuffer = this._activeFramebuffer
+  if(!framebuffer) {
+    return gl.FRAMEBUFFER_COMPLETE
+  }
+
+  return precheckFramebufferStatus(framebuffer)
 }
 
 var _clear = gl.clear
 gl.clear = function clear(mask) {
+  if(!framebufferOk(this)) {
+    return
+  }
+
   return _clear.call(this, mask|0)
 }
 
@@ -875,6 +990,9 @@ gl.copyTexImage2D = function copyTexImage2D(
   x, y, width, height,
   border) {
 
+  return
+  /*
+
   target |= 0
   level  |= 0
   internalformat |= 0
@@ -910,6 +1028,7 @@ gl.copyTexImage2D = function copyTexImage2D(
     width,
     height,
     border)
+  */
 }
 
 var _copyTexSubImage2D = gl.copyTexSubImage2D
@@ -918,6 +1037,9 @@ gl.copyTexSubImage2D = function copyTexSubImage2D(
   level,
   xoffset, yoffset,
   x, y, width, height) {
+
+  return
+  /*
 
   var texture = getTexImage(this, target)
   if(!texture) {
@@ -935,6 +1057,7 @@ gl.copyTexSubImage2D = function copyTexSubImage2D(
     y|0,
     width|0,
     height|0)
+  */
 }
 
 var _cullFace = gl.cullFace;
@@ -1142,18 +1265,26 @@ gl.deleteTexture = function deleteTexture(texture) {
 
   //FIXME: Does the texture get unbound from *all* framebuffers, or just the
   //active FBO?
-  var framebuffer = this._activeFramebuffer
-  if(framebuffer && linked(framebuffer, texture)) {
-    var attachments = Object.keys(framebuffer._attachments)
-    for(var i=0; i<attachments.length; ++i) {
-      if(framebuffer._attachments[attachments[i]] === texture) {
-        this.framebufferTexture2D(
-          gl.FRAMEBUFFER,
-          attachments[i]|0,
-          gl.TEXTURE_2D,
-          null)
+  var ctx = this
+  function tryDetach(framebuffer) {
+    if(framebuffer && linked(framebuffer, texture)) {
+      for(var i=0; i<ATTACHMENTS.length; ++i) {
+        var attachment = ATTACHMENTS[i]
+        if(framebuffer._attachments[attachment] === texture) {
+          ctx.framebufferTexture2D(
+            gl.FRAMEBUFFER,
+            attachment,
+            gl.TEXTURE_2D,
+            null)
+        }
       }
     }
+  }
+
+//  tryDetach(this._activeFramebuffer)
+  var fbos = Object.keys(this._framebuffers)
+  for(var i=0; i<fbos.length; ++i) {
+    tryDetach(this._framebuffers[fbos[i]])
   }
 
   //Mark texture for deletion
@@ -1239,6 +1370,11 @@ gl.drawArrays = function drawArrays(mode, first, count) {
     setError(this, gl.INVALID_ENUM)
     return
   }
+
+  if(!framebufferOk(this)) {
+    return
+  }
+
   if(count === 0) {
     return
   }
@@ -1320,6 +1456,10 @@ gl.drawElements = function drawElements(mode, count, type, offset) {
       return
   }
 
+  if(!framebufferOk(this)) {
+    return
+  }
+
   if(count === 0) {
     checkVertexAttribState(this, 0)
     return
@@ -1378,6 +1518,65 @@ gl.flush = function flush() {
   return _flush.call(this)
 }
 
+
+var ATTACHMENTS = [
+  gl.COLOR_ATTACHMENT0,
+  gl.DEPTH_ATTACHMENT,
+  gl.STENCIL_ATTACHMENT,
+  gl.DEPTH_STENCIL_ATTACHMENT
+]
+
+function updateFramebufferAttachments(framebuffer) {
+  var prevStatus  = framebuffer._status
+  var ctx = framebuffer._ctx
+  framebuffer._status = precheckFramebufferStatus(framebuffer)
+  if(framebuffer._status !== gl.FRAMEBUFFER_COMPLETE) {
+    if(prevStatus === gl.FRAMEBUFFER_COMPLETE) {
+      for(var i=0; i<ATTACHMENTS.length; ++i) {
+        _framebufferTexture2D.call(
+          ctx,
+          gl.FRAMEBUFFER,
+          ATTACHMENTS[i],
+          gl.TEXTURE_2D,
+          0,
+          0)
+      }
+    }
+    return
+  }
+
+  for(var i=0; i<ATTACHMENTS.length; ++i) {
+    _framebufferTexture2D.call(
+      ctx,
+      gl.FRAMEBUFFER,
+      ATTACHMENTS[i],
+      gl.TEXTURE_2D,
+      0,
+      0)
+  }
+
+  for(var i=0; i<ATTACHMENTS.length; ++i) {
+    var attachmentEnum = ATTACHMENTS[i]
+    var attachment = framebuffer._attachments[attachmentEnum]
+    if(attachment instanceof WebGLTexture) {
+      _framebufferTexture2D.call(
+        ctx,
+        gl.FRAMEBUFFER,
+        attachmentEnum,
+        gl.TEXTURE_2D,
+        attachment._|0,
+        framebuffer._attachmentLevel[attachmentEnum])
+    } else if(attachment instanceof WebGLRenderbuffer) {
+      _framebufferRenderbuffer.call(
+        ctx,
+        gl.FRAMEBUFFER,
+        attachmentEnum,
+        gl.RENDERBUFFER,
+        attachment._|0)
+    }
+  }
+}
+
 var _framebufferRenderbuffer = gl.framebufferRenderbuffer
 gl.framebufferRenderbuffer = function framebufferRenderbuffer(
   target,
@@ -1406,35 +1605,12 @@ gl.framebufferRenderbuffer = function framebufferRenderbuffer(
     return
   }
 
-  if(!renderbuffer) {
-    //For null renderbuffers, we use framebufferTexture2D instead
-    this.framebufferTexture2D(
-      target,
-      attachment,
-      gl.TEXTURE_2D,
-      null,
-      0)
+  if(renderbuffer && !checkWrapper(this, renderbuffer, WebGLRenderbuffer)) {
     return
   }
 
-  if(!checkWrapper(this, renderbuffer, WebGLRenderbuffer)) {
-    return
-  }
-
-  saveError(this)
-  _framebufferRenderbuffer.call(
-    this,
-    target,
-    attachment,
-    renderbuffertarget,
-    renderbuffer._|0)
-  var error = this.getError()
-  restoreError(this, error)
-
-  if(error !== gl.NO_ERROR) {
-    return
-  }
   setFramebufferAttachment(framebuffer, renderbuffer, attachment)
+  updateFramebufferAttachments(framebuffer)
 }
 
 var _framebufferTexture2D = gl.framebufferTexture2D
@@ -1496,23 +1672,11 @@ gl.framebufferTexture2D = function framebufferTexture2D(
     texture = null
   }
 
-  //Try setting attachment
-  saveError(this)
-  _framebufferTexture2D.call(
-    this,
-    target,
-    attachment,
-    textarget,
-    texture_id,
-    level)
-  var error = this.getError()
-  restoreError(this, error)
-  if(error != gl.NO_ERROR) {
-    return
-  }
-
-  //Success, now update references
   setFramebufferAttachment(framebuffer, texture, attachment)
+  updateFramebufferAttachments(framebuffer)
+
+  framebuffer._attachmentLevel[attachment] = level
+  framebuffer._attachmentFace[attachment]  = target
 }
 
 var _frontFace = gl.frontFace
@@ -1701,36 +1865,43 @@ gl.getFramebufferAttachmentParameter = function getFramebufferAttachmentParamete
   target     |= 0
   attachment |= 0
   pname      |= 0
+
   if(target !== gl.FRAMEBUFFER ||
      !validFramebufferAttachment(attachment)) {
     setError(this, gl.INVALID_ENUM)
     return null
   }
-  var type = _getFramebufferAttachmentParameter.call(
-    this, target, attachment, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE)
-  switch(pname) {
-    case gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME:
-      if(type !== gl.NONE) {
-        var id = _getFramebufferAttachmentParameter.call(
-          this, target, attachment, pname)
-        if(type === gl.TEXTURE) {
-          return this._textures[id]
-        } else if(type === gl.RENDERBUFFER) {
-          return this._renderbuffers[id]
-        }
-      }
-    break
 
-    case gl.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE:
-      return type
+  var framebuffer = this._activeFramebuffer
+  if(!framebuffer) {
+    setError(this, gl.INVALID_OPERATION)
+    return null
+  }
 
-    case gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL:
-    case gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE:
-      if(type === gl.TEXTURE) {
-        return _getFramebufferAttachmentParameter.call(
-          this, target, attachment, pname)
-      }
-    break
+  var object = framebuffer._attachments[attachment]
+  if(object === null) {
+    switch(pname) {
+      case gl.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE:
+        return gl.NONE
+    }
+  } else if(object instanceof WebGLTexture) {
+    switch(pname) {
+      case gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME:
+        return object
+      case gl.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE:
+        return gl.TEXTURE
+      case gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL:
+        return framebuffer._attachmentLevel[attachment]
+      case gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE:
+        return framebuffer._attachmentFace[attachment]
+    }
+  } else if(object instanceof WebGLRenderbuffer) {
+    switch(pname) {
+      case gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME:
+        return object
+      case gl.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE:
+        return gl.RENDERBUFFER
+    }
   }
 
   setError(this, gl.INVALID_ENUM)
@@ -2121,6 +2292,7 @@ gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
   y       |= 0
   width   |= 0
   height  |= 0
+
   if(format === gl.RGB ||
      format === gl.ALPHA ||
      type   !== gl.UNSIGNED_BYTE) {
@@ -2137,28 +2309,21 @@ gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
     return
   }
 
+  if(!framebufferOk(this)) {
+    return
+  }
+
   var rowStride = width * 4
   if(rowStride % this._packAlignment !== 0) {
     rowStride += this._packAlignment - (rowStride % this._packAlignment)
   }
-
   var imageSize = rowStride * (height-1) + width*4
   if(imageSize <= 0) {
     return
   }
-
   if(pixels.length < imageSize) {
     setError(this, gl.INVALID_VALUE)
     return
-  }
-
-  var framebuffer  = this._activeFramebuffer
-  if(framebuffer) {
-    var colors = framebuffer._attachments[gl.COLOR_ATTACHMENT0]
-    if(!colors || this.checkFramebufferStatus() !== gl.FRAMEBUFFER_COMPLETE) {
-      setError(this, gl.INVALID_FRAMEBUFFER_OPERATION)
-      return
-    }
   }
 
   _readPixels.call(
@@ -2210,6 +2375,7 @@ gl.renderbufferStorage = function renderbufferStorage(
 
   renderbuffer._width  = width
   renderbuffer._height = height
+  renderbuffer._format = internalformat
 }
 
 var _sampleCoverage = gl.sampleCoverage
@@ -2430,6 +2596,8 @@ gl.texImage2D = function texImage2D(
   //Save width and height at level
   texture._levelWidth[level]  = width
   texture._levelHeight[level] = height
+  texture._format             = format
+  texture._type               = type
 }
 
 var _texSubImage2D = gl.texSubImage2D
