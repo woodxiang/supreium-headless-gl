@@ -1405,9 +1405,12 @@ gl.deleteTexture = function deleteTexture(texture) {
     throw new TypeError('deleteTexture(WebGLTexture)')
   }
 
-  if(!(texture instanceof WebGLTexture &&
-       checkOwns(this, texture))) {
-    setError(this, gl.INVALID_OPERATION)
+  if(texture instanceof WebGLTexture) {
+    if(!checkOwns(this, texture)) {
+      setError(this, gl.INVALID_OPERATION)
+      return
+    }
+  } else {
     return
   }
 
@@ -2438,6 +2441,10 @@ gl.hint = function hint(target, mode) {
 function isObject(method, wrapper) {
   var native = gl[method]
   gl[method] = function(object) {
+    if(!(object === null || object === void 0) &&
+       !(object instanceof wrapper)) {
+      throw new TypeError(method + '(' + wrapper.name + ')')
+    }
     if(checkValid(object, wrapper) &&
        checkOwns(this, object)) {
       return native.call(this, object._|0)
@@ -2798,7 +2805,7 @@ gl.texImage2D = function texImage2D(
   border         |= 0
   type           |= 0
 
-  if(typeof pixels !== 'object') {
+  if(typeof pixels !== 'object' && pixels !== void 0) {
     throw new TypeError('texImage2D(GLenum, GLint, GLenum, GLint, GLint, GLint, GLenum, GLenum, Uint8Array)')
   }
 
@@ -2837,6 +2844,7 @@ gl.texImage2D = function texImage2D(
     return
   }
 
+  //Need to check for out of memory error
   saveError(this)
   _texImage2D.call(
     this,
