@@ -189,7 +189,7 @@ function unpackTypedArray(array) {
 
 //Don't allow: ", $, `, @, \, ', \0
 function isValidString(str) {
-    return /^[\x01-!#%&(-?A-[\]-_a-\x7F]*$/.test(str);
+    return !(/[\"\$\`\@\\\'\0]/.test(str))
 }
 
 function isTypedArray(data) {
