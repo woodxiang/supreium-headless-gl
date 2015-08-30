@@ -258,7 +258,11 @@ function precheckFramebufferStatus(framebuffer) {
 
   var stencilAttachment = attachments[gl.STENCIL_ATTACHMENT]
   if(stencilAttachment) {
-    return gl.FRAMEBUFFER_UNSUPPORTED
+    return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+  }
+
+  if(depthAttachment && depthStencilAttachment) {
+    return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
   }
 
   var colorAttachment = attachments[gl.COLOR_ATTACHMENT0]
@@ -289,6 +293,10 @@ function precheckFramebufferStatus(framebuffer) {
 
   if(!colorAttachment) {
     return gl.FRAMEBUFFER_UNSUPPORTED
+  }
+
+  if(colorWidth <= 0 || colorHeight <= 0) {
+    return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
   }
 
   if((width >= 0 && height >=0) &&
@@ -1351,7 +1359,7 @@ gl.deleteFramebuffer = function deleteFramebuffer(framebuffer) {
   }
 
   if(this._activeFramebuffer === framebuffer) {
-    this.bindFramebuffer(gl.FRAMEBUFFER, this._drawingBuffer._framebuffer)
+    this.bindFramebuffer(gl.FRAMEBUFFER, null)
   }
 
   framebuffer._pendingDelete = true
@@ -2229,10 +2237,18 @@ gl.getRenderbufferParameter = function getRenderbufferParameter(target, pname) {
     setError(this, gl.INVALID_ENUM)
     return null
   }
+  var renderbuffer = this._activeRenderbuffer
+  if(!renderbuffer) {
+    setError(this, gl.INVALID_OPERATION)
+    return null
+  }
   switch(pname) {
-    case gl.RENDERBUFFER_WIDTH:
-    case gl.RENDERBUFFER_HEIGHT:
     case gl.RENDERBUFFER_INTERNAL_FORMAT:
+      return renderbuffer._format
+    case gl.RENDERBUFFER_WIDTH:
+      return renderbuffer._width
+    case gl.RENDERBUFFER_HEIGHT:
+      return renderbuffer._height
     case gl.RENDERBUFFER_SIZE:
     case gl.RENDERBUFFER_RED_SIZE:
     case gl.RENDERBUFFER_GREEN_SIZE:
