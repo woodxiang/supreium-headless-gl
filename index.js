@@ -45,7 +45,7 @@ function createContext(width, height, options) {
     contextAttributes.preferLowPowerToHighPerformance,
     contextAttributes.failIfMajorPerformanceCaveat)
 
-  gl.drawingBufferWidth = width
+  gl.drawingBufferWidth  = width
   gl.drawingBufferHeight = height
 
   gl._ = CONTEXT_COUNTER++
@@ -101,9 +101,10 @@ function createContext(width, height, options) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null)
   gl.bindRenderbuffer(gl.RENDERBUFFER, null)
 
-  gl.disable(gl.DEPTH_TEST)
-  gl.disable(gl.STENCIL_TEST)
+  //Clear buffers
+  gl.clearDepth(1)
   gl.clearColor(0, 0, 0, 0)
+  gl.clearStencil(0)
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT)
 
   return gl

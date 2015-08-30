@@ -122,7 +122,7 @@ WebGLRenderingContext::WebGLRenderingContext(
     PUSH_ATTRIB(EGL_ALPHA_SIZE, 0);
   }
   if(depth) {
-    PUSH_ATTRIB(EGL_DEPTH_SIZE, 16);
+    PUSH_ATTRIB(EGL_DEPTH_SIZE, 24);
   } else {
     PUSH_ATTRIB(EGL_DEPTH_SIZE, 0);
   }
