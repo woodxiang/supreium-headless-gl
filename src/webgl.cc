@@ -770,7 +770,7 @@ GL_METHOD(BindTexture) {
   GL_BOILERPLATE;
 
   int target = args[0]->Int32Value();
-  int texture = args[1]->IsNull() ? 0 : args[1]->Int32Value();
+  int texture = args[1]->Int32Value();
 
   glBindTexture(target, texture);
 
@@ -1043,7 +1043,7 @@ GL_METHOD(BindFramebuffer) {
   GL_BOILERPLATE;
 
   GLint target = (GLint)args[0]->Int32Value();
-  GLint buffer = (GLint)(args[1]->IsNull() ? 0 : args[1]->Int32Value());
+  GLint buffer = (GLint)args[1]->Int32Value();
 
   glBindFramebuffer(target, buffer);
 
@@ -1468,9 +1468,11 @@ GL_METHOD(StencilOpSeparate) {
 
 GL_METHOD(BindRenderbuffer) {
   GL_BOILERPLATE;
+
   GLenum target = args[0]->Int32Value();
-  GLuint buffer = args[1]->IsNull() ? 0 : args[1]->Int32Value();
+  GLuint buffer = args[1]->Int32Value();
   glBindRenderbuffer(target, buffer);
+
   NanReturnUndefined();
 }
 
@@ -1602,14 +1604,11 @@ GL_METHOD(RenderbufferStorage) {
   GLsizei width         = args[2]->Uint32Value();
   GLsizei height        = args[3]->Uint32Value();
 
-  if(target != GL_RENDERBUFFER) {
-    inst->setError(GL_INVALID_ENUM);
-  } else {
-    if(internalformat == GL_DEPTH_STENCIL) {
-      internalformat = GL_DEPTH24_STENCIL8;
-    }
-    glRenderbufferStorage(target, internalformat, width, height);
+  if(internalformat == GL_DEPTH_STENCIL) {
+    internalformat = GL_DEPTH24_STENCIL8;
   }
+  glRenderbufferStorage(target, internalformat, width, height);
+
   NanReturnUndefined();
 }
 
@@ -1641,11 +1640,9 @@ GL_METHOD(ReadPixels) {
   GLenum type    = args[5]->Int32Value();
   void *pixels   = getImageData(args[6]);
 
-  if(!pixels) {
-    inst->setError(GL_INVALID_VALUE);
-  } else {
-    glReadPixels(x, y, width, height, format, type, pixels);
-  }
+  int fbo = 0;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
+  glReadPixels(x, y, width, height, format, type, pixels);
 
   NanReturnUndefined();
 }

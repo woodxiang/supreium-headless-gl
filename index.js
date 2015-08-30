@@ -34,8 +34,8 @@ function createContext(width, height, options) {
     contextAttributes.premultipliedAlpha && contextAttributes.alpha
 
   var gl = new webgl.WebGLRenderingContext(
-    width,
-    height,
+    1,
+    1,
     contextAttributes.alpha,
     contextAttributes.depth,
     contextAttributes.stencil,
@@ -95,11 +95,18 @@ function createContext(width, height, options) {
   gl._unpackAlignment = 4
   gl._packAlignment   = 4
 
+  //Allocate framebuffer
+  webgl.allocateDrawingBuffer(gl, width, height)
+
   //Initialize defaults
   gl.bindBuffer(gl.ARRAY_BUFFER, null)
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)
   gl.bindFramebuffer(gl.FRAMEBUFFER, null)
   gl.bindRenderbuffer(gl.RENDERBUFFER, null)
+
+  //Set viewport and scissor
+  gl.viewport(0, 0, width, height)
+  gl.scissor(0, 0, width, height)
 
   //Clear buffers
   gl.clearDepth(1)

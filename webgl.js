@@ -171,6 +171,16 @@ function WebGLTextureUnit(ctx, idx) {
 }
 exports.WebGLTextureUnit = WebGLTextureUnit
 
+function WebGLDrawingBufferWrapper(
+  framebuffer,
+  color,
+  depthStencil) {
+  this._framebuffer  = framebuffer
+  this._color        = color
+  this._depthStencil = depthStencil
+}
+exports.WebGLDrawingBufferWrapper = WebGLDrawingBufferWrapper
+
 function unpackTypedArray(array) {
   return (new Uint8Array(array.buffer)).subarray(
       array.byteOffset,
@@ -575,7 +585,7 @@ gl.resize = function(width, height) {
     throw new Error("Invalid surface dimensions")
   } else if(width  !== this.drawingBufferWidth ||
             height !== this.drawingBufferHeight) {
-    _resize.call(this, width, height)
+    resizeDrawingBuffer(this, width, height)
     this.drawingBufferWidth  = width
     this.drawingBufferHeight = height
   }
@@ -714,41 +724,44 @@ gl.bindBuffer = function bindBuffer(target, buffer) {
   }
 }
 
-function bindObject(method, wrapper, activeProp) {
-  var native = gl[method]
-  gl[method] = function(target, object) {
-    if(!checkObject(object)) {
-      throw new TypeError(method + '(GLenum, ' + wrapper.name + ')')
-    }
-    if(!object) {
-      native.call(
-        this,
-        target|0,
-        0)
-    } else if(object._pendingDelete) {
-      return
-    } else if(checkWrapper(this, object, wrapper)) {
-      native.call(
-        this,
-        target|0,
-        object._|0)
-    } else {
-      return
-    }
-    var active = this[activeProp]
-    if(active !== object) {
-      if(active) {
-        active._refCount -= 1
-        checkDelete(active)
-      }
-      if(object) {
-        object._refCount += 1
-      }
-    }
-    this[activeProp] = object
+var _bindRenderbuffer = gl.bindRenderbuffer
+gl.bindRenderbuffer = function(target, object) {
+  if(!checkObject(object)) {
+    throw new TypeError('bindRenderbuffer(GLenum, WebGLRenderbuffer)')
   }
+
+  if(target !== gl.RENDERBUFFER) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  if(!object) {
+    _bindRenderbuffer.call(
+      this,
+      target|0,
+      0)
+  } else if(object._pendingDelete) {
+    return
+  } else if(checkWrapper(this, object, WebGLRenderbuffer)) {
+    _bindRenderbuffer.call(
+      this,
+      target|0,
+      object._|0)
+  } else {
+    return
+  }
+  var active = this._activeRenderbuffer
+  if(active !== object) {
+    if(active) {
+      active._refCount -= 1
+      checkDelete(active)
+    }
+    if(object) {
+      object._refCount += 1
+    }
+  }
+  this._activeRenderbuffer = object
 }
-bindObject('bindRenderbuffer', WebGLRenderbuffer, '_activeRenderbuffer')
 
 var _bindFramebuffer = gl.bindFramebuffer
 gl.bindFramebuffer = function bindFramebuffer(target, framebuffer) {
@@ -760,7 +773,10 @@ gl.bindFramebuffer = function bindFramebuffer(target, framebuffer) {
     return
   }
   if(!framebuffer) {
-    _bindFramebuffer.call(this, gl.FRAMEBUFFER, 0)
+    _bindFramebuffer.call(
+      this,
+      gl.FRAMEBUFFER,
+      this._drawingBuffer._framebuffer)
   } else if(framebuffer._pendingDelete) {
     return
   } else if(checkWrapper(this, framebuffer, WebGLFramebuffer)) {
@@ -1233,6 +1249,13 @@ function createObject(method, wrapper, refset) {
     }
   }
 }
+
+var _createBuffer       = gl.createBuffer
+var _createFramebuffer  = gl.createFramebuffer
+var _createProgram      = gl.createProgram
+var _createRenderbuffer = gl.createRenderbuffer
+var _createShader       = gl.createShader
+var _createTexture      = gl.createTexture
 createObject('createBuffer',       WebGLBuffer,       '_buffers')
 createObject('createFramebuffer',  WebGLFramebuffer,  '_framebuffers')
 createObject('createProgram',      WebGLProgram,      '_programs')
@@ -1328,7 +1351,7 @@ gl.deleteFramebuffer = function deleteFramebuffer(framebuffer) {
   }
 
   if(this._activeFramebuffer === framebuffer) {
-    this.bindFramebuffer(gl.FRAMEBUFFER, null)
+    this.bindFramebuffer(gl.FRAMEBUFFER, this._drawingBuffer._framebuffer)
   }
 
   framebuffer._pendingDelete = true
@@ -3228,4 +3251,102 @@ gl.vertexAttribPointer = function vertexAttribPointer(
 var _viewport = gl.viewport
 gl.viewport = function viewport(x, y, width, height) {
   return _viewport.call(this, x|0, y|0, width|0, height|0)
+}
+
+function allocateDrawingBuffer(context, width, height) {
+
+  context._drawingBuffer = new WebGLDrawingBufferWrapper(
+    _createFramebuffer.call(context),
+    _createTexture.call(context),
+    _createRenderbuffer.call(context))
+
+  resizeDrawingBuffer(context, width, height)
+}
+
+exports.allocateDrawingBuffer = allocateDrawingBuffer
+
+function resizeDrawingBuffer(context, width, height) {
+  var prevFramebuffer  = context._activeFramebuffer
+  var prevTexture      = activeTexture(context, gl.TEXTURE_2D)
+  var prevRenderbuffer = context._activeRenderbuffer
+
+  var contextAttributes = context._contextattributes
+
+  var drawingBuffer     = context._drawingBuffer
+  _bindFramebuffer.call(context, gl.FRAMEBUFFER, drawingBuffer._framebuffer)
+
+  //Clear all attachments
+  for(var i=0; i<ATTACHMENTS.length; ++i) {
+    _framebufferTexture2D.call(
+      context,
+      gl.FRAMEBUFFER,
+      ATTACHMENTS[i],
+      gl.TEXTURE_2D,
+      0,
+      0)
+  }
+
+  //Update color attachment
+  _bindTexture.call(
+    context,
+    gl.TEXTURE_2D,
+    drawingBuffer._color)
+  var colorFormat = contextAttributes.alpha ? gl.RGBA : gl.RGB
+  _texImage2D.call(
+    context,
+    gl.TEXTURE_2D,
+    0,
+    colorFormat,
+    width,
+    height,
+    0,
+    colorFormat,
+    gl.UNSIGNED_BYTE,
+    null)
+  _texParameteri.call(context, gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+  _texParameteri.call(context, gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+  _framebufferTexture2D.call(
+    context,
+    gl.FRAMEBUFFER,
+    gl.COLOR_ATTACHMENT0,
+    gl.TEXTURE_2D,
+    drawingBuffer._color,
+    0)
+
+  //Update depth-stencil attachments if needed
+  var storage   = 0
+  var attachment = 0
+  if(contextAttributes.depth && contextAttributes.stencil) {
+    storage    = gl.DEPTH_STENCIL
+    attachment = gl.DEPTH_STENCIL_ATTACHMENT
+  } else if(contextAttributes.depth) {
+    storage    = 0x81A6  //Use 24 bit depth
+    attachment = gl.DEPTH_ATTACHMENT
+  } else if(contextAttributes.stencil) {
+    storage    = gl.STENCIL_INDEX8
+    attachment = gl.STENCIL_ATTACHMENT
+  }
+  if(storage) {
+    _bindRenderbuffer.call(
+      context,
+      gl.RENDERBUFFER,
+      drawingBuffer._depthStencil)
+    _renderbufferStorage.call(
+      context,
+      gl.RENDERBUFFER,
+      storage,
+      width,
+      height)
+    _framebufferRenderbuffer.call(
+      context,
+      gl.FRAMEBUFFER,
+      attachment,
+      gl.RENDERBUFFER,
+      drawingBuffer._depthStencil)
+  }
+
+  //Restore previous binding state
+  context.bindFramebuffer(gl.FRAMEBUFFER, prevFramebuffer)
+  context.bindTexture(gl.TEXTURE_2D,      prevTexture)
+  context.bindRenderbuffer(gl.RENDERBUFFER, prevRenderbuffer)
 }
