@@ -1085,7 +1085,7 @@ var _checkFramebufferStatus = gl.checkFramebufferStatus
 gl.checkFramebufferStatus = function checkFramebufferStatus(target) {
   if(target !== gl.FRAMEBUFFER) {
     setError(this, gl.INVALID_ENUM)
-    return
+    return 0
   }
 
   var framebuffer = this._activeFramebuffer
@@ -1807,6 +1807,11 @@ gl.framebufferTexture2D = function framebufferTexture2D(
   if(target !== gl.FRAMEBUFFER ||
      !validFramebufferAttachment(attachment)) {
     setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  if(level !== 0) {
+    setError(this, gl.INVALID_VALUE)
     return
   }
 
