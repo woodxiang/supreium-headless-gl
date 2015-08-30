@@ -312,7 +312,7 @@ function getTexImage(context, target) {
 
 function checkObject(object) {
   return typeof object === 'object' ||
-         object        === void 0
+         (object       === void 0)
 }
 
 function validFramebufferAttachment(attachment) {
@@ -955,6 +955,7 @@ gl.bufferData = function bufferData(target, data, usage) {
   if(target !== gl.ARRAY_BUFFER &&
      target !== gl.ELEMENT_ARRAY_BUFFER) {
     setError(this, gl.INVALID_ENUM)
+    return
   }
 
   var active = getActiveBuffer(this, target)
@@ -974,7 +975,6 @@ gl.bufferData = function bufferData(target, data, usage) {
       return
     }
 
-
     saveError(this)
     _bufferData.call(
       this,
@@ -993,7 +993,7 @@ gl.bufferData = function bufferData(target, data, usage) {
     }
 
     return
-  } else {
+  } else if(typeof data === 'number') {
     var size = data|0
     if(size < 0) {
       setError(this, gl.INVALID_VALUE)
@@ -1018,8 +1018,10 @@ gl.bufferData = function bufferData(target, data, usage) {
     }
 
     return
+  } else {
+    setError(this, gl.INVALID_VALUE)
+    return
   }
-  setError(this, gl.INVALID_OPERATION)
 }
 
 var _bufferSubData = gl.bufferSubData
@@ -1030,9 +1032,15 @@ gl.bufferSubData = function bufferSubData(target, offset, data) {
   if(target !== gl.ARRAY_BUFFER &&
      target !== gl.ELEMENT_ARRAY_BUFFER) {
     setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  if(data === null) {
+    return
   }
 
   if(!data || typeof data !== 'object') {
+    setError(this, gl.INVALID_VALUE)
     return
   }
 
@@ -1267,8 +1275,9 @@ WebGLBuffer.prototype._performDelete = function() {
 }
 
 gl.deleteBuffer = function deleteBuffer(buffer) {
-  if(!checkObject(buffer)) {
-    throw new TypeError('deleteBuffer(WebGLBuffer)')
+  if(!checkObject(buffer) ||
+     (buffer !== null && !(buffer instanceof WebGLBuffer))) {
+      throw new TypeError('deleteBuffer(WebGLBuffer)')
   }
 
   if(!(buffer instanceof WebGLBuffer &&
@@ -1549,8 +1558,8 @@ gl.drawArrays = function drawArrays(mode, first, count) {
   }
 
   var maxIndex = first
-  if(reducedCount > 0) {
-    maxIndex = (reducedCount + first - 1)>>>0
+  if(count > 0) {
+    maxIndex = (count + first - 1)>>>0
   }
   if(checkVertexAttribState(this, maxIndex)) {
     return _drawArrays.call(this, mode, first, reducedCount)
@@ -1591,17 +1600,16 @@ gl.drawElements = function drawElements(mode, count, type, offset) {
     return
   }
 
+  var reducedCount = count
   switch(mode) {
     case gl.TRIANGLES:
       if(count % 3) {
-        setError(this, gl.INVALID_OPERATION)
-        return
+        reducedCount -= (count % 3)
       }
     break
     case gl.LINES:
       if(count % 2) {
-        setError(this, gl.INVALID_OPERATION)
-        return
+        reducedCount -= (count % 2)
       }
     break
     case gl.POINTS:
@@ -1651,7 +1659,9 @@ gl.drawElements = function drawElements(mode, count, type, offset) {
   }
 
   if(checkVertexAttribState(this, maxIndex)) {
-    return _drawElements.call(this, mode, count, type, offset)
+    if(reducedCount > 0) {
+      return _drawElements.call(this, mode, reducedCount, type, offset)
+    }
   }
 }
 
