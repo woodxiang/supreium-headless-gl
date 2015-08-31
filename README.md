@@ -119,13 +119,10 @@ None at the moment
 
 ### How is the development environment set up?
 
-* Init ANGLE submodule
-* `npm` stuff
-* `node-gyp` building
-* Fast rebuild
-* Prebuilt binaries?
-
-TODO
+1. Init ANGLE submodule
+1. Run `npm install`
+1. Run `npm build`
+1. To do a local rebuild, `cd` into the build directory and run `make`
 
 ## License
 
