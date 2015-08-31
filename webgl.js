@@ -1,5 +1,6 @@
 'use strict'
 
+var bits = require('bit-twiddle')
 var nativeGL = require('bindings')('webgl')
 
 var HEADLESS_VERSION = require('./package.json').version
@@ -1166,11 +1167,6 @@ gl.copyTexImage2D = function copyTexImage2D(
   x, y, width, height,
   border) {
 
-  console.warn('copyTexImage2D not supported')
-
-  return
-  /*
-
   target |= 0
   level  |= 0
   internalformat |= 0
@@ -1186,16 +1182,22 @@ gl.copyTexImage2D = function copyTexImage2D(
     return
   }
 
-  if(target !== gl.TEXTURE_2D && !validCubeTarget(target)) {
-    setError(this, gl.INVALID_ENUM)
-    return
-  }
-
-  if(level < 0 || x < 0 || y < 0 || width < 0 || height < 0) {
+  if(internalformat !== gl.RGBA) {
     setError(this, gl.INVALID_VALUE)
     return
   }
 
+  if(level < 0 || width < 0 || height < 0 || border !== 0) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  if(level > 0 && !(bits.isPow2(width) && bits.isPow2(height))) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  saveError(this)
   _copyTexImage2D.call(
     this,
     target,
@@ -1206,7 +1208,15 @@ gl.copyTexImage2D = function copyTexImage2D(
     width,
     height,
     border)
-  */
+  var error = this.getError()
+  restoreError(this, error)
+
+  if(error === gl.NO_ERROR) {
+    texture._levelWidth[level]  = width
+    texture._levelHeight[level] = height
+    texture._format             = gl.RGBA
+    texture._type               = gl.UNSIGNED_BYTE
+  }
 }
 
 var _copyTexSubImage2D = gl.copyTexSubImage2D
@@ -1216,10 +1226,14 @@ gl.copyTexSubImage2D = function copyTexSubImage2D(
   xoffset, yoffset,
   x, y, width, height) {
 
-  console.warn('copyTexSubImage2D not supported')
-
-  return
-  /*
+  target  |= 0
+  level   |= 0
+  xoffset |= 0
+  yoffset |= 0
+  x       |= 0
+  y       |= 0
+  width   |= 0
+  height  |= 0
 
   var texture = getTexImage(this, target)
   if(!texture) {
@@ -1227,17 +1241,21 @@ gl.copyTexSubImage2D = function copyTexSubImage2D(
     return
   }
 
-  return _copyTexSubImage2D.call(
+  if(width < 0 || height < 0 || xoffset < 0 || yoffset < 0 || level < 0) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  _copyTexSubImage2D.call(
     this,
-    target|0,
-    level|0,
-    xoffset|0,
-    yoffset|0,
-    x|0,
-    y|0,
-    width|0,
-    height|0)
-  */
+    target,
+    level,
+    xoffset,
+    yoffset,
+    x,
+    y,
+    width,
+    height)
 }
 
 var _cullFace = gl.cullFace;

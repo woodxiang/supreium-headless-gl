@@ -1320,13 +1320,13 @@ GL_METHOD(CopyTexImage2D) {
 
 GL_METHOD(CopyTexSubImage2D) {
   GL_BOILERPLATE;
-  GLenum target = args[0]->Int32Value();
-  GLint level = args[1]->Int32Value();
-  GLint xoffset = args[2]->Int32Value();
-  GLint yoffset = args[3]->Int32Value();
-  GLint x = args[4]->Int32Value();
-  GLint y = args[5]->Int32Value();
-  GLsizei width = args[6]->Int32Value();
+  GLenum target  = args[0]->Int32Value();
+  GLint level    = args[1]->Int32Value();
+  GLint xoffset  = args[2]->Int32Value();
+  GLint yoffset  = args[3]->Int32Value();
+  GLint x        = args[4]->Int32Value();
+  GLint y        = args[5]->Int32Value();
+  GLsizei width  = args[6]->Int32Value();
   GLsizei height = args[7]->Int32Value();
   glCopyTexSubImage2D( target, level, xoffset, yoffset, x, y, width, height);
   NanReturnUndefined();
