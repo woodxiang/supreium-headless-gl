@@ -105,7 +105,7 @@ The previous version of `gl` (aka `headless-gl`) was pretty much a terrible hack
 
 It depends on what you are trying to do.  [node-webgl](https://github.com/mikeseven/node-webgl) is good if you are making a graphical application like a game, and allows for access to some features which are not part of ordinary WebGL.  On the other hand, because headless-gl does not create any windows, it is suitable for running in a server environment.  This means that you can use it to generate figures using OpenGL or perform GPGPU computations using shaders. Also, unlike `node-webgl`, `headless-gl` attempts to correctly implement the full WebGL standard making it more reliable.
 
-### Why use this thing instead of `nw.js`?
+### Why use this thing instead of `nw.js`/electron/atom shell/Chromium?
 
 `nw.js` is good if you need a full DOM implementation.  On the other hand, because it is a larger dependency it can be more difficult to set up and configure.  `headless-gl` is lighter weight and more modular in the sense that it just implements WebGL and nothing else.
 
@@ -119,10 +119,14 @@ None at the moment
 
 ### How is the development environment set up?
 
-1. Init ANGLE submodule
+1. Clone this repo
+1. Init the ANGLE git submodule
 1. Run `npm install`
-1. Run `npm build`
-1. To do a local rebuild, `cd` into the build directory and run `make`
+1. To do a partial rebuild, `cd` into the build directory and run `make`
+1. To do a full rebuild, run `npm build`
+1. To run all the test cases, run `npm test`
+
+This should work on most environments, but hasn't been tested thoroughly with windows.
 
 ## License
 
