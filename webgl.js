@@ -2834,6 +2834,8 @@ function convertPixels(pixels) {
       return new Uint8Array(pixels)
     } else if(pixels instanceof Uint8Array) {
       return unpackTypedArray(pixels)
+    } else if (pixels instanceof Buffer) {
+      return new Uint8Array(pixels);
     }
   }
   return null
@@ -2858,6 +2860,19 @@ gl.texImage2D = function texImage2D(
   format,
   type,
   pixels) {
+
+  if (arguments.length === 6) {
+    pixels = border
+    type = height
+    format = width
+
+    if (typeof pixels !== 'object' || typeof pixels.data !== 'object') {
+      throw new TypeError('texImage2D(GLenum, GLint, GLenum, GLint, GLenum, GLenum, ImageData)')
+    }
+    width = pixels.width
+    height = pixels.height
+    pixels = pixels.data
+  }
 
   target         |= 0
   level          |= 0
@@ -2956,6 +2971,19 @@ gl.texSubImage2D = function texSubImage2D(
     format,
     type,
     pixels) {
+
+  if (arguments.length === 7) {
+    pixels = format
+    type = height
+    format = width
+
+    if (typeof pixels !== 'object' || typeof pixels.data !== 'object') {
+      throw new TypeError('texSubImage2D(GLenum, GLint, GLint, GLint, GLenum, GLenum, ImageData)')
+    }
+    width = pixels.width
+    height = pixels.height
+    pixels = pixels.data
+  }
 
   if(typeof pixels !== 'object') {
     throw new TypeError('texSubImage2D(GLenum, GLint, GLint, GLint, GLint, GLint, GLenum, GLenum, Uint8Array)')
