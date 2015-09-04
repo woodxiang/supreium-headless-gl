@@ -1575,13 +1575,12 @@ gl.disable = function disable(cap) {
 var _disableVertexAttribArray = gl.disableVertexAttribArray
 gl.disableVertexAttribArray = function disableVertexAttribArray(index) {
   index |= 0
-  saveError(this)
-  _disableVertexAttribArray.call(this, index)
-  var error = this.getError()
-  if(error === gl.NO_ERROR) {
-    this._vertexAttribs[index]._isPointer = false
+  if(index < 0 || index >= this._vertexAttribs.length) {
+    setError(this, gl.INVALID_VALUE)
+    return
   }
-  restoreError(this, error)
+  _disableVertexAttribArray.call(this, index)
+  this._vertexAttribs[index]._isPointer = false
 }
 
 var _drawArrays = gl.drawArrays
@@ -1730,13 +1729,14 @@ gl.enable = function enable(cap) {
 var _enableVertexAttribArray = gl.enableVertexAttribArray
 gl.enableVertexAttribArray = function enableVertexAttribArray(index) {
   index |= 0
-  saveError(this)
-  _enableVertexAttribArray.call(this, index)
-  var error = this.getError()
-  if(error === gl.NO_ERROR) {
-    this._vertexAttribs[index]._isPointer = true
+  if(index < 0 || index >= this._vertexAttribs.length) {
+    setError(this, gl.INVALID_VALUE)
+    return
   }
-  restoreError(this, error)
+
+  _enableVertexAttribArray.call(this, index)
+
+  this._vertexAttribs[index]._isPointer = true
 }
 
 var _finish = gl.finish
@@ -2548,12 +2548,22 @@ gl.linkProgram = function linkProgram(program) {
 
       //Record attribute locations
       var numAttribs = this.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES)
+      var names = new Array(numAttribs)
       program._attributes.length = numAttribs
       for(var i=0; i<numAttribs; ++i) {
-        program._attributes[i] = this.getAttribLocation(
-            program,
-            this.getActiveAttrib(program, i).name)|0
+        names[i] = this.getActiveAttrib(program, i).name
+        program._attributes[i] = this.getAttribLocation(program, names[i])|0
       }
+
+      for(var i=0; i<numAttribs; ++i) {
+        _bindAttribLocation.call(
+          this,
+          program._|0,
+          program._attributes[i],
+          names[i])
+      }
+
+      _linkProgram.call(this, program._|0)
 
       var numUniforms = this.getProgramParameter(program, gl.ACTIVE_UNIFORMS)
       program._uniforms.length = numUniforms
@@ -3240,24 +3250,27 @@ makeVertexAttribs()
 
 var _vertexAttribPointer = gl.vertexAttribPointer
 gl.vertexAttribPointer = function vertexAttribPointer(
-  indx,
+  index,
   size,
   type,
   normalized,
   stride,
   offset) {
 
-  if(+stride < 0 || +offset < 0) {
-    setError(this, gl.INVALID_VALUE)
-    return
-  }
-
-  indx   |= 0
+  index  |= 0
   size   |= 0
   type   |= 0
   normalized = !!normalized
   stride |= 0
   offset |= 0
+
+  if(stride < 0 ||
+     offset < 0 ||
+     index < 0   || index >= this._vertexAttribs.length ||
+    !(size === 1 || size === 2 || size === 3 || size === 4)) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
 
   if(this._activeArrayBuffer === null) {
     setError(this, gl.INVALID_OPERATION)
@@ -3286,28 +3299,22 @@ gl.vertexAttribPointer = function vertexAttribPointer(
   }
 
   //Call vertex attrib pointer
-  saveError(this)
-  _vertexAttribPointer.call(this, indx, size, type, normalized, stride, offset)
+  _vertexAttribPointer.call(this, index, size, type, normalized, stride, offset)
 
   //Save attribute pointer state
-  var error = this.getError()
-  if(error === gl.NO_ERROR) {
-    var attrib = this._vertexAttribs[indx]
+  var attrib = this._vertexAttribs[index]
 
-    if(attrib._pointerBuffer &&
-       attrib._pointerBuffer !== this._activeArrayBuffer) {
-      attrib._pointerBuffer._refCount -= 1
-      checkDelete(attrib._pointerBuffer)
-    }
-
-    this._activeArrayBuffer._refCount += 1
-    attrib._pointerBuffer = this._activeArrayBuffer
-    attrib._pointerSize   = size * byteSize
-    attrib._pointerOffset = offset
-    attrib._pointerStride = stride || (size * byteSize)
+  if(attrib._pointerBuffer &&
+     attrib._pointerBuffer !== this._activeArrayBuffer) {
+    attrib._pointerBuffer._refCount -= 1
+    checkDelete(attrib._pointerBuffer)
   }
 
-  restoreError(this, error)
+  this._activeArrayBuffer._refCount += 1
+  attrib._pointerBuffer = this._activeArrayBuffer
+  attrib._pointerSize   = size * byteSize
+  attrib._pointerOffset = offset
+  attrib._pointerStride = stride || (size * byteSize)
 }
 
 var _viewport = gl.viewport

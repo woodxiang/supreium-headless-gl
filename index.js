@@ -81,8 +81,6 @@ function createContext(width, height, options) {
   gl._vertexAttribs = new Array(numAttribs)
   for(var i=0; i<numAttribs; ++i) {
     gl._vertexAttribs[i] = new webgl.WebGLVertexAttribute(gl, i)
-    gl.disableVertexAttribArray(i)
-    gl.vertexAttrib4f(i, 0, 0, 0, 1)
   }
 
   //Store limits

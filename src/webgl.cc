@@ -1150,15 +1150,15 @@ GL_METHOD(EnableVertexAttribArray) {
 GL_METHOD(VertexAttribPointer) {
   GL_BOILERPLATE;
 
-  int indx = args[0]->Int32Value();
-  int size = args[1]->Int32Value();
-  int type = args[2]->Int32Value();
+  int index      = args[0]->Int32Value();
+  int size       = args[1]->Int32Value();
+  int type       = args[2]->Int32Value();
   int normalized = args[3]->BooleanValue();
-  int stride = args[4]->Int32Value();
-  long offset = args[5]->Int32Value();
+  int stride     = args[4]->Int32Value();
+  long offset    = args[5]->Int32Value();
 
   glVertexAttribPointer(
-    indx,
+    index,
     size,
     type,
     normalized,
