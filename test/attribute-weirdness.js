@@ -21,12 +21,13 @@ tape('attribute-weirdness', function(t) {
         }
 
         var vertexSrc = [
+            'precision mediump float;',
             attributes[0],
             attributes[1],
             'varying vec2 v_pos0;',
             'void main() {',
-                'gl_Position = vec4(a_pos - 1.0, 0, 1);',
                 'v_pos0 = a_texture_pos;',
+                'gl_Position = vec4(a_pos - 1.0, 0, 1);',
             '}'
         ].join('\n');
 
@@ -58,6 +59,7 @@ tape('attribute-weirdness', function(t) {
 
         var aPos = gl.getAttribLocation(program, "a_pos");
         var aTexturePos = gl.getAttribLocation(program, "a_texture_pos");
+
         gl.enableVertexAttribArray(aPos);
         gl.enableVertexAttribArray(aTexturePos);
 
@@ -67,11 +69,15 @@ tape('attribute-weirdness', function(t) {
             aTexturePos = tmp;
         }
 
+        console.log('locations:', aPos, aTexturePos)
+
         gl.vertexAttribPointer(aPos, 2, gl.SHORT, false, 8, 0);
         gl.vertexAttribPointer(aTexturePos, 2, gl.SHORT, false, 8, 4);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         gl.deleteBuffer(buffer);
+
+        console.log('error:', gl.getError())
 
         var pixels = new Uint8Array(width * height * 4);
         gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
