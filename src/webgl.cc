@@ -1930,8 +1930,7 @@ GL_METHOD(GetUniform) {
   GLuint program = args[0]->Int32Value();
   GLint location = args[1]->Int32Value();
 
-  float data[16]; // worst case scenario is 16 floats
-
+  float data[1024];
   glGetUniformfv(program, location, data);
 
   v8::Local<v8::Array> arr=NanNew<v8::Array>(16);
