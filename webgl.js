@@ -3106,7 +3106,8 @@ function makeUniforms() {
       } else if(!!transpose ||
         typeof v !== 'object' ||
         v === null ||
-        v.length !== i*i) {
+        !v.length ||
+        v.length % i*i !== 0) {
         setError(this, gl.INVALID_VALUE)
         return
       }
@@ -3116,10 +3117,25 @@ function makeUniforms() {
       if(!checkLocationActive(this, location)) {
         return
       }
-      return native.call(this,
-        location._|0,
-        !!transpose,
-        new Float32Array(v))
+
+      var data = new Float32Array(v)
+      if(v.length === i*i) {
+        return native.call(this,
+          location._|0,
+          !!transpose,
+          data)
+      } else if(location._array) {
+        var arrayLocs = location._array
+        for(var j=0; j<arrayLocs.length && (j+1) * i * i <= v.length; ++j) {
+          native.call(this,
+            arrayLocs[j],
+            !!transpose,
+            new Float32Array(data.subarray(j*i*i, (j+1)*i*i)))
+        }
+      } else {
+        setError(this, gl.INVALID_VALUE)
+        return
+      }
     }
   }
 
