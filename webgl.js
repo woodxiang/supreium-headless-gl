@@ -3298,6 +3298,11 @@ gl.vertexAttribPointer = function vertexAttribPointer(
     return
   }
 
+  if(offset >= this._activeArrayBuffer._size) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
   //Call vertex attrib pointer
   _vertexAttribPointer.call(this, index, size, type, normalized, stride, offset)
 
