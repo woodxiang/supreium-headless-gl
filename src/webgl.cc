@@ -480,7 +480,7 @@ GL_METHOD(BindAttribLocation) {
 
   GLint program = args[0]->Int32Value();
   GLint index   = args[1]->Int32Value();
-  v8::String::Utf8Value name(args[2]);
+  NanAsciiString name(args[2]);
 
   glBindAttribLocation(program, index, *name);
 
@@ -567,7 +567,7 @@ GL_METHOD(GetAttribLocation) {
   GL_BOILERPLATE;
 
   int program = args[0]->Int32Value();
-  v8::String::Utf8Value name(args[1]);
+  NanAsciiString name(args[1]);
 
   NanReturnValue(NanNew<v8::Integer>(glGetAttribLocation(program, *name)));
 }
@@ -609,7 +609,7 @@ GL_METHOD(ShaderSource) {
   GL_BOILERPLATE;
 
   int id = args[0]->Int32Value();
-  v8::String::Utf8Value code(args[1]);
+  NanAsciiString code(args[1]);
 
   const char* codes[1];
   codes[0] = *code;
