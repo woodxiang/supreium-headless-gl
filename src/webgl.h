@@ -116,9 +116,6 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   static NAN_METHOD(SetError);
   static NAN_METHOD(GetError);
 
-  //Display resizing
-  static NAN_METHOD(Resize);
-
   //Destructors
   void dispose();
 

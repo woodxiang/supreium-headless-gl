@@ -8,23 +8,18 @@
 #include <cstdlib>
 #include "webgl.h"
 
-v8::Persistent<v8::FunctionTemplate> WEBGL_TEMPLATE;
+Nan::Persistent<v8::FunctionTemplate> WEBGL_TEMPLATE;
 
 #define JS_GL_METHOD(webgl_name, method_name) \
   webgl_template->PrototypeTemplate()->Set(\
-    NanNew<v8::String>(webgl_name),\
-    NanNew<v8::FunctionTemplate>(\
+    Nan::New<v8::String>(webgl_name).ToLocalChecked(),\
+    Nan::New<v8::FunctionTemplate>(\
       WebGLRenderingContext:: method_name)->GetFunction())
 
 #define JS_CONSTANT(x, v) \
   webgl_template->PrototypeTemplate()->Set(\
-    NanNew<v8::String>(#x), NanNew<v8::Integer>(v))
-
-/*
-#define JS_GL_STR_CONSTANT(name) \
-  webgl_template->PrototypeTemplate()->Set(\
-    NanNew<v8::String>(#name), NanNew<v8::String>(GL_ ## name))
-*/
+    Nan::New<v8::String>(#x).ToLocalChecked(), \
+    Nan::New<v8::Integer>(v))
 
 #define JS_GL_CONSTANT(name) JS_CONSTANT(name, GL_ ## name)
 
@@ -33,13 +28,10 @@ void init(v8::Handle<v8::Object> exports)
 {
   //Create the WebGL template
   v8::Local<v8::FunctionTemplate> webgl_template =
-    NanNew<v8::FunctionTemplate>(WebGLRenderingContext::New);
+    Nan::New<v8::FunctionTemplate>(WebGLRenderingContext::New);
 
   webgl_template->InstanceTemplate()->SetInternalFieldCount(1);
-  webgl_template->SetClassName(NanNew<v8::String>("WebGLRenderingContext"));
-
-  //Add methods
-  JS_GL_METHOD("resize", Resize);
+  webgl_template->SetClassName(Nan::New<v8::String>("WebGLRenderingContext").ToLocalChecked());
 
   JS_GL_METHOD("getUniform", GetUniform);
 
@@ -601,19 +593,19 @@ void init(v8::Handle<v8::Object> exports)
   JS_CONSTANT(BROWSER_DEFAULT_WEBGL, 0x9244);
 
   //Export function
-  NanAssignPersistent(WEBGL_TEMPLATE, webgl_template);
+  WEBGL_TEMPLATE.Reset(webgl_template);
   exports->Set(
-    NanNew<v8::String>("WebGLRenderingContext"),
+    Nan::New<v8::String>("WebGLRenderingContext").ToLocalChecked(),
     webgl_template->GetFunction());
 
   exports->Set(
-    NanNew<v8::String>("cleanup"),
-    NanNew<v8::FunctionTemplate>(
+    Nan::New<v8::String>("cleanup").ToLocalChecked(),
+    Nan::New<v8::FunctionTemplate>(
       WebGLRenderingContext::DisposeAll)->GetFunction());
 
   exports->Set(
-    NanNew<v8::String>("setError"),
-    NanNew<v8::FunctionTemplate>(
+    Nan::New<v8::String>("setError").ToLocalChecked(),
+    Nan::New<v8::FunctionTemplate>(
       WebGLRenderingContext::SetError)->GetFunction());
 }
 

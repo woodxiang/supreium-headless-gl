@@ -13,14 +13,14 @@
   "scripts": {
     "test": "tape test/*.js",
     "build": "node-gyp rebuild --verbose",
-    "prebuild": "prebuild -t 0.10.40 -t 0.12.7 -t 1.0.4 -t 1.8.4 -t 2.4.0",
+    "prebuildx": "prebuild -t 0.10.40 -t 0.12.7 -t 1.0.4 -t 1.8.4 -t 2.4.0 -t 4.0.0",
     "install": "prebuild --download"
   },
   "dependencies": {
     "bindings": "^1.2.1",
     "bit-twiddle": "^1.0.2",
-    "nan": "^1.8.4",
-    "node-gyp": "^2.0.2",
+    "nan": "^2.0.9",
+    "node-gyp": "^3.0.2",
     "prebuild": "^2.5.1"
   },
   "devDependencies": {

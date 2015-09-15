@@ -586,7 +586,6 @@ function setFramebufferAttachment(framebuffer, object, attachment) {
   link(framebuffer, object)
 }
 
-var _resize = gl.resize
 gl.resize = function(width, height) {
   width  = width | 0
   height = height | 0
@@ -3378,7 +3377,7 @@ function resizeDrawingBuffer(context, width, height) {
 
   //Update color attachment
   _bindTexture.call(
-    context,
+      context,
     gl.TEXTURE_2D,
     drawingBuffer._color)
   var colorFormat = contextAttributes.alpha ? gl.RGBA : gl.RGB
