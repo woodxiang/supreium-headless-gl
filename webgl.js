@@ -2496,7 +2496,22 @@ gl.getVertexAttribOffset = function getVertexAttribOffset(index, pname) {
 
 var _hint = gl.hint
 gl.hint = function hint(target, mode) {
-  return _hint.call(this, target|0, mode|0)
+  target |= 0
+  mode |= 0
+
+  if(target !== gl.GENERATE_MIPMAP_HINT) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  if(mode !== gl.FASTEST &&
+     mode !== gl.NICEST &&
+     mode !== gl.DONT_CARE) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  return _hint.call(this, target, mode)
 }
 
 function isObject(method, wrapper) {
@@ -3310,11 +3325,6 @@ gl.vertexAttribPointer = function vertexAttribPointer(
   if((stride % byteSize) !== 0 ||
      (offset % byteSize) !== 0) {
     setError(this, gl.INVALID_OPERATION)
-    return
-  }
-
-  if(offset >= this._activeArrayBuffer._size) {
-    setError(this, gl.INVALID_VALUE)
     return
   }
 
