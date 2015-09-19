@@ -484,9 +484,8 @@ GL_METHOD(ShaderSource) {
   GLint id = info[0]->Int32Value();
   Nan::Utf8String code(info[1]);
 
-  const char*   codes[1];
-  codes[0]      = *code;
-  GLint length  = code.length();
+  const char* codes[] = { *code };
+  GLint length = code.length();
 
   glShaderSource(id, 1, codes, &length);
 }
@@ -921,7 +920,7 @@ GL_METHOD(BufferData) {
 
   if(info[1]->IsObject()) {
     Nan::TypedArrayContents<char> array(info[1]);
-    glBufferData(target, array.length(), static_cast<void*>(*info[1]), usage);
+    glBufferData(target, array.length(), static_cast<void*>(*array), usage);
   } else if(info[1]->IsNumber()) {
     glBufferData(target, info[1]->Int32Value(), NULL, usage);
   }
