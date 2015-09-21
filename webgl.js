@@ -190,7 +190,9 @@ function unpackTypedArray(array) {
 
 //Don't allow: ", $, `, @, \, ', \0
 function isValidString(str) {
-    return !(/[\"\$\`\@\\\'\0]/.test(str))
+  //Remove comments first
+  var c = str.replace(/(?:\/\*(?:[\s\S]*?)\*\/)|(?:([\s;])+\/\/(?:.*)$)/gm, '')
+  return !(/[\"\$\`\@\\\'\0]/.test(c))
 }
 
 function isTypedArray(data) {
