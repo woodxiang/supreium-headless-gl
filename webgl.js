@@ -3385,6 +3385,11 @@ gl.vertexAttribPointer = function vertexAttribPointer(
   stride,
   offset) {
 
+  if(stride < 0 || offset < 0) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
+
   index  |= 0
   size   |= 0
   type   |= 0
