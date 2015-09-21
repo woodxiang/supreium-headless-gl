@@ -124,6 +124,10 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   static NAN_METHOD(New);
   static NAN_METHOD(Destroy);
 
+  static NAN_METHOD(VertexAttribDivisor);
+  static NAN_METHOD(DrawArraysInstanced);
+  static NAN_METHOD(DrawElementsInstanced);
+
   static NAN_METHOD(Uniform1f);
   static NAN_METHOD(Uniform2f);
   static NAN_METHOD(Uniform3f);

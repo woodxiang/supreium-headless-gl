@@ -160,6 +160,11 @@ function WebGLVertexAttribute(ctx, idx) {
   this._pointerOffset = 0
   this._pointerSize   = 0
   this._pointerStride = 0
+  this._pointerType   = gl.FLOAT
+  this._pointerNormal = 0
+  this._inputSize     = 4
+  this._inputStride   = 0
+  this._data          = new Float32Array([0,0,0,1])
 }
 exports.WebGLVertexAttribute = WebGLVertexAttribute
 
@@ -1584,7 +1589,47 @@ gl.disableVertexAttribArray = function disableVertexAttribArray(index) {
   this._vertexAttribs[index]._isPointer = false
 }
 
+var _vertexAttribDivisor = gl.vertexAttribDivisor
+gl.vertexAttribDivisor = void 0
+
+function beginAttrib0Hack(context) {
+  _bindBuffer.call(context, gl.ARRAY_BUFFER, context._attrib0Buffer._)
+  _bufferData.call(
+    context,
+    gl.ARRAY_BUFFER,
+    context._vertexAttribs[0]._data,
+    gl.STREAM_DRAW)
+  _enableVertexAttribArray.call(context, 0)
+  _vertexAttribPointer.call(context, 0, 4, gl.FLOAT, false, 0, 0)
+  _vertexAttribDivisor.call(context, 0, 1)
+}
+
+function endAttrib0Hack(context) {
+  var attrib = context._vertexAttribs[0]
+  if(attrib._pointerBuffer) {
+    _bindBuffer.call(context, gl.ARRAY_BUFFER, attrib._pointerBuffer._)
+  } else {
+    _bindBuffer.call(context, gl.ARRAY_BUFFER, 0)
+  }
+  _vertexAttribPointer.call(context,
+    0,
+    attrib._inputSize,
+    attrib._pointerType,
+    attrib._pointerNormal,
+    attrib._inputStride,
+    attrib._pointerOffset)
+  _vertexAttribDivisor.call(context, 0, 0)
+  _disableVertexAttribArray.call(context, 0)
+  if(context._activeArrayBuffer) {
+    _bindBuffer.call(context, gl.ARRAY_BUFFER, context._activeArrayBuffer._)
+  } else {
+    _bindBuffer.call(context, gl.ARRAY_BUFFER, 0)
+  }
+}
+
 var _drawArrays = gl.drawArrays
+var _drawArraysInstanced = gl.drawArraysInstanced
+gl.drawArraysInstanced = void 0
 gl.drawArrays = function drawArrays(mode, first, count) {
   mode  |= 0
   first |= 0
@@ -1614,11 +1659,19 @@ gl.drawArrays = function drawArrays(mode, first, count) {
     maxIndex = (count + first - 1)>>>0
   }
   if(checkVertexAttribState(this, maxIndex)) {
-    return _drawArrays.call(this, mode, first, reducedCount)
+    if(this._vertexAttribs[0]._isPointer) {
+      return _drawArrays.call(this, mode, first, reducedCount)
+    } else {
+      beginAttrib0Hack(this)
+      _drawArraysInstanced.call(this, mode, first, reducedCount, 1)
+      endAttrib0Hack(this)
+    }
   }
 }
 
 var _drawElements = gl.drawElements
+var _drawElementsInstanced = gl.drawElementsInstanced
+gl.drawElementsInstanced = void 0
 gl.drawElements = function drawElements(mode, count, type, offset) {
   mode    |= 0
   count   |= 0
@@ -1712,7 +1765,14 @@ gl.drawElements = function drawElements(mode, count, type, offset) {
 
   if(checkVertexAttribState(this, maxIndex)) {
     if(reducedCount > 0) {
-      return _drawElements.call(this, mode, reducedCount, type, offset)
+
+      if(this._vertexAttribs[0]._isPointer) {
+        return _drawElements.call(this, mode, reducedCount, type, offset)
+      } else {
+        beginAttrib0Hack(this)
+        _drawElements.call(this, mode, reducedCount, type, offset, 1)
+        endAttrib0Hack(this)
+      }
     }
   }
 }
@@ -2478,22 +2538,42 @@ gl.getVertexAttrib = function getVertexAttrib(index, pname) {
     setError(this, gl.INVALID_VALUE)
     return null
   }
+  var attrib = this._vertexAttribs[index]
   switch(pname) {
     case gl.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING:
-      return this._vertexAttribs[index]._pointerBuffer
+      return attrib._pointerBuffer
+    case gl.VERTEX_ATTRIB_ARRAY_ENABLED:
+      return attrib._isPointer
+    case gl.VERTEX_ATTRIB_ARRAY_SIZE:
+      return attrib._inputSize
+    case gl.VERTEX_ATTRIB_ARRAY_STRIDE:
+      return attrib._inputStride
+    case gl.VERTEX_ATTRIB_ARRAY_TYPE:
+      return attrib._pointerType
+    case gl.VERTEX_ATTRIB_ARRAY_NORMALIZED:
+      return attrib._pointerNormal
     case gl.CURRENT_VERTEX_ATTRIB:
-      return new Float32Array(_getVertexAttrib.call(this, index, pname))
+      return new Float32Array(attrib._data)
     default:
-      return _getVertexAttrib.call(this, index, pname)
+      setError(this, gl.INVALID_ENUM)
+      return null
   }
 }
 
 var _getVertexAttribOffset = gl.getVertexAttribOffset
 gl.getVertexAttribOffset = function getVertexAttribOffset(index, pname) {
-  if(pname === gl.CURRENT_VERTEX_ATTRIB) {
-    return new Float32Array(_getVertexAttribOffset(index|0, pname|0))
+  index |= 0
+  pname |= 0
+  if(index < 0 || index >= this._vertexAttribs.length) {
+    setError(this, gl.INVALID_VALUE)
+    return null
   }
-  return _getVertexAttribOffset.call(this, index|0, pname|0)
+  if(pname === gl.VERTEX_ATTRIB_ARRAY_POINTER) {
+    return this._vertexAttribs[index]._pointerOffset
+  } else {
+    setError(this, gl.INVALID_ENUM)
+    return null
+  }
 }
 
 var _hint = gl.hint
@@ -3259,18 +3339,34 @@ function makeVertexAttribs() {
   function makeVertex(i) {
     var func = 'vertexAttrib' + i + 'f'
     var native = gl[func]
-    gl[func] = function(idx, x, y, z, w) {
+
+    var base = gl[func] = function(idx, x, y, z, w) {
+      idx |= 0
+      if(idx < 0 || idx >= this._vertexAttribs.length) {
+        setError(this, gl.INVALID_VALUE)
+        return
+      }
+      var data = this._vertexAttribs[idx]._data
+      data[3] = 1
+      data[0] = data[1] = data[2] = 0.0
+      switch(i) {
+        case 4:   data[3] = w
+        case 3:   data[2] = z
+        case 2:   data[1] = y
+        case 1:   data[0] = x
+      }
       return native.call(this, idx|0, +x, +y, +z, +w)
     }
+
     gl[func+'v'] = function(idx, v) {
       if(typeof v === 'object' &&
          v !== null &&
          v.length === i) {
         switch(i) {
-          case 1: return native.call(this, idx|0, +v[0])
-          case 2: return native.call(this, idx|0, +v[0], +v[1])
-          case 3: return native.call(this, idx|0, +v[0], +v[1], +v[2])
-          case 4: return native.call(this, idx|0, +v[0], +v[1], +v[2], +v[3])
+          case 1: return base.call(this, idx|0, +v[0], 0, 0, 0)
+          case 2: return base.call(this, idx|0, +v[0], +v[1], 0, 0)
+          case 3: return base.call(this, idx|0, +v[0], +v[1], +v[2], 0)
+          case 4: return base.call(this, idx|0, +v[0], +v[1], +v[2], +v[3])
         }
       }
       setError(this, gl.INVALID_OPERATION)
@@ -3347,6 +3443,10 @@ gl.vertexAttribPointer = function vertexAttribPointer(
   attrib._pointerSize   = size * byteSize
   attrib._pointerOffset = offset
   attrib._pointerStride = stride || (size * byteSize)
+  attrib._pointerType   = type
+  attrib._pointerNormal = normalized
+  attrib._inputStride   = stride
+  attrib._inputSize     = size
 }
 
 var _viewport = gl.viewport

@@ -96,6 +96,9 @@ function createContext(width, height, options) {
   //Allocate framebuffer
   webgl.allocateDrawingBuffer(gl, width, height)
 
+  var attrib0Buffer = gl.createBuffer()
+  gl._attrib0Buffer = attrib0Buffer
+
   //Initialize defaults
   gl.bindBuffer(gl.ARRAY_BUFFER, null)
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)

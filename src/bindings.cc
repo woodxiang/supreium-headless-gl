@@ -34,6 +34,10 @@ NAN_MODULE_INIT(Init) {
     Nan::New<v8::String>("WebGLRenderingContext").ToLocalChecked());
 
   /* WebGL methods */
+  JS_GL_METHOD("drawArraysInstanced", DrawArraysInstanced);
+  JS_GL_METHOD("drawElementsInstanced", DrawElementsInstanced);
+  JS_GL_METHOD("vertexAttribDivisor", VertexAttribDivisor);
+
   JS_GL_METHOD("getUniform", GetUniform);
   JS_GL_METHOD("uniform1f", Uniform1f);
   JS_GL_METHOD("uniform2f", Uniform2f);

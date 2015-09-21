@@ -391,6 +391,43 @@ GL_METHOD(GetError) {
   info.GetReturnValue().Set(Nan::New<v8::Integer>(inst->getError()));
 }
 
+GL_METHOD(VertexAttribDivisor) {
+  GL_BOILERPLATE;
+
+  GLuint index    = info[0]->Uint32Value();
+  GLuint divisor  = info[1]->Uint32Value();
+
+  glVertexAttribDivisor(index, divisor);
+}
+
+GL_METHOD(DrawArraysInstanced) {
+  GL_BOILERPLATE;
+
+  GLenum  mode    = info[0]->Int32Value();
+  GLint   first   = info[1]->Int32Value();
+  GLuint  count   = info[2]->Uint32Value();
+  GLuint  icount  = info[3]->Uint32Value();
+
+  glDrawArraysInstanced(mode, first, count, icount);
+}
+
+GL_METHOD(DrawElementsInstanced) {
+  GL_BOILERPLATE;
+
+  GLenum mode   = info[0]->Int32Value();
+  GLint  count  = info[1]->Int32Value();
+  GLenum type   = info[2]->Int32Value();
+  GLint  offset = info[3]->Int32Value();
+  GLuint icount = info[4]->Uint32Value();
+
+  glDrawElementsInstanced(
+    mode,
+    count,
+    type,
+    reinterpret_cast<GLvoid*>(offset),
+    icount);
+}
+
 GL_METHOD(DrawArrays) {
   GL_BOILERPLATE;
 
