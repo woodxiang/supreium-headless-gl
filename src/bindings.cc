@@ -11,16 +11,16 @@
 Nan::Persistent<v8::FunctionTemplate> WEBGL_TEMPLATE;
 
 #define JS_GL_METHOD(webgl_name, method_name) \
-  Nan::Set(\
-      webgl_template->PrototypeTemplate() \
-    , Nan::New<v8::String>(webgl_name).ToLocalChecked()\
+  Nan::SetPrototypeTemplate(\
+      webgl_template \
+    , webgl_name\
     , Nan::New<v8::FunctionTemplate>(\
         WebGLRenderingContext:: method_name)->GetFunction())
 
 #define JS_CONSTANT(x, v) \
-  Nan::Set( \
-      webgl_template->PrototypeTemplate() \
-    , Nan::New<v8::String>(#x).ToLocalChecked() \
+  Nan::SetPrototypeTemplate( \
+      webgl_template \
+    , #x \
     , Nan::New<v8::Integer>(v))
 
 #define JS_GL_CONSTANT(name) JS_CONSTANT(name, GL_ ## name)
