@@ -5,6 +5,9 @@ var nativeGL = require('bindings')('webgl')
 
 var HEADLESS_VERSION = require('./package.json').version
 
+var MAX_UNIFORM_LENGTH    = 256
+var MAX_ATTRIBUTE_LENGTH  = 256
+
 //We need to wrap some of the native WebGL functions to handle certain error codes and check input values
 var gl = nativeGL.WebGLRenderingContext.prototype
 gl.VERSION = 0x1F02
@@ -34,12 +37,14 @@ function WebGLProgram(_, ctx) {
 }
 exports.WebGLProgram = WebGLProgram
 
-function WebGLShader(_, ctx) {
+function WebGLShader(_, ctx, type) {
   this._              = _
+  this._type          = type
   this._ctx           = ctx
   this._pendingDelete = false
   this._references    = []
   this._refCount      = 0
+  this._source        = ''
 }
 exports.WebGLShader = WebGLShader
 
@@ -117,8 +122,8 @@ function WebGLActiveInfo(_) {
 exports.WebGLActiveInfo = WebGLActiveInfo
 
 function WebGLShaderPrecisionFormat(_) {
-  this.rangeMin = _.rangeMin
-  this.rangeMax = _.rangeMax
+  this.rangeMin  = _.rangeMin
+  this.rangeMax  = _.rangeMax
   this.precision = _.precision
 }
 exports.WebGLShaderPrecisionFormat = WebGLShaderPrecisionFormat
@@ -1272,8 +1277,8 @@ gl.cullFace = function cullFace(mode) {
 //Object constructor methods
 function createObject(method, wrapper, refset) {
   var native = gl[method]
-  gl[method] = function(type) {
-    var id = native.call(this, type)
+  gl[method] = function() {
+    var id = native.call(this)
     if(id <= 0) {
       return null
     } else {
@@ -1286,14 +1291,27 @@ var _createBuffer       = gl.createBuffer
 var _createFramebuffer  = gl.createFramebuffer
 var _createProgram      = gl.createProgram
 var _createRenderbuffer = gl.createRenderbuffer
-var _createShader       = gl.createShader
 var _createTexture      = gl.createTexture
 createObject('createBuffer',       WebGLBuffer,       '_buffers')
 createObject('createFramebuffer',  WebGLFramebuffer,  '_framebuffers')
 createObject('createProgram',      WebGLProgram,      '_programs')
 createObject('createRenderbuffer', WebGLRenderbuffer, '_renderbuffers')
-createObject('createShader',       WebGLShader,       '_shaders')
 createObject('createTexture',      WebGLTexture,      '_textures')
+
+var _createShader       = gl.createShader
+gl.createShader = function(type) {
+  type |= 0
+  if(type !== gl.FRAGMENT_SHADER &&
+     type !== gl.VERTEX_SHADER) {
+    setError(this, gl.INVALID_ENUM)
+    return null
+  }
+  var id = _createShader.call(this, type)
+  if(id < 0) {
+    return null
+  }
+  return this._shaders[id] = new WebGLShader(id, this, type)
+}
 
 //Generic object deletion method
 function deleteObject(name, type, refset) {
@@ -2374,7 +2392,7 @@ gl.getShaderSource = function getShaderSource(shader) {
   if(!checkObject(shader)) {
     throw new TypeError('Input to getShaderSource must be an object')
   } else if(checkWrapper(this, shader, WebGLShader)) {
-    return _getShaderSource.call(this, shader._|0)
+    return shader._source
   }
   return ''
 }
@@ -2826,6 +2844,10 @@ gl.scissor = function scissor(x, y, width, height) {
 }
 
 
+function wrapShader(type, source) {
+  return source
+}
+
 var _shaderSource = gl.shaderSource
 gl.shaderSource = function shaderSource(shader, source) {
   if(!checkObject(shader)) {
@@ -2840,7 +2862,8 @@ gl.shaderSource = function shaderSource(shader, source) {
     setError(this, gl.INVALID_VALUE)
     return
   } else if(checkWrapper(this, shader, WebGLShader)) {
-    return _shaderSource.call(this, shader._|0, source)
+    _shaderSource.call(this, shader._|0, wrapShader(shader._type, source))
+    shader._source = source
   }
 }
 
