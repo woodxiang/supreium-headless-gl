@@ -394,8 +394,8 @@ GL_METHOD(GetError) {
 GL_METHOD(VertexAttribDivisor) {
   GL_BOILERPLATE;
 
-  GLuint index    = info[0]->Uint32Value();
-  GLuint divisor  = info[1]->Uint32Value();
+  GLuint index   = info[0]->Uint32Value();
+  GLuint divisor = info[1]->Uint32Value();
 
   glVertexAttribDivisor(index, divisor);
 }
@@ -403,10 +403,10 @@ GL_METHOD(VertexAttribDivisor) {
 GL_METHOD(DrawArraysInstanced) {
   GL_BOILERPLATE;
 
-  GLenum  mode    = info[0]->Int32Value();
-  GLint   first   = info[1]->Int32Value();
-  GLuint  count   = info[2]->Uint32Value();
-  GLuint  icount  = info[3]->Uint32Value();
+  GLenum  mode   = info[0]->Int32Value();
+  GLint   first  = info[1]->Int32Value();
+  GLuint  count  = info[2]->Uint32Value();
+  GLuint  icount = info[3]->Uint32Value();
 
   glDrawArraysInstanced(mode, first, count, icount);
 }
@@ -943,8 +943,8 @@ GL_METHOD(BindFramebuffer) {
 GL_METHOD(FramebufferTexture2D) {
   GL_BOILERPLATE;
 
-  GLenum target      = info[0]->Int32Value();
-  GLenum attachment  = info[1]->Int32Value();
+  GLenum target     = info[0]->Int32Value();
+  GLenum attachment = info[1]->Int32Value();
   GLint textarget   = info[2]->Int32Value();
   GLint texture     = info[3]->Int32Value();
   GLint level       = info[4]->Int32Value();
@@ -1559,11 +1559,14 @@ GL_METHOD(GetActiveAttrib) {
   GLuint program = info[0]->Int32Value();
   GLuint index   = info[1]->Int32Value();
 
-  char    name[1024];
+  GLint maxLength;
+  glGetProgramiv(program, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxLength);
+
+  char* name = new char[maxLength];
   GLsizei length = 0;
   GLenum  type;
   GLsizei size;
-  glGetActiveAttrib(program, index, 1024, &length, &size, &type, name);
+  glGetActiveAttrib(program, index, maxLength, &length, &size, &type, name);
 
   if (length > 0) {
     v8::Local<v8::Object> activeInfo = Nan::New<v8::Object>();
@@ -1580,6 +1583,8 @@ GL_METHOD(GetActiveAttrib) {
   } else {
     info.GetReturnValue().SetNull();
   }
+
+  delete[] name;
 }
 
 GL_METHOD(GetActiveUniform) {
@@ -1588,11 +1593,15 @@ GL_METHOD(GetActiveUniform) {
   GLuint program = info[0]->Int32Value();
   GLuint index   = info[1]->Int32Value();
 
-  char    name[1024];
-  GLsizei length=0;
+  GLint maxLength;
+  glGetProgramiv(program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxLength);
+
+
+  char* name = new char[maxLength];
+  GLsizei length = 0;
   GLenum  type;
   GLsizei size;
-  glGetActiveUniform(program, index, 1024, &length, &size, &type, name);
+  glGetActiveUniform(program, index, maxLength, &length, &size, &type, name);
 
   if (length > 0) {
     v8::Local<v8::Object> activeInfo = Nan::New<v8::Object>();
@@ -1609,6 +1618,8 @@ GL_METHOD(GetActiveUniform) {
   } else {
     info.GetReturnValue().SetNull();
   }
+
+  delete[] name;
 }
 
 GL_METHOD(GetAttachedShaders) {
@@ -1616,9 +1627,12 @@ GL_METHOD(GetAttachedShaders) {
 
   GLuint program = info[0]->Int32Value();
 
-  GLuint  shaders[1024];
+  GLint numAttachedShaders;
+  glGetProgramiv(program, GL_ATTACHED_SHADERS, &numAttachedShaders);
+
+  GLuint* shaders = new GLuint[numAttachedShaders];
   GLsizei count;
-  glGetAttachedShaders(program, 1024, &count, shaders);
+  glGetAttachedShaders(program, numAttachedShaders, &count, shaders);
 
   v8::Local<v8::Array> shadersArr = Nan::New<v8::Array>(count);
   for (int i=0; i<count; i++) {
@@ -1626,6 +1640,8 @@ GL_METHOD(GetAttachedShaders) {
   }
 
   info.GetReturnValue().Set(shadersArr);
+
+  delete[] shaders;
 }
 
 GL_METHOD(GetParameter) {
