@@ -64,7 +64,7 @@ function createContext(width, height, options) {
   gl._activeArrayBuffer        = null
   gl._activeElementArrayBuffer = null
   gl._activeRenderbuffer       = null
-
+  
   //Initialize texture units
   var numTextures = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS)
   gl._textureUnits = new Array(numTextures)

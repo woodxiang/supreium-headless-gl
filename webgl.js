@@ -1722,6 +1722,20 @@ function endAttrib0Hack(context) {
   }
 }
 
+function checkStencilState(context) {
+  if(context.getParameter(gl.STENCIL_WRITEMASK) !==
+      context.getParameter(gl.STENCIL_BACK_WRITEMASK) ||
+     context.getParameter(gl.STENCIL_VALUE_MASK) !==
+      context.getParameter(gl.STENCIL_BACK_VALUE_MASK) ||
+     context.getParameter(gl.STENCIL_REF) !==
+      context.getParameter(gl.STENCIL_BACK_REF)) {
+    setError(context, gl.INVALID_OPERATION)
+    return false
+  }
+  return true
+}
+
+
 var _drawArrays = gl.drawArrays
 var _drawArraysInstanced = gl.drawArraysInstanced
 gl.drawArraysInstanced = void 0
@@ -1732,6 +1746,10 @@ gl.drawArrays = function drawArrays(mode, first, count) {
 
   if(first < 0 || count < 0) {
     setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+  if(!checkStencilState(this)) {
     return
   }
 
@@ -1775,6 +1793,11 @@ gl.drawElements = function drawElements(mode, count, type, ioffset) {
 
   if(count < 0 || ioffset < 0) {
     setError(this, gl.INVALID_VALUE)
+    return
+  }
+
+
+  if(!checkStencilState(this)) {
     return
   }
 
