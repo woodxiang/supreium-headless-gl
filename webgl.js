@@ -5,8 +5,9 @@ var nativeGL = require('bindings')('webgl')
 
 var HEADLESS_VERSION = require('./package.json').version
 
-var MAX_UNIFORM_LENGTH    = 256
-var MAX_ATTRIBUTE_LENGTH  = 256
+var MAX_UNIFORM_LENGTH        = 256
+var MAX_ATTRIBUTE_LENGTH      = 256
+var MAX_UNIFORM_ARRAY_LENGTH  = 1024
 
 //We need to wrap some of the native WebGL functions to handle certain error codes and check input values
 var gl = nativeGL.WebGLRenderingContext.prototype
@@ -1786,7 +1787,6 @@ gl.drawElements = function drawElements(mode, count, type, ioffset) {
   if(checkVertexAttribState(this, maxIndex)) {
     if(reducedCount > 0) {
       if(this._vertexAttribs[0]._isPointer) {
-        console.log('here!', mode===gl.LINE_LOOP, count, reducedCount, type==gl.UNSIGNED_SHORT, offset)
         return _drawElements.call(this, mode, reducedCount, type, ioffset)
       } else {
         beginAttrib0Hack(this)
