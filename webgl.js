@@ -1982,7 +1982,7 @@ gl.framebufferTexture2D = function framebufferTexture2D(
   }
 
   framebuffer._attachmentLevel[attachment] = level
-  framebuffer._attachmentFace[attachment]  = target
+  framebuffer._attachmentFace[attachment]  = textarget
   setFramebufferAttachment(framebuffer, texture, attachment)
   updateFramebufferAttachments(framebuffer)
 }
