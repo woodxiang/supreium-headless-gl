@@ -558,12 +558,16 @@ GL_METHOD(GetShaderInfoLog) {
 
   GLint id = info[0]->Int32Value();
 
-  int len = 1024;
-  char error[1024];
-  glGetShaderInfoLog(id, 1024, &len, error);
+  GLint infoLogLength;
+  glGetShaderiv(id, GL_INFO_LOG_LENGTH, &infoLogLength);
+
+  char* error = new char[infoLogLength+1];
+  glGetShaderInfoLog(id, infoLogLength+1, &infoLogLength, error);
 
   info.GetReturnValue().Set(
     Nan::New<v8::String>(error).ToLocalChecked());
+
+  delete[] error;
 }
 
 
@@ -1805,12 +1809,16 @@ GL_METHOD(GetProgramInfoLog) {
 
   GLuint program = info[0]->Int32Value();
 
-  int  len = 1024;
-  char error[1024];
-  glGetProgramInfoLog(program, 1024, &len, error);
+  GLint infoLogLength;
+  glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
+
+  char* error = new char[infoLogLength+1];
+  glGetProgramInfoLog(program, infoLogLength+1, &infoLogLength, error);
 
   info.GetReturnValue().Set(
     Nan::New<v8::String>(error).ToLocalChecked());
+
+  delete[] error;
 }
 
 GL_METHOD(GetShaderPrecisionFormat) {
