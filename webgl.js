@@ -3272,12 +3272,28 @@ function makeUniforms() {
       var func = 'uniform' + i + type
       var native = gl[func]
 
-      gl[func] = function(location, x, y, z, w) {
+      var base = gl[func] = function(location, x, y, z, w) {
         if(!checkObject(location)) {
           throw new TypeError(func + '(WebGLUniformLocation, ...)')
         } else if(!location) {
           return
         } else if(checkLocationActive(this, location)) {
+          var utype = location._activeInfo.type
+          if(utype === gl.SAMPLER_2D ||
+             utype === gl.SAMPLER_CUBE) {
+            if(i !== 1) {
+              setError(this, gl.INVALID_VALUE)
+              return
+            }
+            if(type !== 'i') {
+              setError(this, gl.INVALID_OPERATION)
+              return
+            }
+            if(x < 0 || x >= this._textureUnits.length) {
+              setError(this, gl.INVALID_VALUE)
+              return
+            }
+          }
           return native.call(this, location._|0, x, y, z, w)
         }
       }
@@ -3316,10 +3332,14 @@ function makeUniforms() {
             return
           } else if(v.length === i) {
             switch(i) {
-              case 1: return native.call(this, location._|0, v[0])
-              case 2: return native.call(this, location._|0, v[0], v[1])
-              case 3: return native.call(this, location._|0, v[0], v[1], v[2])
-              case 4: return native.call(this, location._|0, v[0], v[1], v[2], v[3])
+              case 1:
+                return base.call(this, location, v[0])
+              case 2:
+                return base.call(this, location, v[0], v[1])
+              case 3:
+                return base.call(this, location, v[0], v[1], v[2])
+              case 4:
+                return base.call(this, location, v[0], v[1], v[2], v[3])
             }
           }
         }
