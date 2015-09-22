@@ -1690,13 +1690,13 @@ gl.drawArrays = function drawArrays(mode, first, count) {
 var _drawElements = gl.drawElements
 var _drawElementsInstanced = gl.drawElementsInstanced
 gl.drawElementsInstanced = void 0
-gl.drawElements = function drawElements(mode, count, type, offset) {
+gl.drawElements = function drawElements(mode, count, type, ioffset) {
   mode    |= 0
   count   |= 0
   type    |= 0
-  offset  |= 0
+  ioffset |= 0
 
-  if(count < 0 || offset < 0) {
+  if(count < 0 || ioffset < 0) {
     setError(this, gl.INVALID_VALUE)
     return
   }
@@ -1709,6 +1709,7 @@ gl.drawElements = function drawElements(mode, count, type, offset) {
 
   //Unpack element data
   var elementData = null
+  var offset = ioffset
   if(type === gl.UNSIGNED_SHORT) {
     if(offset % 2) {
       setError(this, gl.INVALID_OPERATION)
@@ -1783,12 +1784,12 @@ gl.drawElements = function drawElements(mode, count, type, offset) {
 
   if(checkVertexAttribState(this, maxIndex)) {
     if(reducedCount > 0) {
-
       if(this._vertexAttribs[0]._isPointer) {
-        return _drawElements.call(this, mode, reducedCount, type, offset)
+        console.log('here!', mode===gl.LINE_LOOP, count, reducedCount, type==gl.UNSIGNED_SHORT, offset)
+        return _drawElements.call(this, mode, reducedCount, type, ioffset)
       } else {
         beginAttrib0Hack(this)
-        _drawElements.call(this, mode, reducedCount, type, offset, 1)
+        _drawElements.call(this, mode, reducedCount, type, ioffset, 1)
         endAttrib0Hack(this)
       }
     }
@@ -2842,7 +2843,6 @@ var _scissor = gl.scissor
 gl.scissor = function scissor(x, y, width, height) {
   return _scissor.call(this, x|0, y|0, width|0, height|0)
 }
-
 
 function wrapShader(type, source) {
   return source
