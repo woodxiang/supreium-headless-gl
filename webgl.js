@@ -485,7 +485,8 @@ function checkOwns(context, object) {
 
 function checkUniform(program, location) {
   return location instanceof WebGLUniformLocation &&
-         location._program === program
+         location._program   === program &&
+         location._linkCount === program._linkCount
 }
 
 function checkLocation(context, location) {
@@ -2436,8 +2437,11 @@ gl.getUniform = function getUniform(program, location) {
     return null
   } else if(!location) {
     return null
-  } else if(checkWrapper(this, program, WebGLProgram) &&
-     checkUniform(program, location)) {
+  } else if(checkWrapper(this, program, WebGLProgram)) {
+    if(!checkUniform(program, location)) {
+      setError(this, gl.INVALID_OPERATION)
+      return null
+    }
     var data = _getUniform.call(this, program._|0, location._|0)
     if(!data) {
       return null
