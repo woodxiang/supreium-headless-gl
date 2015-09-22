@@ -590,6 +590,11 @@ GL_METHOD(AttachShader) {
   glAttachShader(program, shader);
 }
 
+GL_METHOD(ValidateProgram) {
+  GL_BOILERPLATE;
+
+  glValidateProgram(info[0]->Int32Value());
+}
 
 GL_METHOD(LinkProgram) {
   GL_BOILERPLATE;
@@ -803,7 +808,7 @@ GL_METHOD(TexImage2D) {
       , type
       , unpacked);
     delete[] unpacked;
-  } else {
+  } else if(*pixels) {
     glTexImage2D(
         target
       , level
@@ -814,6 +819,21 @@ GL_METHOD(TexImage2D) {
       , format
       , type
       , *pixels);
+  } else {
+    size_t length = width * height * 4;
+    char* data = new char[length];
+    memset(data, 0, length);
+    glTexImage2D(
+        target
+      , level
+      , internalformat
+      , width
+      , height
+      , border
+      , format
+      , type
+      , data);
+    delete[] data;
   }
 }
 
@@ -1521,12 +1541,6 @@ GL_METHOD(GetShaderSource) {
   info.GetReturnValue().Set(str);
 }
 
-GL_METHOD(ValidateProgram) {
-  GL_BOILERPLATE;
-
-  glValidateProgram(info[0]->Int32Value());
-}
-
 GL_METHOD(ReadPixels) {
   GL_BOILERPLATE;
 
@@ -1880,7 +1894,7 @@ GL_METHOD(GetUniform) {
   GLint program  = info[0]->Int32Value();
   GLint location = info[1]->Int32Value();
 
-  float data[16384];
+  float data[4096];
   glGetUniformfv(program, location, data);
 
   v8::Local<v8::Array> arr = Nan::New<v8::Array>(16);
