@@ -2,12 +2,13 @@
 
 var bits = require('bit-twiddle')
 var nativeGL = require('bindings')('webgl')
+var tokenize = require('glsl-tokenizer/string')
 
 var HEADLESS_VERSION = require('./package.json').version
 
+//These are defined by the WebGL spec
 var MAX_UNIFORM_LENGTH        = 256
 var MAX_ATTRIBUTE_LENGTH      = 256
-var MAX_UNIFORM_ARRAY_LENGTH  = 1024
 
 //We need to wrap some of the native WebGL functions to handle certain error codes and check input values
 var gl = nativeGL.WebGLRenderingContext.prototype
@@ -31,6 +32,8 @@ function WebGLProgram(_, ctx) {
   this._ctx           = ctx
   this._linkCount     = 0
   this._pendingDelete = false
+  this._linkStatus    = false
+  this._linkInfoLog   = 'not linked'
   this._references    = []
   this._refCount      = 0
   this._attributes    = []
@@ -46,6 +49,8 @@ function WebGLShader(_, ctx, type) {
   this._references    = []
   this._refCount      = 0
   this._source        = ''
+  this._compileStatus = false
+  this._compileInfo   = ''
 }
 exports.WebGLShader = WebGLShader
 
@@ -682,7 +687,7 @@ gl.bindAttribLocation = function bindAttribLocation(program, index, name) {
     throw new TypeError('bindAttribLocation(WebGLProgram, GLint, String)')
   }
   name += ''
-  if(!isValidString(name)) {
+  if(!isValidString(name) || name.length > MAX_ATTRIBUTE_LENGTH) {
     setError(this, gl.INVALID_VALUE)
     return
   } else if(/^_?webgl_a/.test(name)) {
@@ -1163,12 +1168,82 @@ gl.colorMask = function colorMask(red, green, blue, alpha) {
 }
 
 var _compileShader = gl.compileShader
+
+function validGLSLIdentifier(str) {
+  if(str.indexOf('webgl_') === 0 ||
+     str.indexOf('_webgl_') === 0 ||
+     str.length > 256) {
+    return false
+  }
+  return true
+}
+
+function checkShaderSource(context, shader) {
+  var type   = shader._type
+  var source = shader._source
+
+  var tokens = tokenize(source)
+
+  var errorStatus = false
+  var errorLog = []
+
+  for(var i=0; i<tokens.length; ++i) {
+    var tok = tokens[i]
+    switch(tok.type) {
+      case 'ident':
+        if(!validGLSLIdentifier(tok.data)) {
+          errorStatus = true
+          errorLog.push(tok.line + ':' + tok.column +
+            ' invalid identifier - ' + tok.data)
+        }
+      break
+      case 'preprocessor':
+        var bodyToks = tokenize(tok.data.match(/^\s*\#\s*(.*)$/)[1])
+        for(var j=0; j<bodyToks.length; ++j) {
+          var btok = bodyToks[j]
+          if(btok.type === 'ident' || btok.type === void 0) {
+            if(!validGLSLIdentifier(btok.data)) {
+              errorStatus = true
+              errorLog.push(tok.line + ':' + btok.column +
+                ' invalid identifier - ' +  btok.data)
+            }
+          }
+        }
+      break
+      case 'keyword':
+        switch(tok.data) {
+          case 'do':
+            errorStatus = true
+            errorLog.push(tok.line + ':' + tok.column + ' do not supported')
+          break
+        }
+      break
+    }
+  }
+
+  if(errorStatus) {
+    shader._compileInfo = errorLog.join('\n')
+  }
+  return !errorStatus
+}
+
 gl.compileShader = function compileShader(shader) {
   if(!checkObject(shader)) {
     throw new TypeError('compileShader(WebGLShader)')
   }
-  if(checkWrapper(this, shader, WebGLShader)) {
-    return _compileShader.call(this, shader._)
+  if(checkWrapper(this, shader, WebGLShader) &&
+     checkShaderSource(this, shader)) {
+    _compileShader.call(this, shader._|0)
+    var error = this.getError()
+    shader._compileStatus = _getShaderParameter.call(
+      this,
+      shader._|0,
+      gl.COMPILE_STATUS)
+    shader._compileInfo = _getShaderInfoLog.call(
+      this,
+      shader._|0)
+    this.getError()
+    setError(this, error)
   }
 }
 
@@ -2057,12 +2132,12 @@ gl.getAttribLocation = function getAttribLocation(program, name) {
     throw new TypeError('getAttribLocation(WebGLProgram, String)')
   }
   name += ''
-  if(!isValidString(name)) {
+  if(!isValidString(name) || name.length > MAX_ATTRIBUTE_LENGTH) {
     setError(this, gl.INVALID_VALUE)
   } else if(checkWrapper(this, program, WebGLProgram)) {
     return _getAttribLocation.call(this, program._|0, name+'')
   }
-  return null
+  return -1
 }
 
 var _getParameter = gl.getParameter
@@ -2305,6 +2380,8 @@ gl.getProgramParameter = function getProgramParameter(program, pname) {
         return program._pendingDelete
 
       case gl.LINK_STATUS:
+        return program._linkStatus
+
       case gl.VALIDATE_STATUS:
         return !!_getProgramParameter.call(this, program._, pname)
 
@@ -2323,7 +2400,7 @@ gl.getProgramInfoLog = function getProgramInfoLog(program) {
   if(!checkObject(program)) {
     throw new TypeError('getProgramInfoLog(WebGLProgram)')
   } else if(checkWrapper(this, program, WebGLProgram)) {
-    return _getProgramInfoLog.call(this, program._|0)
+    return program._linkInfoLog
   }
   return ''
 }
@@ -2370,9 +2447,9 @@ gl.getShaderParameter = function getShaderParameter(shader, pname) {
       case gl.DELETE_STATUS:
         return shader._pendingDelete
       case gl.COMPILE_STATUS:
-        return !!_getShaderParameter.call(this, shader._, pname)
+        return shader._compileStatus
       case gl.SHADER_TYPE:
-        return _getShaderParameter.call(this, shader._, pname)|0
+        return shader._type
     }
     setError(this, gl.INVALID_ENUM)
   }
@@ -2384,7 +2461,7 @@ gl.getShaderInfoLog = function getShaderInfoLog(shader) {
   if(!checkObject(shader)) {
     throw new TypeError('getShaderInfoLog(WebGLShader)')
   } else if(checkWrapper(this, shader, WebGLShader)) {
-    return _getShaderInfoLog.call(this, shader._|0)
+    return shader._compileInfo
   }
   return ''
 }
@@ -2652,6 +2729,59 @@ gl.lineWidth = function lineWidth(width) {
 }
 
 var _linkProgram = gl.linkProgram
+
+function fixupLink(context, program) {
+  if(!_getProgramParameter.call(context, program._, gl.LINK_STATUS)) {
+    program._linkInfoLog = _getProgramInfoLog.call(context, program)
+    return false
+  }
+
+  //Record attribute locations
+  var numAttribs = context.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES)
+  var names = new Array(numAttribs)
+  program._attributes.length = numAttribs
+  for(var i=0; i<numAttribs; ++i) {
+    names[i] = context.getActiveAttrib(program, i).name
+    program._attributes[i] = context.getAttribLocation(program, names[i])|0
+  }
+
+  //Check attribute names
+  for(var i=0; i<names.length; ++i) {
+    if(names[i].length > MAX_ATTRIBUTE_LENGTH) {
+      program._linkInfoLog = 'attribute ' + names[i] + ' is too long'
+      return false
+    }
+  }
+
+
+  for(var i=0; i<numAttribs; ++i) {
+    _bindAttribLocation.call(
+      context,
+      program._|0,
+      program._attributes[i],
+      names[i])
+  }
+
+  _linkProgram.call(context, program._|0)
+
+  var numUniforms = context.getProgramParameter(program, gl.ACTIVE_UNIFORMS)
+  program._uniforms.length = numUniforms
+  for(var i=0; i<numUniforms; ++i) {
+    program._uniforms[i] = context.getActiveUniform(program, i)
+  }
+
+  //Check attribute and uniform name lengths
+  for(var i=0; i<program._uniforms.length; ++i) {
+    if(program._uniforms[i].name.length > MAX_UNIFORM_LENGTH) {
+      program._linkInfoLog = 'uniform ' + program._uniforms[i].name + ' is too long'
+      return false
+    }
+  }
+
+  program._linkInfoLog = ''
+  return true
+}
+
 gl.linkProgram = function linkProgram(program) {
   if(!checkObject(program)) {
     throw new TypeError('linkProgram(WebGLProgram)')
@@ -2659,38 +2789,13 @@ gl.linkProgram = function linkProgram(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
     program._linkCount += 1
     program._attributes = []
-    saveError(this)
     _linkProgram.call(this, program._|0)
     var error = this.getError()
-    if(error === gl.NO_ERROR &&
-       this.getProgramParameter(program, gl.LINK_STATUS)) {
-
-      //Record attribute locations
-      var numAttribs = this.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES)
-      var names = new Array(numAttribs)
-      program._attributes.length = numAttribs
-      for(var i=0; i<numAttribs; ++i) {
-        names[i] = this.getActiveAttrib(program, i).name
-        program._attributes[i] = this.getAttribLocation(program, names[i])|0
-      }
-
-      for(var i=0; i<numAttribs; ++i) {
-        _bindAttribLocation.call(
-          this,
-          program._|0,
-          program._attributes[i],
-          names[i])
-      }
-
-      _linkProgram.call(this, program._|0)
-
-      var numUniforms = this.getProgramParameter(program, gl.ACTIVE_UNIFORMS)
-      program._uniforms.length = numUniforms
-      for(var i=0; i<numUniforms; ++i) {
-        program._uniforms[i] = this.getActiveUniform(program, i)
-      }
+    if(error === gl.NO_ERROR) {
+      program._linkStatus = fixupLink(this, program)
     }
-    restoreError(this, error)
+    this.getError()
+    setError(this, error)
   }
 }
 
@@ -3378,7 +3483,13 @@ gl.useProgram = function useProgram(program) {
 var _validateProgram = gl.validateProgram
 gl.validateProgram = function validateProgram(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
-    return _validateProgram.call(this, program._|0)
+    _validateProgram.call(this, program._|0)
+    var error = this.getError()
+    if(error === gl.NO_ERROR) {
+      program._linkInfoLog = _getProgramInfoLog.call(this, program._|0)
+    }
+    this.getError()
+    setError(this, error)
   }
 }
 
