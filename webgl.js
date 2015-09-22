@@ -2954,7 +2954,7 @@ gl.scissor = function scissor(x, y, width, height) {
 }
 
 function wrapShader(type, source) {
-  return source
+  return '#define gl_MaxDrawBuffers 1\n' + source
 }
 
 var _shaderSource = gl.shaderSource
