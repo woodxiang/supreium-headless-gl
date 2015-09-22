@@ -166,7 +166,7 @@ function WebGLVertexAttribute(ctx, idx) {
   this._pointerSize   = 0
   this._pointerStride = 0
   this._pointerType   = gl.FLOAT
-  this._pointerNormal = 0
+  this._pointerNormal = false
   this._inputSize     = 4
   this._inputStride   = 0
   this._data          = new Float32Array([0,0,0,1])
