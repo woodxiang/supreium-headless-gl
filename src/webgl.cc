@@ -1880,7 +1880,7 @@ GL_METHOD(GetUniform) {
   GLint program  = info[0]->Int32Value();
   GLint location = info[1]->Int32Value();
 
-  float data[1024];
+  float data[16384];
   glGetUniformfv(program, location, data);
 
   v8::Local<v8::Array> arr = Nan::New<v8::Array>(16);
