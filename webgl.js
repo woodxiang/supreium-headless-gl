@@ -1242,7 +1242,7 @@ gl.compileShader = function compileShader(shader) {
      checkShaderSource(this, shader)) {
     _compileShader.call(this, shader._|0)
     var error = this.getError()
-    shader._compileStatus = _getShaderParameter.call(
+    shader._compileStatus = !!_getShaderParameter.call(
       this,
       shader._|0,
       gl.COMPILE_STATUS)
