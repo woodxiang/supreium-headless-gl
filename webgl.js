@@ -2916,11 +2916,6 @@ gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
     viewHeight  = this._activeFramebuffer._height
   }
 
-  var viewport = this.getParameter(gl.VIEWPORT)
-
-  viewWidth   = Math.max(0, Math.min(viewWidth  - viewport[0], viewport[2]))
-  viewHeight  = Math.max(0, Math.min(viewHeight - viewport[1], viewport[3]))
-
   var pixelData   = unpackTypedArray(pixels)
 
   if(x >= viewWidth  || x + width  <= 0 ||
