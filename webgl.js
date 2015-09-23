@@ -73,6 +73,10 @@ function WebGLFramebuffer(_, ctx) {
   this._pendingDelete = false
   this._references    = []
   this._refCount      = 0
+
+  this._width         = 0
+  this._height        = 0
+
   this._attachments   = {}
   this._attachments[gl.COLOR_ATTACHMENT0]        = null
   this._attachments[gl.DEPTH_ATTACHMENT]         = null
@@ -322,6 +326,9 @@ function precheckFramebufferStatus(framebuffer) {
      (colorWidth !== width || colorHeight !== height)) {
     return gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS
   }
+
+  framebuffer._width  = colorWidth
+  framebuffer._height = colorHeight
 
   return gl.FRAMEBUFFER_COMPLETE
 }
@@ -1796,7 +1803,6 @@ gl.drawElements = function drawElements(mode, count, type, ioffset) {
     return
   }
 
-
   if(!checkStencilState(this)) {
     return
   }
@@ -2891,6 +2897,7 @@ gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
   if(rowStride % this._packAlignment !== 0) {
     rowStride += this._packAlignment - (rowStride % this._packAlignment)
   }
+
   var imageSize = rowStride * (height-1) + width*4
   if(imageSize <= 0) {
     return
@@ -2900,15 +2907,92 @@ gl.readPixels = function readPixels(x, y, width, height, format, type, pixels) {
     return
   }
 
-  _readPixels.call(
-    this,
-    x,
-    y,
-    width,
-    height,
-    format,
-    type,
-    unpackTypedArray(pixels))
+  //Handle reading outside the window
+  var viewWidth   = this.drawingBufferWidth
+  var viewHeight  = this.drawingBufferHeight
+
+  if(this._activeFramebuffer) {
+    viewWidth   = this._activeFramebuffer._width
+    viewHeight  = this._activeFramebuffer._height
+  }
+
+  var viewport = this.getParameter(gl.VIEWPORT)
+
+  viewWidth   = Math.max(0, Math.min(viewWidth  - viewport[0], viewport[2]))
+  viewHeight  = Math.max(0, Math.min(viewHeight - viewport[1], viewport[3]))
+
+  var pixelData   = unpackTypedArray(pixels)
+
+  if(x >= viewWidth  || x + width  <= 0 ||
+     y >= viewHeight || y + height <= 0) {
+    for(var i=0; i<pixelData.length; ++i) {
+      pixelData[i] = 0
+    }
+  } else if(x < 0 || x + width > viewWidth ||
+            y < 0 || y + height > viewHeight) {
+
+    for(var i=0; i<pixelData.length; ++i) {
+      pixelData[i] = 0
+    }
+
+    var nx = x
+    var nwidth = width
+    if(x < 0) {
+      nwidth += x
+      nx = 0
+    }
+    if(nx + width > viewWidth) {
+      nwidth = viewWidth - nx
+    }
+    var ny = y
+    var nheight = height
+    if(y < 0) {
+      nheight += y
+      ny = 0
+    }
+    if(ny + height > viewHeight) {
+      nheight = viewHeight - ny
+    }
+
+    var nRowStride = nwidth * 4
+    if(nRowStride % this._packAlignment !== 0) {
+      nRowStride += this._packAlignment - (nRowStride % this._packAlignment)
+    }
+
+    if(nwidth > 0 && nheight > 0) {
+      var subPixels = new Uint8Array(nRowStride * nheight)
+      _readPixels.call(
+        this,
+        nx,
+        ny,
+        nwidth,
+        nheight,
+        format,
+        type,
+        subPixels)
+
+      var offset = 4 * (nx - x) + (ny - y) * rowStride
+      for(var j=0; j<nheight; ++j) {
+        for(var i=0; i<nwidth; ++i) {
+          for(var k=0; k<4; ++k) {
+            pixelData[offset + j*rowStride + 4*i + k] =
+              subPixels[j*nRowStride + 4*i + k]
+          }
+        }
+      }
+    }
+
+  } else {
+    _readPixels.call(
+      this,
+      x,
+      y,
+      width,
+      height,
+      format,
+      type,
+      pixelData)
+  }
 }
 
 var _renderbufferStorage = gl.renderbufferStorage
@@ -3344,6 +3428,35 @@ gl.texParameteri = function texParameteri(target, pname, param) {
   }
 }
 
+function uniformTypeSize(type) {
+  switch(type) {
+    case gl.BOOL_VEC4:
+    case gl.INT_VEC4:
+    case gl.FLOAT_VEC4:
+      return 4
+
+    case gl.BOOL_VEC3:
+    case gl.INT_VEC3:
+    case gl.FLOAT_VEC3:
+      return 3
+
+    case gl.BOOL_VEC2:
+    case gl.INT_VEC2:
+    case gl.FLOAT_VEC2:
+      return 2
+
+    case gl.BOOL:
+    case gl.INT:
+    case gl.FLOAT:
+    case gl.SAMPLER_2D:
+    case gl.SAMPLER_CUBE:
+      return 1
+
+    default:
+      return 0
+  }
+}
+
 //Generate uniform binding code
 function makeUniforms() {
   function makeMatrix(i) {
@@ -3422,6 +3535,10 @@ function makeUniforms() {
               return
             }
           }
+          if(uniformTypeSize(utype) > i) {
+            setError(this, gl.INVALID_OPERATION)
+            return
+          }
           return native.call(this, location._|0, x, y, z, w)
         }
       }
@@ -3436,6 +3553,9 @@ function makeUniforms() {
           return
         } else if(typeof v !== 'object' || !v || typeof v.length !== 'number') {
           throw new TypeError('Second argument to ' + func + 'v must be array')
+        } else if(uniformTypeSize(location._activeInfo.type) > i) {
+          setError(this, gl.INVALID_OPERATION)
+          return
         } else if(v.length >= i &&
            v.length % i === 0) {
           if(location._array) {
@@ -3469,6 +3589,8 @@ function makeUniforms() {
               case 4:
                 return base.call(this, location, v[0], v[1], v[2], v[3])
             }
+          } else {
+            setError(this, gl.INVALID_OPERATION)
           }
         }
         setError(this, gl.INVALID_VALUE)
