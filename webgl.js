@@ -1240,6 +1240,7 @@ gl.compileShader = function compileShader(shader) {
   }
   if(checkWrapper(this, shader, WebGLShader) &&
      checkShaderSource(this, shader)) {
+    var prevError = this.getError()
     _compileShader.call(this, shader._|0)
     var error = this.getError()
     shader._compileStatus = !!_getShaderParameter.call(
@@ -1250,7 +1251,7 @@ gl.compileShader = function compileShader(shader) {
       this,
       shader._|0)
     this.getError()
-    setError(this, error)
+    setError(this, prevError || error)
   }
 }
 
@@ -1905,10 +1906,6 @@ var _enable = gl.enable
 gl.enable = function enable(cap) {
   cap |= 0
   _enable.call(this, cap)
-  if(cap === gl.TEXTURE_2D ||
-     cap === gl.TEXTURE_CUBE_MAP) {
-    activeTextureUnit(this)._mode = cap
-  }
 }
 
 var _enableVertexAttribArray = gl.enableVertexAttribArray
@@ -2760,6 +2757,7 @@ gl.lineWidth = function lineWidth(width) {
 var _linkProgram = gl.linkProgram
 
 function fixupLink(context, program) {
+
   if(!_getProgramParameter.call(context, program._, gl.LINK_STATUS)) {
     program._linkInfoLog = _getProgramInfoLog.call(context, program)
     return false
@@ -2781,7 +2779,6 @@ function fixupLink(context, program) {
       return false
     }
   }
-
 
   for(var i=0; i<numAttribs; ++i) {
     _bindAttribLocation.call(
@@ -2818,13 +2815,14 @@ gl.linkProgram = function linkProgram(program) {
   if(checkWrapper(this, program, WebGLProgram)) {
     program._linkCount += 1
     program._attributes = []
+    var prevError = this.getError()
     _linkProgram.call(this, program._|0)
     var error = this.getError()
     if(error === gl.NO_ERROR) {
       program._linkStatus = fixupLink(this, program)
     }
     this.getError()
-    setError(this, error)
+    setError(this, prevError || error)
   }
 }
 
