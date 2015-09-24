@@ -3119,14 +3119,14 @@ function computePixelSize(context, type, internalformat) {
       return pixelSize
     case gl.UNSIGNED_SHORT_5_6_5:
       if(internalformat !== gl.RGB) {
-        setError(this, gl.INVALID_OPERATION)
+        setError(context, gl.INVALID_OPERATION)
         break
       }
       return 2
     case gl.UNSIGNED_SHORT_4_4_4_4:
     case gl.UNSIGNED_SHORT_5_5_5_1:
       if(internalformat !== gl.RGBA) {
-        setError(this, gl.INVALID_OPERATION)
+        setError(context, gl.INVALID_OPERATION)
         break
       }
       return 2
@@ -3172,7 +3172,9 @@ function convertPixels(pixels) {
   if(typeof pixels === 'object' && pixels !== null) {
     if(pixels instanceof ArrayBuffer) {
       return new Uint8Array(pixels)
-    } else if(pixels instanceof Uint8Array) {
+    } else if(pixels instanceof Uint8Array  ||
+              pixels instanceof Uint16Array ||
+              pixels instanceof Uint8ClampedArray) {
       return unpackTypedArray(pixels)
     } else if (pixels instanceof Buffer) {
       return new Uint8Array(pixels);
@@ -3337,6 +3339,7 @@ gl.texSubImage2D = function texSubImage2D(
   height   |= 0
   format   |= 0
   type     |= 0
+
 
   var texture = getTexImage(this, target)
   if(!texture) {
