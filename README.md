@@ -46,7 +46,7 @@ For general information on building native modules, see the [`node-gyp`](https:/
 * GLEW
 
 ```
-$ sudo apt-get install -y build-essential libxi-dev
+$ sudo apt-get install -y build-essential libxi-dev libglu1-mesa-dev
 ```
 
 #### Windows
