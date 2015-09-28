@@ -37,12 +37,17 @@ For general information on building native modules, see the [`node-gyp`](https:/
 * Python 2.7
 * XCode
 
-#### Linux
+#### Ubuntu/Debian
 
 * Python 2.7
 * A GNU C++ environment (available via the `build-essential` package on `apt`)
+* libxi-dev
 * Working and up to date OpenGL drivers
 * GLEW
+
+```
+$ sudo apt-get install -y build-essential libxi-dev libglu1-mesa-dev
+```
 
 #### Windows
 
