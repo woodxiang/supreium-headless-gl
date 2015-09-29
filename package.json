@@ -12,6 +12,7 @@
   },
   "scripts": {
     "test": "tape test/*.js",
+    "rebuild": "node-gyp rebuild --verbose",
     "build": "node-gyp rebuild --verbose",
     "prebuild": "prebuild",
     "install": "prebuild --download"
