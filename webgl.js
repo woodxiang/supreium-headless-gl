@@ -3203,13 +3203,13 @@ gl.texImage2D = function texImage2D(
 
   if (arguments.length === 6) {
     pixels = border
-    type = height
+    type   = height
     format = width
 
     if (typeof pixels !== 'object' || typeof pixels.data !== 'object') {
       throw new TypeError('texImage2D(GLenum, GLint, GLenum, GLint, GLenum, GLenum, ImageData)')
     }
-    width = pixels.width
+    width  = pixels.width
     height = pixels.height
     pixels = pixels.data
   }
@@ -3220,6 +3220,7 @@ gl.texImage2D = function texImage2D(
   width          |= 0
   height         |= 0
   border         |= 0
+  format         |= 0
   type           |= 0
 
   if(typeof pixels !== 'object' && pixels !== void 0) {
@@ -3314,13 +3315,13 @@ gl.texSubImage2D = function texSubImage2D(
 
   if (arguments.length === 7) {
     pixels = format
-    type = height
+    type   = height
     format = width
 
     if (typeof pixels !== 'object' || typeof pixels.data !== 'object') {
       throw new TypeError('texSubImage2D(GLenum, GLint, GLint, GLint, GLenum, GLenum, ImageData)')
     }
-    width = pixels.width
+    width  = pixels.width
     height = pixels.height
     pixels = pixels.data
   }
@@ -3337,7 +3338,6 @@ gl.texSubImage2D = function texSubImage2D(
   height   |= 0
   format   |= 0
   type     |= 0
-
 
   var texture = getTexImage(this, target)
   if(!texture) {
