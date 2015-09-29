@@ -12,7 +12,6 @@
 
 #include <EGL/egl.h>
 #include <GLES3/gl3.h>
-#include <GLES3/gl3ext.h>
 
 enum GLObjectType {
   GLOBJECT_TYPE_BUFFER,
