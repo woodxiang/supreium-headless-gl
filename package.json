@@ -26,7 +26,6 @@
   },
   "devDependencies": {
     "gl-conformance": "^1.0.4",
-    "prebuild": "^2.4.0",
     "tape": "^4.0.1"
   },
   "repository": {
