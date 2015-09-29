@@ -1895,7 +1895,7 @@ gl.drawElements = function drawElements(mode, count, type, ioffset) {
         return _drawElements.call(this, mode, reducedCount, type, ioffset)
       } else {
         beginAttrib0Hack(this)
-        _drawElements.call(this, mode, reducedCount, type, ioffset, 1)
+        _drawElementsInstanced.call(this, mode, reducedCount, type, ioffset, 1)
         endAttrib0Hack(this)
       }
     }
