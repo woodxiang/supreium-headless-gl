@@ -8,7 +8,7 @@
   },
   "browser": "browser_index.js",
   "engines": {
-    "node": ">=0.7.0"
+    "node": ">=0.8.0"
   },
   "scripts": {
     "test": "tape test/*.js",
@@ -19,12 +19,14 @@
   "dependencies": {
     "bindings": "^1.2.1",
     "bit-twiddle": "^1.0.2",
-    "nan": "^1.8.4",
-    "node-gyp": "^2.0.2",
+    "glsl-tokenizer": "^2.0.2",
+    "nan-typedarrays": "^1.0.0",
+    "node-gyp": "^3.0.2",
     "prebuild": "^2.5.1"
   },
   "devDependencies": {
-    "gl-conformance": "^1.0.0",
+    "gl-conformance": "^1.0.4",
+    "prebuild": "^2.4.0",
     "tape": "^4.0.1"
   },
   "repository": {
