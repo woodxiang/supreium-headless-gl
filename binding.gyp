@@ -22,7 +22,7 @@
           'src/webgl.cc'
       ],
       'include_dirs': [
-        "<!(node -e \"require('nan-typedarrays')\")",
+        "<!(node -e \"require('nan')\")",
         '<(module_root_dir)/deps/include',
         "angle/include"
       ],
@@ -41,10 +41,8 @@
         ['OS=="win"',
           {
             'include_dirs': [
-              './deps/glew/include'
               ],
             'library_dirs': [
-              './deps/glew/windows/lib/<(target_arch)'
               ],
             'libraries': [
               ],
