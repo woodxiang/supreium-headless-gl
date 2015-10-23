@@ -1,6 +1,6 @@
 {
   "name": "gl",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "description": "Creates a WebGL context without a window",
   "main": "index.js",
   "directories": {
