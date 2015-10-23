@@ -259,6 +259,10 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   static NAN_METHOD(FrontFace);
   static NAN_METHOD(SampleCoverage);
   static NAN_METHOD(GetUniform);
+
+  void initPointers();
+  
+  #include "procs.h"
 };
 
 #endif

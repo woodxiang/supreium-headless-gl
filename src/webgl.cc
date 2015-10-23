@@ -115,6 +115,9 @@ WebGLRenderingContext::WebGLRenderingContext(
   state = GLCONTEXT_STATE_OK;
   registerContext();
   ACTIVE = this;
+
+  //Initialize function pointers
+  initPointers();
 }
 
 bool WebGLRenderingContext::setActive() {
@@ -136,7 +139,7 @@ void WebGLRenderingContext::setError(GLenum error) {
   if (error == GL_NO_ERROR || lastError != GL_NO_ERROR) {
     return;
   }
-  GLenum prevError = glGetError();
+  GLenum prevError = (this->glGetError)();
   if (prevError == GL_NO_ERROR) {
     lastError = error;
   }
@@ -154,6 +157,9 @@ void WebGLRenderingContext::dispose() {
   //Update state
   state = GLCONTEXT_STATE_DESTROY;
 
+  //Store this pointer
+  WebGLRenderingContext* inst = this;
+
   //Destroy all object references
   for (
     std::map< std::pair<GLuint, GLObjectType>, bool >::iterator
@@ -165,22 +171,22 @@ void WebGLRenderingContext::dispose() {
 
     switch(iter->first.second) {
       case GLOBJECT_TYPE_PROGRAM:
-        glDeleteProgram(obj);
+        (inst->glDeleteProgram)(obj);
         break;
       case GLOBJECT_TYPE_BUFFER:
-        glDeleteBuffers(1,&obj);
+        (inst->glDeleteBuffers)(1,&obj);
         break;
       case GLOBJECT_TYPE_FRAMEBUFFER:
-        glDeleteFramebuffers(1,&obj);
+        (inst->glDeleteFramebuffers)(1,&obj);
         break;
       case GLOBJECT_TYPE_RENDERBUFFER:
-        glDeleteRenderbuffers(1,&obj);
+        (inst->glDeleteRenderbuffers)(1,&obj);
         break;
       case GLOBJECT_TYPE_SHADER:
-        glDeleteShader(obj);
+        (inst->glDeleteShader)(obj);
         break;
       case GLOBJECT_TYPE_TEXTURE:
-        glDeleteTextures(1,&obj);
+        (inst->glDeleteTextures)(1,&obj);
         break;
       default:
         break;
@@ -257,7 +263,7 @@ GL_METHOD(Uniform1f) {
   int location = info[0]->Int32Value();
   float x = (float) info[1]->NumberValue();
 
-  glUniform1f(location, x);
+  (inst->glUniform1f)(location, x);
 }
 
 GL_METHOD(Uniform2f) {
@@ -267,7 +273,7 @@ GL_METHOD(Uniform2f) {
   GLfloat x = static_cast<GLfloat>(info[1]->NumberValue());
   GLfloat y = static_cast<GLfloat>(info[2]->NumberValue());
 
-  glUniform2f(location, x, y);
+  (inst->glUniform2f)(location, x, y);
 }
 
 GL_METHOD(Uniform3f) {
@@ -278,7 +284,7 @@ GL_METHOD(Uniform3f) {
   GLfloat y = static_cast<GLfloat>(info[2]->NumberValue());
   GLfloat z = static_cast<GLfloat>(info[3]->NumberValue());
 
-  glUniform3f(location, x, y, z);
+  (inst->glUniform3f)(location, x, y, z);
 }
 
 GL_METHOD(Uniform4f) {
@@ -290,7 +296,7 @@ GL_METHOD(Uniform4f) {
   GLfloat z = static_cast<GLfloat>(info[3]->NumberValue());
   GLfloat w = static_cast<GLfloat>(info[4]->NumberValue());
 
-  glUniform4f(location, x, y, z, w);
+  (inst->glUniform4f)(location, x, y, z, w);
 }
 
 GL_METHOD(Uniform1i) {
@@ -299,7 +305,7 @@ GL_METHOD(Uniform1i) {
   GLint location = info[0]->Int32Value();
   GLint x = info[1]->Int32Value();
 
-  glUniform1i(location, x);
+  (inst->glUniform1i)(location, x);
 }
 
 GL_METHOD(Uniform2i) {
@@ -309,7 +315,7 @@ GL_METHOD(Uniform2i) {
   GLint x = info[1]->Int32Value();
   GLint y = info[2]->Int32Value();
 
-  glUniform2i(location, x, y);
+  (inst->glUniform2i)(location, x, y);
 }
 
 GL_METHOD(Uniform3i) {
@@ -320,7 +326,7 @@ GL_METHOD(Uniform3i) {
   GLint y = info[2]->Int32Value();
   GLint z = info[3]->Int32Value();
 
-  glUniform3i(location, x, y, z);
+  (inst->glUniform3i)(location, x, y, z);
 }
 
 GL_METHOD(Uniform4i) {
@@ -332,7 +338,7 @@ GL_METHOD(Uniform4i) {
   GLint z = info[3]->Int32Value();
   GLint w = info[4]->Int32Value();
 
-  glUniform4i(location, x, y, z, w);
+  (inst->glUniform4i)(location, x, y, z, w);
 }
 
 
@@ -358,11 +364,11 @@ GL_METHOD(PixelStorei) {
 
     case GL_UNPACK_ALIGNMENT:
       inst->unpack_alignment = param;
-      glPixelStorei(pname, param);
+      (inst->glPixelStorei)(pname, param);
     break;
 
     default:
-      glPixelStorei(pname, param);
+      (inst->glPixelStorei)(pname, param);
     break;
   }
 }
@@ -374,11 +380,11 @@ GL_METHOD(BindAttribLocation) {
   GLint index   = info[1]->Int32Value();
   Nan::Utf8String name(info[2]);
 
-  glBindAttribLocation(program, index, *name);
+  (inst->glBindAttribLocation)(program, index, *name);
 }
 
 GLenum WebGLRenderingContext::getError() {
-  GLenum error = glGetError();
+  GLenum error = (this->glGetError)();
   if (lastError != GL_NO_ERROR) {
     error = lastError;
   }
@@ -397,7 +403,7 @@ GL_METHOD(VertexAttribDivisor) {
   GLuint index   = info[0]->Uint32Value();
   GLuint divisor = info[1]->Uint32Value();
 
-  glVertexAttribDivisor(index, divisor);
+  (inst->glVertexAttribDivisor)(index, divisor);
 }
 
 GL_METHOD(DrawArraysInstanced) {
@@ -408,7 +414,7 @@ GL_METHOD(DrawArraysInstanced) {
   GLuint  count  = info[2]->Uint32Value();
   GLuint  icount = info[3]->Uint32Value();
 
-  glDrawArraysInstanced(mode, first, count, icount);
+  (inst->glDrawArraysInstanced)(mode, first, count, icount);
 }
 
 GL_METHOD(DrawElementsInstanced) {
@@ -420,7 +426,7 @@ GL_METHOD(DrawElementsInstanced) {
   GLint  offset = info[3]->Int32Value();
   GLuint icount = info[4]->Uint32Value();
 
-  glDrawElementsInstanced(
+  (inst->glDrawElementsInstanced)(
     mode,
     count,
     type,
@@ -435,7 +441,7 @@ GL_METHOD(DrawArrays) {
   GLint  first = info[1]->Int32Value();
   GLint  count = info[2]->Int32Value();
 
-  glDrawArrays(mode, first, count);
+  (inst->glDrawArrays)(mode, first, count);
 }
 
 GL_METHOD(UniformMatrix2fv) {
@@ -445,7 +451,7 @@ GL_METHOD(UniformMatrix2fv) {
   GLboolean transpose = info[1]->BooleanValue();
   Nan::TypedArrayContents<GLfloat> data(info[2]);
 
-  glUniformMatrix2fv(location, data.length() / 4, transpose, *data);
+  (inst->glUniformMatrix2fv)(location, data.length() / 4, transpose, *data);
 }
 
 GL_METHOD(UniformMatrix3fv) {
@@ -455,7 +461,7 @@ GL_METHOD(UniformMatrix3fv) {
   GLboolean transpose = info[1]->BooleanValue();
   Nan::TypedArrayContents<GLfloat> data(info[2]);
 
-  glUniformMatrix3fv(location, data.length() / 9, transpose, *data);
+  (inst->glUniformMatrix3fv)(location, data.length() / 9, transpose, *data);
 }
 
 GL_METHOD(UniformMatrix4fv) {
@@ -465,14 +471,14 @@ GL_METHOD(UniformMatrix4fv) {
   GLboolean transpose = info[1]->BooleanValue();
   Nan::TypedArrayContents<GLfloat> data(info[2]);
 
-  glUniformMatrix4fv(location, data.length() / 16, transpose, *data);
+  (inst->glUniformMatrix4fv)(location, data.length() / 16, transpose, *data);
 }
 
 GL_METHOD(GenerateMipmap) {
   GL_BOILERPLATE;
 
   GLint target = info[0]->Int32Value();
-  glGenerateMipmap(target);
+  (inst->glGenerateMipmap)(target);
 }
 
 GL_METHOD(GetAttribLocation) {
@@ -481,7 +487,7 @@ GL_METHOD(GetAttribLocation) {
   GLint program = info[0]->Int32Value();
   Nan::Utf8String name(info[1]);
 
-  GLint result = glGetAttribLocation(program, *name);
+  GLint result = (inst->glGetAttribLocation)(program, *name);
 
   info.GetReturnValue().Set(Nan::New<v8::Integer>(result));
 }
@@ -490,7 +496,7 @@ GL_METHOD(GetAttribLocation) {
 GL_METHOD(DepthFunc) {
   GL_BOILERPLATE;
 
-  glDepthFunc(info[0]->Int32Value());
+  (inst->glDepthFunc)(info[0]->Int32Value());
 }
 
 
@@ -502,13 +508,13 @@ GL_METHOD(Viewport) {
   GLsizei width   = info[2]->Int32Value();
   GLsizei height  = info[3]->Int32Value();
 
-  glViewport(x, y, width, height);
+  (inst->glViewport)(x, y, width, height);
 }
 
 GL_METHOD(CreateShader) {
   GL_BOILERPLATE;
 
-  GLuint shader=glCreateShader(info[0]->Int32Value());
+  GLuint shader=(inst->glCreateShader)(info[0]->Int32Value());
   inst->registerGLObj(GLOBJECT_TYPE_SHADER, shader);
 
   info.GetReturnValue().Set(Nan::New<v8::Integer>(shader));
@@ -524,20 +530,20 @@ GL_METHOD(ShaderSource) {
   const char* codes[] = { *code };
   GLint length = code.length();
 
-  glShaderSource(id, 1, codes, &length);
+  (inst->glShaderSource)(id, 1, codes, &length);
 }
 
 
 GL_METHOD(CompileShader) {
   GL_BOILERPLATE;
 
-  glCompileShader(info[0]->Int32Value());
+  (inst->glCompileShader)(info[0]->Int32Value());
 }
 
 GL_METHOD(FrontFace) {
   GL_BOILERPLATE;
 
-  glFrontFace(info[0]->Int32Value());
+  (inst->glFrontFace)(info[0]->Int32Value());
 }
 
 
@@ -548,7 +554,7 @@ GL_METHOD(GetShaderParameter) {
   GLenum pname = info[1]->Int32Value();
 
   GLint value;
-  glGetShaderiv(shader, pname, &value);
+  (inst->glGetShaderiv)(shader, pname, &value);
 
   info.GetReturnValue().Set(Nan::New<v8::Integer>(value));
 }
@@ -559,10 +565,10 @@ GL_METHOD(GetShaderInfoLog) {
   GLint id = info[0]->Int32Value();
 
   GLint infoLogLength;
-  glGetShaderiv(id, GL_INFO_LOG_LENGTH, &infoLogLength);
+  (inst->glGetShaderiv)(id, GL_INFO_LOG_LENGTH, &infoLogLength);
 
   char* error = new char[infoLogLength+1];
-  glGetShaderInfoLog(id, infoLogLength+1, &infoLogLength, error);
+  (inst->glGetShaderInfoLog)(id, infoLogLength+1, &infoLogLength, error);
 
   info.GetReturnValue().Set(
     Nan::New<v8::String>(error).ToLocalChecked());
@@ -574,7 +580,7 @@ GL_METHOD(GetShaderInfoLog) {
 GL_METHOD(CreateProgram) {
   GL_BOILERPLATE;
 
-  GLuint program=glCreateProgram();
+  GLuint program=(inst->glCreateProgram)();
   inst->registerGLObj(GLOBJECT_TYPE_PROGRAM, program);
 
   info.GetReturnValue().Set(Nan::New<v8::Integer>(program));
@@ -587,19 +593,19 @@ GL_METHOD(AttachShader) {
   GLint program = info[0]->Int32Value();
   GLint shader  = info[1]->Int32Value();
 
-  glAttachShader(program, shader);
+  (inst->glAttachShader)(program, shader);
 }
 
 GL_METHOD(ValidateProgram) {
   GL_BOILERPLATE;
 
-  glValidateProgram(info[0]->Int32Value());
+  (inst->glValidateProgram)(info[0]->Int32Value());
 }
 
 GL_METHOD(LinkProgram) {
   GL_BOILERPLATE;
 
-  glLinkProgram(info[0]->Int32Value());
+  (inst->glLinkProgram)(info[0]->Int32Value());
 }
 
 
@@ -610,7 +616,7 @@ GL_METHOD(GetProgramParameter) {
   GLenum pname  = (GLenum)(info[1]->Int32Value());
   GLint value = 0;
 
-  glGetProgramiv(program, pname, &value);
+  (inst->glGetProgramiv)(program, pname, &value);
 
   info.GetReturnValue().Set(Nan::New<v8::Integer>(value));
 }
@@ -623,7 +629,7 @@ GL_METHOD(GetUniformLocation) {
   Nan::Utf8String name(info[1]);
 
   info.GetReturnValue().Set(Nan::New<v8::Integer>(
-    glGetUniformLocation(program, *name)));
+    (inst->glGetUniformLocation)(program, *name)));
 }
 
 
@@ -635,7 +641,7 @@ GL_METHOD(ClearColor) {
   GLfloat blue  = static_cast<GLfloat>(info[2]->NumberValue());
   GLfloat alpha = static_cast<GLfloat>(info[3]->NumberValue());
 
-  glClearColor(red, green, blue, alpha);
+  (inst->glClearColor)(red, green, blue, alpha);
 }
 
 
@@ -644,19 +650,19 @@ GL_METHOD(ClearDepth) {
 
   GLfloat depth = static_cast<GLfloat>(info[0]->NumberValue());
 
-  glClearDepthf(depth);
+  (inst->glClearDepthf)(depth);
 }
 
 GL_METHOD(Disable) {
   GL_BOILERPLATE;
 
-  glDisable(info[0]->Int32Value());
+  (inst->glDisable)(info[0]->Int32Value());
 }
 
 GL_METHOD(Enable) {
   GL_BOILERPLATE;
 
-  glEnable(info[0]->Int32Value());
+  (inst->glEnable)(info[0]->Int32Value());
 }
 
 
@@ -664,7 +670,7 @@ GL_METHOD(CreateTexture) {
   GL_BOILERPLATE;
 
   GLuint texture;
-  glGenTextures(1, &texture);
+  (inst->glGenTextures)(1, &texture);
   inst->registerGLObj(GLOBJECT_TYPE_TEXTURE, texture);
 
   info.GetReturnValue().Set(Nan::New<v8::Integer>(texture));
@@ -677,7 +683,7 @@ GL_METHOD(BindTexture) {
   GLenum target = info[0]->Int32Value();
   GLint texture = info[1]->Int32Value();
 
-  glBindTexture(target, texture);
+  (inst->glBindTexture)(target, texture);
 }
 
 unsigned char* WebGLRenderingContext::unpackPixels(
@@ -797,7 +803,7 @@ GL_METHOD(TexImage2D) {
       , width
       , height
       , *pixels);
-    glTexImage2D(
+    (inst->glTexImage2D)(
         target
       , level
       , internalformat
@@ -809,7 +815,7 @@ GL_METHOD(TexImage2D) {
       , unpacked);
     delete[] unpacked;
   } else if(*pixels) {
-    glTexImage2D(
+    (inst->glTexImage2D)(
         target
       , level
       , internalformat
@@ -823,7 +829,7 @@ GL_METHOD(TexImage2D) {
     size_t length = width * height * 4;
     char* data = new char[length];
     memset(data, 0, length);
-    glTexImage2D(
+    (inst->glTexImage2D)(
         target
       , level
       , internalformat
@@ -858,7 +864,7 @@ GL_METHOD(TexSubImage2D) {
       , width
       , height
       , *pixels);
-    glTexSubImage2D(
+    (inst->glTexSubImage2D)(
         target
       , level
       , xoffset
@@ -870,7 +876,7 @@ GL_METHOD(TexSubImage2D) {
       , unpacked);
     delete[] unpacked;
   } else {
-    glTexSubImage2D(
+    (inst->glTexSubImage2D)(
         target
       , level
       , xoffset
@@ -892,7 +898,7 @@ GL_METHOD(TexParameteri) {
   GLenum pname  = info[1]->Int32Value();
   GLint param   = info[2]->Int32Value();
 
-  glTexParameteri(target, pname, param);
+  (inst->glTexParameteri)(target, pname, param);
 }
 
 GL_METHOD(TexParameterf) {
@@ -902,28 +908,28 @@ GL_METHOD(TexParameterf) {
   GLenum pname  = info[1]->Int32Value();
   GLfloat param = static_cast<GLfloat>(info[2]->NumberValue());
 
-  glTexParameterf(target, pname, param);
+  (inst->glTexParameterf)(target, pname, param);
 }
 
 
 GL_METHOD(Clear) {
   GL_BOILERPLATE;
 
-  glClear(info[0]->Int32Value());
+  (inst->glClear)(info[0]->Int32Value());
 }
 
 
 GL_METHOD(UseProgram) {
   GL_BOILERPLATE;
 
-  glUseProgram(info[0]->Int32Value());
+  (inst->glUseProgram)(info[0]->Int32Value());
 }
 
 GL_METHOD(CreateBuffer) {
   GL_BOILERPLATE;
 
   GLuint buffer;
-  glGenBuffers(1, &buffer);
+  (inst->glGenBuffers)(1, &buffer);
   inst->registerGLObj(GLOBJECT_TYPE_BUFFER, buffer);
 
   info.GetReturnValue().Set(Nan::New<v8::Integer>(buffer));
@@ -935,7 +941,7 @@ GL_METHOD(BindBuffer) {
   GLenum target = (GLenum)info[0]->Int32Value();
   GLuint buffer = (GLuint)info[1]->Uint32Value();
 
-  glBindBuffer(target,buffer);
+  (inst->glBindBuffer)(target,buffer);
 }
 
 
@@ -943,7 +949,7 @@ GL_METHOD(CreateFramebuffer) {
   GL_BOILERPLATE;
 
   GLuint buffer;
-  glGenFramebuffers(1, &buffer);
+  (inst->glGenFramebuffers)(1, &buffer);
   inst->registerGLObj(GLOBJECT_TYPE_FRAMEBUFFER, buffer);
 
   info.GetReturnValue().Set(Nan::New<v8::Integer>(buffer));
@@ -956,7 +962,7 @@ GL_METHOD(BindFramebuffer) {
   GLint target = (GLint)info[0]->Int32Value();
   GLint buffer = (GLint)info[1]->Int32Value();
 
-  glBindFramebuffer(target, buffer);
+  (inst->glBindFramebuffer)(target, buffer);
 }
 
 
@@ -969,7 +975,7 @@ GL_METHOD(FramebufferTexture2D) {
   GLint texture     = info[3]->Int32Value();
   GLint level       = info[4]->Int32Value();
 
-  glFramebufferTexture2D(target, attachment, textarget, texture, level);
+  (inst->glFramebufferTexture2D)(target, attachment, textarget, texture, level);
 }
 
 
@@ -981,9 +987,9 @@ GL_METHOD(BufferData) {
 
   if(info[1]->IsObject()) {
     Nan::TypedArrayContents<char> array(info[1]);
-    glBufferData(target, array.length(), static_cast<void*>(*array), usage);
+    (inst->glBufferData)(target, array.length(), static_cast<void*>(*array), usage);
   } else if(info[1]->IsNumber()) {
-    glBufferData(target, info[1]->Int32Value(), NULL, usage);
+    (inst->glBufferData)(target, info[1]->Int32Value(), NULL, usage);
   }
 }
 
@@ -995,7 +1001,7 @@ GL_METHOD(BufferSubData) {
   GLint offset  = info[1]->Int32Value();
   Nan::TypedArrayContents<char> array(info[2]);
 
-  glBufferSubData(target, offset, array.length(), *array);
+  (inst->glBufferSubData)(target, offset, array.length(), *array);
 }
 
 
@@ -1004,7 +1010,7 @@ GL_METHOD(BlendEquation) {
 
   GLenum mode = info[0]->Int32Value();;
 
-  glBlendEquation(mode);
+  (inst->glBlendEquation)(mode);
 }
 
 
@@ -1014,14 +1020,14 @@ GL_METHOD(BlendFunc) {
   GLenum sfactor = info[0]->Int32Value();
   GLenum dfactor = info[1]->Int32Value();
 
-  glBlendFunc(sfactor,dfactor);
+  (inst->glBlendFunc)(sfactor,dfactor);
 }
 
 
 GL_METHOD(EnableVertexAttribArray) {
   GL_BOILERPLATE;
 
-  glEnableVertexAttribArray(info[0]->Int32Value());
+  (inst->glEnableVertexAttribArray)(info[0]->Int32Value());
 }
 
 GL_METHOD(VertexAttribPointer) {
@@ -1034,7 +1040,7 @@ GL_METHOD(VertexAttribPointer) {
   GLint stride         = info[4]->Int32Value();
   size_t offset        = info[5]->Uint32Value();
 
-  glVertexAttribPointer(
+  (inst->glVertexAttribPointer)(
     index,
     size,
     type,
@@ -1047,7 +1053,7 @@ GL_METHOD(VertexAttribPointer) {
 GL_METHOD(ActiveTexture) {
   GL_BOILERPLATE;
 
-  glActiveTexture(info[0]->Int32Value());
+  (inst->glActiveTexture)(info[0]->Int32Value());
 }
 
 
@@ -1059,20 +1065,20 @@ GL_METHOD(DrawElements) {
   GLenum type   = info[2]->Int32Value();
   size_t offset = info[3]->Uint32Value();
 
-  glDrawElements(mode, count, type, reinterpret_cast<GLvoid*>(offset));
+  (inst->glDrawElements)(mode, count, type, reinterpret_cast<GLvoid*>(offset));
 }
 
 
 GL_METHOD(Flush) {
   GL_BOILERPLATE;
 
-  glFlush();
+  (inst->glFlush)();
 }
 
 GL_METHOD(Finish) {
   GL_BOILERPLATE;
 
-  glFinish();
+  (inst->glFinish)();
 }
 
 GL_METHOD(VertexAttrib1f) {
@@ -1081,7 +1087,7 @@ GL_METHOD(VertexAttrib1f) {
   GLuint index = info[0]->Int32Value();
   GLfloat x = static_cast<GLfloat>(info[1]->NumberValue());
 
-  glVertexAttrib1f(index, x);
+  (inst->glVertexAttrib1f)(index, x);
 }
 
 GL_METHOD(VertexAttrib2f) {
@@ -1091,7 +1097,7 @@ GL_METHOD(VertexAttrib2f) {
   GLfloat x = static_cast<GLfloat>(info[1]->NumberValue());
   GLfloat y = static_cast<GLfloat>(info[2]->NumberValue());
 
-  glVertexAttrib2f(index, x, y);
+  (inst->glVertexAttrib2f)(index, x, y);
 }
 
 GL_METHOD(VertexAttrib3f) {
@@ -1102,7 +1108,7 @@ GL_METHOD(VertexAttrib3f) {
   GLfloat y = static_cast<GLfloat>(info[2]->NumberValue());
   GLfloat z = static_cast<GLfloat>(info[3]->NumberValue());
 
-  glVertexAttrib3f(index, x, y, z);
+  (inst->glVertexAttrib3f)(index, x, y, z);
 }
 
 GL_METHOD(VertexAttrib4f) {
@@ -1114,7 +1120,7 @@ GL_METHOD(VertexAttrib4f) {
   GLfloat z = static_cast<GLfloat>(info[3]->NumberValue());
   GLfloat w = static_cast<GLfloat>(info[4]->NumberValue());
 
-  glVertexAttrib4f(index, x, y, z, w);
+  (inst->glVertexAttrib4f)(index, x, y, z, w);
 }
 
 GL_METHOD(BlendColor) {
@@ -1125,7 +1131,7 @@ GL_METHOD(BlendColor) {
   GLclampf b = static_cast<GLclampf>(info[2]->NumberValue());
   GLclampf a = static_cast<GLclampf>(info[3]->NumberValue());
 
-  glBlendColor(r, g, b, a);
+  (inst->glBlendColor)(r, g, b, a);
 }
 
 GL_METHOD(BlendEquationSeparate) {
@@ -1134,7 +1140,7 @@ GL_METHOD(BlendEquationSeparate) {
   GLenum mode_rgb   = info[0]->Int32Value();
   GLenum mode_alpha = info[1]->Int32Value();
 
-  glBlendEquationSeparate(mode_rgb, mode_alpha);
+  (inst->glBlendEquationSeparate)(mode_rgb, mode_alpha);
 }
 
 GL_METHOD(BlendFuncSeparate) {
@@ -1145,7 +1151,7 @@ GL_METHOD(BlendFuncSeparate) {
   GLenum src_alpha = info[2]->Int32Value();
   GLenum dst_alpha = info[3]->Int32Value();
 
-  glBlendFuncSeparate(src_rgb, dst_rgb, src_alpha, dst_alpha);
+  (inst->glBlendFuncSeparate)(src_rgb, dst_rgb, src_alpha, dst_alpha);
 }
 
 GL_METHOD(ClearStencil) {
@@ -1153,7 +1159,7 @@ GL_METHOD(ClearStencil) {
 
   GLint s = info[0]->Int32Value();
 
-  glClearStencil(s);
+  (inst->glClearStencil)(s);
 }
 
 GL_METHOD(ColorMask) {
@@ -1164,7 +1170,7 @@ GL_METHOD(ColorMask) {
   GLboolean b = info[2]->BooleanValue();
   GLboolean a = info[3]->BooleanValue();
 
-  glColorMask(r, g, b, a);
+  (inst->glColorMask)(r, g, b, a);
 }
 
 GL_METHOD(CopyTexImage2D) {
@@ -1179,7 +1185,7 @@ GL_METHOD(CopyTexImage2D) {
   GLsizei height        = info[6]->Int32Value();
   GLint border          = info[7]->Int32Value();
 
-  glCopyTexImage2D(target, level, internalformat, x, y, width, height, border);
+  (inst->glCopyTexImage2D)(target, level, internalformat, x, y, width, height, border);
 }
 
 GL_METHOD(CopyTexSubImage2D) {
@@ -1194,7 +1200,7 @@ GL_METHOD(CopyTexSubImage2D) {
   GLsizei width  = info[6]->Int32Value();
   GLsizei height = info[7]->Int32Value();
 
-  glCopyTexSubImage2D(target, level, xoffset, yoffset, x, y, width, height);
+  (inst->glCopyTexSubImage2D)(target, level, xoffset, yoffset, x, y, width, height);
 }
 
 GL_METHOD(CullFace) {
@@ -1202,7 +1208,7 @@ GL_METHOD(CullFace) {
 
   GLenum mode = info[0]->Int32Value();
 
-  glCullFace(mode);
+  (inst->glCullFace)(mode);
 }
 
 GL_METHOD(DepthMask) {
@@ -1210,7 +1216,7 @@ GL_METHOD(DepthMask) {
 
   GLboolean flag = info[0]->BooleanValue();
 
-  glDepthMask(flag);
+  (inst->glDepthMask)(flag);
 }
 
 GL_METHOD(DepthRange) {
@@ -1219,7 +1225,7 @@ GL_METHOD(DepthRange) {
   GLclampf zNear  = static_cast<GLclampf>(info[0]->NumberValue());
   GLclampf zFar   = static_cast<GLclampf>(info[1]->NumberValue());
 
-  glDepthRangef(zNear, zFar);
+  (inst->glDepthRangef)(zNear, zFar);
 }
 
 GL_METHOD(DisableVertexAttribArray) {
@@ -1227,7 +1233,7 @@ GL_METHOD(DisableVertexAttribArray) {
 
   GLuint index = info[0]->Int32Value();
 
-  glDisableVertexAttribArray(index);
+  (inst->glDisableVertexAttribArray)(index);
 }
 
 GL_METHOD(Hint) {
@@ -1236,14 +1242,14 @@ GL_METHOD(Hint) {
   GLenum target = info[0]->Int32Value();
   GLenum mode   = info[1]->Int32Value();
 
-  glHint(target, mode);
+  (inst->glHint)(target, mode);
 }
 
 GL_METHOD(IsEnabled) {
   GL_BOILERPLATE;
 
   GLenum cap = info[0]->Int32Value();
-  bool ret = glIsEnabled(cap) != 0;
+  bool ret = (inst->glIsEnabled)(cap) != 0;
 
   info.GetReturnValue().Set(Nan::New<v8::Boolean>(ret));
 }
@@ -1253,7 +1259,7 @@ GL_METHOD(LineWidth) {
 
   GLfloat width = (GLfloat)info[0]->NumberValue();
 
-  glLineWidth(width);
+  (inst->glLineWidth)(width);
 }
 
 GL_METHOD(PolygonOffset) {
@@ -1262,7 +1268,7 @@ GL_METHOD(PolygonOffset) {
   GLfloat factor  = static_cast<GLfloat>(info[0]->NumberValue());
   GLfloat units   = static_cast<GLfloat>(info[1]->NumberValue());
 
-  glPolygonOffset(factor, units);
+  (inst->glPolygonOffset)(factor, units);
 }
 
 GL_METHOD(SampleCoverage) {
@@ -1271,7 +1277,7 @@ GL_METHOD(SampleCoverage) {
   GLclampf value   = static_cast<GLclampf>(info[0]->NumberValue());
   GLboolean invert = info[1]->BooleanValue();
 
-  glSampleCoverage(value, invert);
+  (inst->glSampleCoverage)(value, invert);
 }
 
 GL_METHOD(Scissor) {
@@ -1282,7 +1288,7 @@ GL_METHOD(Scissor) {
   GLsizei width  = info[2]->Int32Value();
   GLsizei height = info[3]->Int32Value();
 
-  glScissor(x, y, width, height);
+  (inst->glScissor)(x, y, width, height);
 }
 
 GL_METHOD(StencilFunc) {
@@ -1292,7 +1298,7 @@ GL_METHOD(StencilFunc) {
   GLint ref   = info[1]->Int32Value();
   GLuint mask = info[2]->Uint32Value();
 
-  glStencilFunc(func, ref, mask);
+  (inst->glStencilFunc)(func, ref, mask);
 }
 
 GL_METHOD(StencilFuncSeparate) {
@@ -1303,7 +1309,7 @@ GL_METHOD(StencilFuncSeparate) {
   GLint ref   = info[2]->Int32Value();
   GLuint mask = info[3]->Uint32Value();
 
-  glStencilFuncSeparate(face, func, ref, mask);
+  (inst->glStencilFuncSeparate)(face, func, ref, mask);
 }
 
 GL_METHOD(StencilMask) {
@@ -1311,7 +1317,7 @@ GL_METHOD(StencilMask) {
 
   GLuint mask = info[0]->Uint32Value();
 
-  glStencilMask(mask);
+  (inst->glStencilMask)(mask);
 }
 
 GL_METHOD(StencilMaskSeparate) {
@@ -1320,7 +1326,7 @@ GL_METHOD(StencilMaskSeparate) {
   GLenum face = info[0]->Int32Value();
   GLuint mask = info[1]->Uint32Value();
 
-  glStencilMaskSeparate(face, mask);
+  (inst->glStencilMaskSeparate)(face, mask);
 }
 
 GL_METHOD(StencilOp) {
@@ -1330,7 +1336,7 @@ GL_METHOD(StencilOp) {
   GLenum zfail  = info[1]->Int32Value();
   GLenum zpass  = info[2]->Int32Value();
 
-  glStencilOp(fail, zfail, zpass);
+  (inst->glStencilOp)(fail, zfail, zpass);
 }
 
 GL_METHOD(StencilOpSeparate) {
@@ -1341,7 +1347,7 @@ GL_METHOD(StencilOpSeparate) {
   GLenum zfail  = info[2]->Int32Value();
   GLenum zpass  = info[3]->Int32Value();
 
-  glStencilOpSeparate(face, fail, zfail, zpass);
+  (inst->glStencilOpSeparate)(face, fail, zfail, zpass);
 }
 
 GL_METHOD(BindRenderbuffer) {
@@ -1350,14 +1356,14 @@ GL_METHOD(BindRenderbuffer) {
   GLenum target = info[0]->Int32Value();
   GLuint buffer = info[1]->Uint32Value();
 
-  glBindRenderbuffer(target, buffer);
+  (inst->glBindRenderbuffer)(target, buffer);
 }
 
 GL_METHOD(CreateRenderbuffer) {
   GL_BOILERPLATE;
 
   GLuint renderbuffers;
-  glGenRenderbuffers(1, &renderbuffers);
+  (inst->glGenRenderbuffers)(1, &renderbuffers);
 
   inst->registerGLObj(GLOBJECT_TYPE_RENDERBUFFER, renderbuffers);
 
@@ -1371,7 +1377,7 @@ GL_METHOD(DeleteBuffer) {
 
   inst->unregisterGLObj(GLOBJECT_TYPE_BUFFER, buffer);
 
-  glDeleteBuffers(1, &buffer);
+  (inst->glDeleteBuffers)(1, &buffer);
 }
 
 GL_METHOD(DeleteFramebuffer) {
@@ -1381,7 +1387,7 @@ GL_METHOD(DeleteFramebuffer) {
 
   inst->unregisterGLObj(GLOBJECT_TYPE_FRAMEBUFFER, buffer);
 
-  glDeleteFramebuffers(1, &buffer);
+  (inst->glDeleteFramebuffers)(1, &buffer);
 }
 
 GL_METHOD(DeleteProgram) {
@@ -1391,7 +1397,7 @@ GL_METHOD(DeleteProgram) {
 
   inst->unregisterGLObj(GLOBJECT_TYPE_PROGRAM, program);
 
-  glDeleteProgram(program);
+  (inst->glDeleteProgram)(program);
 }
 
 GL_METHOD(DeleteRenderbuffer) {
@@ -1401,7 +1407,7 @@ GL_METHOD(DeleteRenderbuffer) {
 
   inst->unregisterGLObj(GLOBJECT_TYPE_RENDERBUFFER, renderbuffer);
 
-  glDeleteRenderbuffers(1, &renderbuffer);
+  (inst->glDeleteRenderbuffers)(1, &renderbuffer);
 }
 
 GL_METHOD(DeleteShader) {
@@ -1411,7 +1417,7 @@ GL_METHOD(DeleteShader) {
 
   inst->unregisterGLObj(GLOBJECT_TYPE_SHADER, shader);
 
-  glDeleteShader(shader);
+  (inst->glDeleteShader)(shader);
 }
 
 GL_METHOD(DeleteTexture) {
@@ -1421,7 +1427,7 @@ GL_METHOD(DeleteTexture) {
 
   inst->unregisterGLObj(GLOBJECT_TYPE_TEXTURE, texture);
 
-  glDeleteTextures(1, &texture);
+  (inst->glDeleteTextures)(1, &texture);
 }
 
 GL_METHOD(DetachShader) {
@@ -1430,7 +1436,7 @@ GL_METHOD(DetachShader) {
   GLuint program  = info[0]->Uint32Value();
   GLuint shader   = info[1]->Uint32Value();
 
-  glDetachShader(program, shader);
+  (inst->glDetachShader)(program, shader);
 }
 
 GL_METHOD(FramebufferRenderbuffer) {
@@ -1441,7 +1447,7 @@ GL_METHOD(FramebufferRenderbuffer) {
   GLenum renderbuffertarget = info[2]->Int32Value();
   GLuint renderbuffer       = info[3]->Uint32Value();
 
-  glFramebufferRenderbuffer(
+  (inst->glFramebufferRenderbuffer)(
       target
     , attachment
     , renderbuffertarget
@@ -1455,7 +1461,7 @@ GL_METHOD(GetVertexAttribOffset) {
   GLenum pname = info[1]->Int32Value();
 
   void *ret = NULL;
-  glGetVertexAttribPointerv(index, pname, &ret);
+  (inst->glGetVertexAttribPointerv)(index, pname, &ret);
 
   GLuint offset = static_cast<GLuint>(reinterpret_cast<size_t>(ret));
   info.GetReturnValue().Set(Nan::New<v8::Integer>(offset));
@@ -1466,7 +1472,7 @@ GL_METHOD(IsBuffer) {
 
   info.GetReturnValue().Set(
     Nan::New<v8::Boolean>(
-      glIsBuffer(info[0]->Uint32Value()) != 0));
+      (inst->glIsBuffer)(info[0]->Uint32Value()) != 0));
 }
 
 GL_METHOD(IsFramebuffer) {
@@ -1474,7 +1480,7 @@ GL_METHOD(IsFramebuffer) {
 
   info.GetReturnValue().Set(
     Nan::New<v8::Boolean>(
-      glIsFramebuffer(info[0]->Uint32Value()) != 0));
+      (inst->glIsFramebuffer)(info[0]->Uint32Value()) != 0));
 }
 
 GL_METHOD(IsProgram) {
@@ -1482,7 +1488,7 @@ GL_METHOD(IsProgram) {
 
   info.GetReturnValue().Set(
     Nan::New<v8::Boolean>(
-      glIsProgram(info[0]->Uint32Value()) != 0));
+      (inst->glIsProgram)(info[0]->Uint32Value()) != 0));
 }
 
 GL_METHOD(IsRenderbuffer) {
@@ -1490,7 +1496,7 @@ GL_METHOD(IsRenderbuffer) {
 
   info.GetReturnValue().Set(
     Nan::New<v8::Boolean>(
-      glIsRenderbuffer(info[0]->Uint32Value()) != 0));
+      (inst->glIsRenderbuffer)(info[0]->Uint32Value()) != 0));
 }
 
 GL_METHOD(IsShader) {
@@ -1498,7 +1504,7 @@ GL_METHOD(IsShader) {
 
   info.GetReturnValue().Set(
     Nan::New<v8::Boolean>(
-      glIsShader(info[0]->Uint32Value()) != 0));
+      (inst->glIsShader)(info[0]->Uint32Value()) != 0));
 }
 
 GL_METHOD(IsTexture) {
@@ -1506,7 +1512,7 @@ GL_METHOD(IsTexture) {
 
   info.GetReturnValue().Set(
     Nan::New<v8::Boolean>(
-      glIsTexture(info[0]->Uint32Value()) != 0));
+      (inst->glIsTexture)(info[0]->Uint32Value()) != 0));
 }
 
 GL_METHOD(RenderbufferStorage) {
@@ -1522,7 +1528,7 @@ GL_METHOD(RenderbufferStorage) {
     internalformat = GL_DEPTH24_STENCIL8;
   }
 
-  glRenderbufferStorage(target, internalformat, width, height);
+  (inst->glRenderbufferStorage)(target, internalformat, width, height);
 }
 
 GL_METHOD(GetShaderSource) {
@@ -1531,10 +1537,10 @@ GL_METHOD(GetShaderSource) {
   GLint shader = info[0]->Int32Value();
 
   GLint len;
-  glGetShaderiv(shader, GL_SHADER_SOURCE_LENGTH, &len);
+  (inst->glGetShaderiv)(shader, GL_SHADER_SOURCE_LENGTH, &len);
 
   GLchar *source = new GLchar[len];
-  glGetShaderSource(shader, len, NULL, source);
+  (inst->glGetShaderSource)(shader, len, NULL, source);
   v8::Local<v8::String> str = Nan::New<v8::String>(source).ToLocalChecked();
   delete source;
 
@@ -1552,7 +1558,7 @@ GL_METHOD(ReadPixels) {
   GLenum type    = info[5]->Int32Value();
   Nan::TypedArrayContents<char> pixels(info[6]);
 
-  glReadPixels(x, y, width, height, format, type, *pixels);
+  (inst->glReadPixels)(x, y, width, height, format, type, *pixels);
 }
 
 GL_METHOD(GetTexParameter) {
@@ -1562,7 +1568,7 @@ GL_METHOD(GetTexParameter) {
   GLenum pname      = info[1]->Int32Value();
   GLint param_value = 0;
 
-  glGetTexParameteriv(target, pname, &param_value);
+  (inst->glGetTexParameteriv)(target, pname, &param_value);
 
   info.GetReturnValue().Set(Nan::New<v8::Integer>(param_value));
 }
@@ -1574,13 +1580,13 @@ GL_METHOD(GetActiveAttrib) {
   GLuint index   = info[1]->Int32Value();
 
   GLint maxLength;
-  glGetProgramiv(program, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxLength);
+  (inst->glGetProgramiv)(program, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxLength);
 
   char* name = new char[maxLength];
   GLsizei length = 0;
   GLenum  type;
   GLsizei size;
-  glGetActiveAttrib(program, index, maxLength, &length, &size, &type, name);
+  (inst->glGetActiveAttrib)(program, index, maxLength, &length, &size, &type, name);
 
   if (length > 0) {
     v8::Local<v8::Object> activeInfo = Nan::New<v8::Object>();
@@ -1608,14 +1614,14 @@ GL_METHOD(GetActiveUniform) {
   GLuint index   = info[1]->Int32Value();
 
   GLint maxLength;
-  glGetProgramiv(program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxLength);
+  (inst->glGetProgramiv)(program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxLength);
 
 
   char* name = new char[maxLength];
   GLsizei length = 0;
   GLenum  type;
   GLsizei size;
-  glGetActiveUniform(program, index, maxLength, &length, &size, &type, name);
+  (inst->glGetActiveUniform)(program, index, maxLength, &length, &size, &type, name);
 
   if (length > 0) {
     v8::Local<v8::Object> activeInfo = Nan::New<v8::Object>();
@@ -1642,11 +1648,11 @@ GL_METHOD(GetAttachedShaders) {
   GLuint program = info[0]->Int32Value();
 
   GLint numAttachedShaders;
-  glGetProgramiv(program, GL_ATTACHED_SHADERS, &numAttachedShaders);
+  (inst->glGetProgramiv)(program, GL_ATTACHED_SHADERS, &numAttachedShaders);
 
   GLuint* shaders = new GLuint[numAttachedShaders];
   GLsizei count;
-  glGetAttachedShaders(program, numAttachedShaders, &count, shaders);
+  (inst->glGetAttachedShaders)(program, numAttachedShaders, &count, shaders);
 
   v8::Local<v8::Array> shadersArr = Nan::New<v8::Array>(count);
   for (int i=0; i<count; i++) {
@@ -1689,7 +1695,7 @@ GL_METHOD(GetParameter) {
     case GL_STENCIL_TEST:
     {
       GLboolean params;
-      glGetBooleanv(name, &params);
+      (inst->glGetBooleanv)(name, &params);
 
       info.GetReturnValue().Set(Nan::New<v8::Boolean>(params != 0));
 
@@ -1703,7 +1709,7 @@ GL_METHOD(GetParameter) {
     case GL_SAMPLE_COVERAGE_VALUE:
     {
       GLfloat params;
-      glGetFloatv(name, &params);
+      (inst->glGetFloatv)(name, &params);
 
       info.GetReturnValue().Set(Nan::New<v8::Number>(params));
 
@@ -1716,7 +1722,7 @@ GL_METHOD(GetParameter) {
     case GL_VERSION:
     case GL_EXTENSIONS:
     {
-      const char *params = reinterpret_cast<const char*>(glGetString(name));
+      const char *params = reinterpret_cast<const char*>((inst->glGetString)(name));
       if(params) {
         info.GetReturnValue().Set(
           Nan::New<v8::String>(params).ToLocalChecked());
@@ -1727,7 +1733,7 @@ GL_METHOD(GetParameter) {
     case GL_MAX_VIEWPORT_DIMS:
     {
       GLint params[2];
-      glGetIntegerv(name, params);
+      (inst->glGetIntegerv)(name, params);
 
       v8::Local<v8::Array> arr = Nan::New<v8::Array>(2);
       Nan::Set(arr, 0, Nan::New<v8::Integer>(params[0]));
@@ -1741,7 +1747,7 @@ GL_METHOD(GetParameter) {
     case GL_VIEWPORT:
     {
       GLint params[4];
-      glGetIntegerv(name, params);
+      (inst->glGetIntegerv)(name, params);
 
       v8::Local<v8::Array> arr=Nan::New<v8::Array>(4);
       Nan::Set(arr, 0, Nan::New<v8::Integer>(params[0]));
@@ -1758,7 +1764,7 @@ GL_METHOD(GetParameter) {
     case GL_DEPTH_RANGE:
     {
       GLfloat params[2];
-      glGetFloatv(name, params);
+      (inst->glGetFloatv)(name, params);
 
       v8::Local<v8::Array> arr=Nan::New<v8::Array>(2);
       Nan::Set(arr, 0, Nan::New<v8::Number>(params[0]));
@@ -1772,7 +1778,7 @@ GL_METHOD(GetParameter) {
     case GL_COLOR_CLEAR_VALUE:
     {
       GLfloat params[4];
-      glGetFloatv(name, params);
+      (inst->glGetFloatv)(name, params);
 
       v8::Local<v8::Array> arr = Nan::New<v8::Array>(4);
       Nan::Set(arr, 0, Nan::New<v8::Number>(params[0]));
@@ -1787,7 +1793,7 @@ GL_METHOD(GetParameter) {
     case GL_COLOR_WRITEMASK:
     {
       GLboolean params[4];
-      glGetBooleanv(name, params);
+      (inst->glGetBooleanv)(name, params);
 
       v8::Local<v8::Array> arr = Nan::New<v8::Array>(4);
       Nan::Set(arr, 0, Nan::New<v8::Boolean>(params[0] == GL_TRUE));
@@ -1802,7 +1808,7 @@ GL_METHOD(GetParameter) {
     default:
     {
       GLint params;
-      glGetIntegerv(name, &params);
+      (inst->glGetIntegerv)(name, &params);
       info.GetReturnValue().Set(Nan::New<v8::Integer>(params));
       return;
     }
@@ -1816,7 +1822,7 @@ GL_METHOD(GetBufferParameter) {
   GLenum pname  = info[1]->Int32Value();
 
   GLint params;
-  glGetBufferParameteriv(target, pname, &params);
+  (inst->glGetBufferParameteriv)(target, pname, &params);
 
   info.GetReturnValue().Set(Nan::New<v8::Integer>(params));
 }
@@ -1829,7 +1835,7 @@ GL_METHOD(GetFramebufferAttachmentParameter) {
   GLenum pname      = info[2]->Int32Value();
 
   GLint params;
-  glGetFramebufferAttachmentParameteriv(target, attachment, pname, &params);
+  (inst->glGetFramebufferAttachmentParameteriv)(target, attachment, pname, &params);
 
   info.GetReturnValue().Set(Nan::New<v8::Integer>(params));
 }
@@ -1840,10 +1846,10 @@ GL_METHOD(GetProgramInfoLog) {
   GLuint program = info[0]->Int32Value();
 
   GLint infoLogLength;
-  glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
+  (inst->glGetProgramiv)(program, GL_INFO_LOG_LENGTH, &infoLogLength);
 
   char* error = new char[infoLogLength+1];
-  glGetProgramInfoLog(program, infoLogLength+1, &infoLogLength, error);
+  (inst->glGetProgramInfoLog)(program, infoLogLength+1, &infoLogLength, error);
 
   info.GetReturnValue().Set(
     Nan::New<v8::String>(error).ToLocalChecked());
@@ -1860,7 +1866,7 @@ GL_METHOD(GetShaderPrecisionFormat) {
   GLint range[2];
   GLint precision;
 
-  glGetShaderPrecisionFormat(shaderType, precisionType, range, &precision);
+  (inst->glGetShaderPrecisionFormat)(shaderType, precisionType, range, &precision);
 
   v8::Local<v8::Object> result = Nan::New<v8::Object>();
   Nan::Set(result
@@ -1883,7 +1889,7 @@ GL_METHOD(GetRenderbufferParameter) {
   GLenum pname  = info[1]->Int32Value();
 
   int value;
-  glGetRenderbufferParameteriv(target, pname, &value);
+  (inst->glGetRenderbufferParameteriv)(target, pname, &value);
 
   info.GetReturnValue().Set(Nan::New<v8::Integer>(value));
 }
@@ -1895,7 +1901,7 @@ GL_METHOD(GetUniform) {
   GLint location = info[1]->Int32Value();
 
   float data[4096];
-  glGetUniformfv(program, location, data);
+  (inst->glGetUniformfv)(program, location, data);
 
   v8::Local<v8::Array> arr = Nan::New<v8::Array>(16);
   for (int i=0; i<16; i++) {
@@ -1917,7 +1923,7 @@ GL_METHOD(GetVertexAttrib) {
     case GL_VERTEX_ATTRIB_ARRAY_ENABLED:
     case GL_VERTEX_ATTRIB_ARRAY_NORMALIZED:
     {
-      glGetVertexAttribiv(index, pname, &value);
+      (inst->glGetVertexAttribiv)(index, pname, &value);
       info.GetReturnValue().Set(Nan::New<v8::Boolean>(value != 0));
       return;
     }
@@ -1926,14 +1932,14 @@ GL_METHOD(GetVertexAttrib) {
     case GL_VERTEX_ATTRIB_ARRAY_STRIDE:
     case GL_VERTEX_ATTRIB_ARRAY_TYPE:
     {
-      glGetVertexAttribiv(index, pname, &value);
+      (inst->glGetVertexAttribiv)(index, pname, &value);
       info.GetReturnValue().Set(Nan::New<v8::Integer>(value));
       return;
     }
 
     case GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING:
     {
-      glGetVertexAttribiv(index, pname, &value);
+      (inst->glGetVertexAttribiv)(index, pname, &value);
       info.GetReturnValue().Set(Nan::New<v8::Integer>(value));
       return;
     }
@@ -1942,7 +1948,7 @@ GL_METHOD(GetVertexAttrib) {
     {
       float vextex_attribs[4];
 
-      glGetVertexAttribfv(index, pname, vextex_attribs);
+      (inst->glGetVertexAttribfv)(index, pname, vextex_attribs);
 
       v8::Local<v8::Array> arr=Nan::New<v8::Array>(4);
       Nan::Set(arr, 0,
@@ -1969,7 +1975,7 @@ GL_METHOD(GetSupportedExtensions) {
   GL_BOILERPLATE;
 
   const char *extensions = reinterpret_cast<const char*>(
-    glGetString(GL_EXTENSIONS));
+    (inst->glGetString)(GL_EXTENSIONS));
 
   info.GetReturnValue().Set(
     Nan::New<v8::String>(extensions).ToLocalChecked());
@@ -1988,5 +1994,5 @@ GL_METHOD(CheckFramebufferStatus) {
 
   info.GetReturnValue().Set(
     Nan::New<v8::Integer>(
-      static_cast<int>(glCheckFramebufferStatus(target))));
+      static_cast<int>((inst->glCheckFramebufferStatus)(target))));
 }

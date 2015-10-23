@@ -19,7 +19,8 @@
       ],
       'sources': [
           'src/bindings.cc',
-          'src/webgl.cc'
+          'src/webgl.cc',
+          'src/procs.cc'
       ],
       'include_dirs': [
         "<!(node -e \"require('nan')\")",
