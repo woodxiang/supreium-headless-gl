@@ -7,11 +7,11 @@ matrix:
   include:
 # Linux
   - os: linux
-    compiler: clang
-    env: CXX=clang++-3.5 NODE_VERSION=0.12
+    compiler: g++
+    env: CXX=g++-4.9 NODE_VERSION=0.12
   - os: linux
-    compiler: clang
-    env: CXX=clang++-3.5 NODE_VERSION=0.10
+    compiler: g++
+    env: CXX=g++-4.9 NODE_VERSION=0.10
 # OS X
   - os: osx
     osx_image: xcode7
@@ -24,8 +24,8 @@ matrix:
 
 addons:
   apt:
-    sources: [ 'ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.5' ]
-    packages: [ 'clang-3.5', 'libstdc++-4.9-dev', 'libstdc++6' ]
+    sources: [ 'ubuntu-toolchain-r-test' ]
+    packages: [ 'g++-4.9', 'gcc-4.9' ]
 
 before_install:
 - ./scripts/install_node.sh
