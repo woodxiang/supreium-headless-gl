@@ -25,7 +25,8 @@ matrix:
 addons:
   apt:
     sources: [ 'ubuntu-toolchain-r-test' ]
-    packages: [ 'g++-4.9', 'gcc-4.9' ]
+    packages: [ 'gdb', 'g++-4.9', 'gcc-4.9', 'libllvm3.4', 'xutils-dev',
+                'libxxf86vm-dev', 'x11proto-xf86vidmode-dev', 'mesa-utils' ]
 
 before_install:
 - ./scripts/install_node.sh
