@@ -14,8 +14,8 @@
     "test": "tape test/*.js",
     "rebuild": "node-gyp rebuild --verbose",
     "build": "node-gyp rebuild --verbose",
-    "prebuild": "prebuild",
-    "install": "prebuild --download"
+    "prebuild": "prebuild --all --strip",
+    "install": "prebuild --install"
   },
   "dependencies": {
     "bindings": "^1.2.1",
@@ -23,7 +23,7 @@
     "glsl-tokenizer": "^2.0.2",
     "nan": "^2.1.0",
     "node-gyp": "^3.0.2",
-    "prebuild": "^2.5.1"
+    "prebuild": "^2.8.0"
   },
   "devDependencies": {
     "gl-conformance": "^1.0.4",
