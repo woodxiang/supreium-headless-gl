@@ -30,4 +30,4 @@ function createContext(width, height, options) {
     return null
 }
 
-module.exports.createContext = createContext
+module.exports = createContext
