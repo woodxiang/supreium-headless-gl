@@ -1,13 +1,13 @@
 'use strict'
 
-var tape          = require('tape')
+var tape = require('tape')
 var createContext = require('../index')
-var drawTriangle  = require('./util/draw-triangle')
-var makeShader    = require('./util/make-program')
+var drawTriangle = require('./util/draw-triangle')
+var makeShader = require('./util/make-program')
 
-tape('alpha texture', function(t) {
-  var width   = 64
-  var height  = 64
+tape('alpha texture', function (t) {
+  var width = 64
+  var height = 64
   var gl = createContext(width, height)
 
   var vertex_src = [
@@ -15,8 +15,8 @@ tape('alpha texture', function(t) {
     'attribute vec2 position;',
     'varying vec2 texCoord;',
     'void main() {',
-      'texCoord = 0.5*(position - 1.0);',
-      'gl_Position = vec4(position,0,1);',
+    'texCoord = 0.5*(position - 1.0);',
+    'gl_Position = vec4(position,0,1);',
     '}'
   ].join('\n')
 
@@ -25,18 +25,17 @@ tape('alpha texture', function(t) {
     'uniform sampler2D tex;',
     'varying vec2 texCoord;',
     'void main() {',
-      'gl_FragColor = texture2D(tex, texCoord);',
+    'gl_FragColor = texture2D(tex, texCoord);',
     '}'
   ].join('\n')
 
   gl.clearColor(0, 0, 0, 0)
   gl.clear(gl.COLOR_BUFFER_BIT)
 
-
-  var data = new Uint8Array(width*height)
-  for(var i=0; i<height; ++i) {
-    for(var j=0; j<width; ++j) {
-      data[width*i+j] = (i+j) % 255
+  var data = new Uint8Array(width * height)
+  for (var i = 0; i < height; ++i) {
+    for (var j = 0; j < width; ++j) {
+      data[width * i + j] = (i + j) % 255
     }
   }
 
@@ -67,11 +66,11 @@ tape('alpha texture', function(t) {
   var pixels = new Uint8Array(width * height * 4)
   gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
   var ptr = 0
-  for(var i=0; i<width*height*4; i+=4) {
-    t.equals(pixels[i],   0, 'red')
-    t.equals(pixels[i+1], 0, 'green')
-    t.equals(pixels[i+2], 0, 'blue')
-    t.equals(pixels[i+3], data[ptr++], 'alpha')
+  for (i = 0; i < width * height * 4; i += 4) {
+    t.equals(pixels[i], 0, 'red')
+    t.equals(pixels[i + 1], 0, 'green')
+    t.equals(pixels[i + 2], 0, 'blue')
+    t.equals(pixels[i + 3], data[ptr++], 'alpha')
   }
 
   t.end()

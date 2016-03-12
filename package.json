@@ -11,7 +11,7 @@
     "node": ">=0.8.0"
   },
   "scripts": {
-    "test": "tape test/*.js",
+    "test": "standard && tape test/*.js",
     "rebuild": "node-gyp rebuild --verbose",
     "build": "node-gyp rebuild --verbose",
     "prebuild": "prebuild",
@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "gl-conformance": "^2.0.0",
+    "standard": "^6.0.8",
     "tape": "^4.0.1"
   },
   "repository": {

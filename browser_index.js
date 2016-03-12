@@ -1,33 +1,30 @@
 'use strict'
 
-function createContext(width, height, options) {
-    var canvas = document.createElement("canvas")
-    if (!canvas) {
-        return null
-    }
-    canvas.width  = width
-    canvas.height = height
-    try {
-        var gl = canvas.getContext("experimental-webgl", options)
-        if (gl) {
-            return gl
-        }
-    } catch (e) {}
-    try {
-        var gl = canvas.getContext("webgl", options)
-        if (gl) {
-            return gl
-        }
-    } catch (e) {}
+function createContext (width, height, options) {
+  var canvas = document.createElement('canvas')
+  if (!canvas) {
+    return null
+  }
+  var gl
+  canvas.width = width
+  canvas.height = height
 
-    //Patch in headless-gl extra methods
-    gl.resize = function(w, h) {
-      canvas.width  = w
+  try {
+    gl = canvas.getContext('experimental-webgl', options)
+  } catch (e) {}
+  try {
+    gl = canvas.getContext('webgl', options)
+  } catch (e) {}
+
+  if (gl) {
+    gl.resize = function (w, h) {
+      canvas.width = w
       canvas.height = h
     }
-    gl.destroy = function() {}
+    gl.destroy = function () {}
+  }
 
-    return null
+  return gl || null
 }
 
 module.exports = createContext

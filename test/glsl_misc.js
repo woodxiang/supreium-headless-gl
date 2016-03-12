@@ -1,4 +1,4 @@
-//These tests are stupid.  Currently commented out
+// These tests are stupid.  Currently commented out
 
 /*
 require('./util/conformance')(function(str) {

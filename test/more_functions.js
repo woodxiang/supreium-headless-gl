@@ -4,7 +4,7 @@ var BLACKLIST = {
   'more_functions_texImage2DHTMLBadArgs': true
 }
 
-require('./util/conformance')(function(str) {
+require('./util/conformance')(function (str) {
   return str.indexOf('more_functions') === 0 &&
-         !BLACKLIST[str]
+  !BLACKLIST[str]
 })

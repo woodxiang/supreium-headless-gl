@@ -1,3 +1,3 @@
-require('./util/conformance')(function(str) {
+require('./util/conformance')(function (str) {
   return str.indexOf('extensions') >= 0
 })

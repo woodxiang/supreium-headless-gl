@@ -1,10 +1,10 @@
 'use strict'
 
-var tape          = require('tape')
+var tape = require('tape')
 var createContext = require('../index')
-var makeShader    = require('./util/make-program')
+var makeShader = require('./util/make-program')
 
-tape('draw-indexed', function(t) {
+tape('draw-indexed', function (t) {
   var width = 50
   var height = 50
   var gl = createContext(width, height)
@@ -27,10 +27,10 @@ tape('draw-indexed', function(t) {
   var vbuffer = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, vbuffer)
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-    -1,-1,
-     1,-1,
+    -1, -1,
+    1, -1,
     -1, 1,
-     1, 1]), gl.STATIC_DRAW)
+    1, 1]), gl.STATIC_DRAW)
   gl.enableVertexAttribArray(0)
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
 
@@ -45,11 +45,11 @@ tape('draw-indexed', function(t) {
 
   var pixels = new Uint8Array(width * height * 4)
   gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
-  for(var i=0; i<width*height*4; i+=4) {
-    t.equals(pixels[i],  0,     'red')
-    t.equals(pixels[i+1], 255,  'green')
-    t.equals(pixels[i+2], 0,    'blue')
-    t.equals(pixels[i+3], 255,  'alpha')
+  for (var i = 0; i < width * height * 4; i += 4) {
+    t.equals(pixels[i], 0, 'red')
+    t.equals(pixels[i + 1], 255, 'green')
+    t.equals(pixels[i + 2], 0, 'blue')
+    t.equals(pixels[i + 3], 255, 'alpha')
   }
 
   t.end()

@@ -1,11 +1,11 @@
 'use strict'
 
-var tape          = require('tape')
+var tape = require('tape')
 var createContext = require('../index')
-var drawTriangle  = require('./util/draw-triangle')
-var makeShader    = require('./util/make-program')
+var drawTriangle = require('./util/draw-triangle')
+var makeShader = require('./util/make-program')
 
-tape('simple-shader', function(t) {
+tape('simple-shader', function (t) {
   var width = 50
   var height = 50
   var gl = createContext(width, height)
@@ -28,11 +28,11 @@ tape('simple-shader', function(t) {
 
   var pixels = new Uint8Array(width * height * 4)
   gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
-  for(var i=0; i<width*height*4; i+=4) {
-    t.equals(pixels[i],  0,     'red')
-    t.equals(pixels[i+1], 255,  'green')
-    t.equals(pixels[i+2], 0,    'blue')
-    t.equals(pixels[i+3], 255,  'alpha')
+  for (var i = 0; i < width * height * 4; i += 4) {
+    t.equals(pixels[i], 0, 'red')
+    t.equals(pixels[i + 1], 255, 'green')
+    t.equals(pixels[i + 2], 0, 'blue')
+    t.equals(pixels[i + 3], 255, 'alpha')
   }
 
   t.end()

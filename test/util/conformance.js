@@ -2,24 +2,24 @@ var tape = require('tape')
 var runConformance = require('gl-conformance')
 var createContext = require('../../index')
 
-//Inject WebGL types into global namespaces, required by some conformance tests
+// Inject WebGL types into global namespaces, required by some conformance tests
 var webgl = require('../../webgl')
-WebGLRenderingContext      = webgl.WebGLRenderingContext
-WebGLBuffer                = webgl.WebGLBuffer
-WebGLFramebuffer           = webgl.WebGLFramebuffer
-WebGLProgram               = webgl.WebGLProgram
-WebGLRenderbuffer          = webgl.WebGLRenderbuffer
-WebGLShader                = webgl.WebGLShader
-WebGLTexture               = webgl.WebGLTexture
-WebGLUniformLocation       = webgl.WebGLUniformLocation
-WebGLActiveInfo            = webgl.WebGLActiveInfo
-WebGLShaderPrecisionFormat = webgl.WebGLShaderPrecisionFormat
-WebGLContextAttributes     = webgl.WebGLContextAttributes
+WebGLRenderingContext = webgl.WebGLRenderingContext // eslint-disable-line
+WebGLBuffer = webgl.WebGLBuffer // eslint-disable-line
+WebGLFramebuffer = webgl.WebGLFramebuffer // eslint-disable-line
+WebGLProgram = webgl.WebGLProgram // eslint-disable-line
+WebGLRenderbuffer = webgl.WebGLRenderbuffer // eslint-disable-line
+WebGLShader = webgl.WebGLShader // eslint-disable-line
+WebGLTexture = webgl.WebGLTexture // eslint-disable-line
+WebGLUniformLocation = webgl.WebGLUniformLocation // eslint-disable-line
+WebGLActiveInfo = webgl.WebGLActiveInfo // eslint-disable-line
+WebGLShaderPrecisionFormat = webgl.WebGLShaderPrecisionFormat // eslint-disable-line
+WebGLContextAttributes = webgl.WebGLContextAttributes // eslint-disable-line 
 
-module.exports = function(filter) {
+module.exports = function (filter) {
   return runConformance({
     tape: tape,
-    createContext: function(width, height, options) {
+    createContext: function (width, height, options) {
       return createContext(width, height, options)
     },
     filter: filter

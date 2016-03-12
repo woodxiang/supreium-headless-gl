@@ -6,6 +6,6 @@ var BLACKLIST = [
   'textures_tex-image-and-uniform-binding-bugs'
 ]
 
-require('./util/conformance')(function(str) {
+require('./util/conformance')(function (str) {
   return str.indexOf('textures') === 0 && BLACKLIST.indexOf(str) < 0
 })
