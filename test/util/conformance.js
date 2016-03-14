@@ -3,7 +3,7 @@ var runConformance = require('gl-conformance')
 var createContext = require('../../index')
 
 // Inject WebGL types into global namespaces, required by some conformance tests
-var webgl = require('../../webgl')
+var webgl = require('../../wrap')
 WebGLRenderingContext = webgl.WebGLRenderingContext // eslint-disable-line
 WebGLBuffer = webgl.WebGLBuffer // eslint-disable-line
 WebGLFramebuffer = webgl.WebGLFramebuffer // eslint-disable-line
@@ -14,7 +14,7 @@ WebGLTexture = webgl.WebGLTexture // eslint-disable-line
 WebGLUniformLocation = webgl.WebGLUniformLocation // eslint-disable-line
 WebGLActiveInfo = webgl.WebGLActiveInfo // eslint-disable-line
 WebGLShaderPrecisionFormat = webgl.WebGLShaderPrecisionFormat // eslint-disable-line
-WebGLContextAttributes = webgl.WebGLContextAttributes // eslint-disable-line 
+WebGLContextAttributes = webgl.WebGLContextAttributes // eslint-disable-line
 
 module.exports = function (filter) {
   return runConformance({

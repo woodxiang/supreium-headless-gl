@@ -13,6 +13,8 @@ var MAX_ATTRIBUTE_LENGTH = 256
 // We need to wrap some of the native WebGL functions to handle certain error codes and check input values
 var gl = nativeGL.WebGLRenderingContext.prototype
 gl.VERSION = 0x1F02
+gl.IMPLEMENTATION_COLOR_READ_TYPE = 0x8B9A
+gl.IMPLEMENTATION_COLOR_READ_FORMAT = 0x8B9B
 
 var ATTACHMENTS = [
   gl.COLOR_ATTACHMENT0,
@@ -1684,7 +1686,7 @@ gl.disableVertexAttribArray = function disableVertexAttribArray (index) {
 }
 
 var _vertexAttribDivisor = gl.vertexAttribDivisor
-gl.vertexAttribDivisor = void 0
+delete gl.vertexAttribDivisor
 
 function beginAttrib0Hack (context) {
   _bindBuffer.call(context, gl.ARRAY_BUFFER, context._attrib0Buffer._)
@@ -1736,7 +1738,7 @@ function checkStencilState (context) {
 
 var _drawArrays = gl.drawArrays
 var _drawArraysInstanced = gl.drawArraysInstanced
-gl.drawArraysInstanced = void 0
+delete gl.drawArraysInstanced
 gl.drawArrays = function drawArrays (mode, first, count) {
   mode |= 0
   first |= 0
@@ -1782,7 +1784,7 @@ gl.drawArrays = function drawArrays (mode, first, count) {
 
 var _drawElements = gl.drawElements
 var _drawElementsInstanced = gl.drawElementsInstanced
-gl.drawElementsInstanced = void 0
+delete gl.drawElementsInstanced
 gl.drawElements = function drawElements (mode, count, type, ioffset) {
   mode |= 0
   count |= 0

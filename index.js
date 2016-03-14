@@ -2,6 +2,7 @@
 
 var bits = require('bit-twiddle')
 var webgl = require('./webgl')
+var wrap = require('./wrap')
 
 var CONTEXT_COUNTER = 0
 
@@ -78,8 +79,6 @@ function createContext (width, height, options) {
 
   gl._errorStack = []
 
-  gl.isContextLost = false
-
   // Initialize vertex attributes
   var numAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS)
   gl._vertexAttribs = new Array(numAttribs)
@@ -119,7 +118,7 @@ function createContext (width, height, options) {
   gl.clearStencil(0)
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT)
 
-  return gl
+  return wrap(gl)
 }
 
 module.exports = createContext
