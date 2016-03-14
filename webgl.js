@@ -2728,6 +2728,10 @@ gl.isEnabled = function isEnabled (cap) {
 
 var _lineWidth = gl.lineWidth
 gl.lineWidth = function lineWidth (width) {
+  if (isNaN(width)) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
   return _lineWidth.call(this, +width)
 }
 
