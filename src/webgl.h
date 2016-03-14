@@ -261,7 +261,7 @@ struct WebGLRenderingContext : public node::ObjectWrap {
   static NAN_METHOD(GetUniform);
 
   void initPointers();
-  
+
   #include "procs.h"
 };
 

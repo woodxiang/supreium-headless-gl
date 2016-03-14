@@ -702,7 +702,9 @@ unsigned char* WebGLRenderingContext::unpackPixels(
     switch(format) {
       case GL_ALPHA:
       case GL_LUMINANCE:
+      case GL_RED:
       break;
+      case GL_RG:
       case GL_LUMINANCE_ALPHA:
         pixelSize *= 2;
       break;
@@ -794,37 +796,37 @@ GL_METHOD(TexImage2D) {
   GLint type            = info[7]->Int32Value();
   Nan::TypedArrayContents<unsigned char> pixels(info[8]);
 
-  if(*pixels && (
-      inst->unpack_flip_y ||
-      inst->unpack_premultiply_alpha)) {
-    unsigned char* unpacked = inst->unpackPixels(
-        type
-      , format
-      , width
-      , height
-      , *pixels);
-    (inst->glTexImage2D)(
-        target
-      , level
-      , internalformat
-      , width
-      , height
-      , border
-      , format
-      , type
-      , unpacked);
-    delete[] unpacked;
-  } else if(*pixels) {
-    (inst->glTexImage2D)(
-        target
-      , level
-      , internalformat
-      , width
-      , height
-      , border
-      , format
-      , type
-      , *pixels);
+  if(*pixels) {
+    if(inst->unpack_flip_y || inst->unpack_premultiply_alpha) {
+      unsigned char* unpacked = inst->unpackPixels(
+          type
+        , format
+        , width
+        , height
+        , *pixels);
+      (inst->glTexImage2D)(
+          target
+        , level
+        , internalformat
+        , width
+        , height
+        , border
+        , format
+        , type
+        , unpacked);
+      delete[] unpacked;
+    } else {
+      (inst->glTexImage2D)(
+          target
+        , level
+        , internalformat
+        , width
+        , height
+        , border
+        , format
+        , type
+        , *pixels);
+    }
   } else {
     size_t length = width * height * 4;
     char* data = new char[length];
