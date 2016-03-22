@@ -12,11 +12,6 @@
       'defines': [
         'VERSION=1.0.0'
       ],
-      'dependencies':
-      [
-        'angle/src/angle.gyp:libEGL',
-        'angle/src/angle.gyp:libGLESv2'
-      ],
       'sources': [
           'src/bindings.cc',
           'src/webgl.cc',
@@ -32,21 +27,31 @@
       ],
       'conditions': [
         ['OS=="mac"', {
+            'dependencies':
+            [
+              'angle/src/angle.gyp:libEGL',
+              'angle/src/angle.gyp:libGLESv2'
+            ],
             'libraries': [
                 '-framework QuartzCore',
                 '-framework Quartz'
             ],
         }],
         ['OS=="linux"', {
+            'dependencies':
+            [
+              'angle/src/angle.gyp:libEGL',
+              'angle/src/angle.gyp:libGLESv2'
+            ]
         }],
-        ['OS=="win"',
-          {
-            'include_dirs': [
-              ],
+        ['OS=="win"', {
             'library_dirs': [
-              ],
+              '<(module_root_dir)/deps/windows/lib/<(target_arch)',
+            ],
             'libraries': [
-              ],
+              'libEGL.lib',
+              'libGLESv2.lib'
+            ],
             'defines' : [
               'WIN32_LEAN_AND_MEAN',
               'VC_EXTRALEAN'
@@ -56,7 +61,21 @@
             ],
             'ldflags' : [
               '/OPT:REF','/OPT:ICF','/LTCG'
-            ]
+            ],
+            'msvs_configuration_attributes':
+            {
+                'OutputDirectory': '$(SolutionDir)$(ConfigurationName)',
+                'IntermediateDirectory': '$(OutDir)\\obj\\$(ProjectName)'
+            },
+            "copies": [
+              {
+                'destination': '$(SolutionDir)$(ConfigurationName)',
+                'files': [
+                  '<(module_root_dir)/deps/windows/dll/<(target_arch)/libEGL.dll',
+                  '<(module_root_dir)/deps/windows/dll/<(target_arch)/libGLESv2.dll'
+                ]
+              }
+           ]
           }
         ]
       ]
