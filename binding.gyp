@@ -56,16 +56,37 @@
               'WIN32_LEAN_AND_MEAN',
               'VC_EXTRALEAN'
             ],
-            'cflags' : [
-              '/O2','/Oy','/GL','/GF','/Gm-','/EHsc','/MT','/GS','/Gy','/GR-','/Gd','/wd"4530"','/wd"4251"'
-            ],
-            'ldflags' : [
-              '/OPT:REF','/OPT:ICF','/LTCG'
-            ],
-            'msvs_configuration_attributes':
-            {
-                'OutputDirectory': '$(SolutionDir)$(ConfigurationName)',
-                'IntermediateDirectory': '$(OutDir)\\obj\\$(ProjectName)'
+            'configurations': {
+              'Release': {
+                'msvs_settings': {
+                  'VCCLCompilerTool': {
+                    'RuntimeLibrary': 0, # static release
+                    'Optimization': 0, # /Od, disabled
+                    'FavorSizeOrSpeed': 1, # /Ot, favour speed over size
+                    'InlineFunctionExpansion': 2, # /Ob2, inline anything eligible
+                    'WholeProgramOptimization': 'false', # No
+                    'OmitFramePointers': 'true',
+                    'EnableFunctionLevelLinking': 'true',
+                    'EnableIntrinsicFunctions': 'true',
+                    'RuntimeTypeInfo': 'false',
+                    'ExceptionHandling': '0',
+                    'AdditionalOptions': [
+                      '/MP', # compile across multiple CPUs
+                    ]
+                  },
+                  'VCLinkerTool': {
+                    'LinkTimeCodeGeneration': 0, # Link Time Code generation default
+                    'OptimizeReferences': 1, # /OPT:NOREF
+                    'EnableCOMDATFolding': 1, # /OPT:NOICF
+                    'LinkIncremental': 2, # /INCREMENTAL
+                  }
+                },
+                'msvs_configuration_attributes':
+                {
+                    'OutputDirectory': '$(SolutionDir)$(ConfigurationName)',
+                    'IntermediateDirectory': '$(OutDir)\\obj\\$(ProjectName)'
+                }
+              }
             },
             "copies": [
               {
