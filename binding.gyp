@@ -12,11 +12,6 @@
       'defines': [
         'VERSION=1.0.0'
       ],
-      'dependencies':
-      [
-        'angle/src/angle.gyp:libEGL',
-        'angle/src/angle.gyp:libGLESv2'
-      ],
       'sources': [
           'src/bindings.cc',
           'src/webgl.cc',
@@ -32,31 +27,76 @@
       ],
       'conditions': [
         ['OS=="mac"', {
+            'dependencies':
+            [
+              'angle/src/angle.gyp:libEGL',
+              'angle/src/angle.gyp:libGLESv2'
+            ],
             'libraries': [
                 '-framework QuartzCore',
                 '-framework Quartz'
             ],
         }],
         ['OS=="linux"', {
+            'dependencies':
+            [
+              'angle/src/angle.gyp:libEGL',
+              'angle/src/angle.gyp:libGLESv2'
+            ]
         }],
-        ['OS=="win"',
-          {
-            'include_dirs': [
-              ],
+        ['OS=="win"', {
             'library_dirs': [
-              ],
+              '<(module_root_dir)/deps/windows/lib/<(target_arch)',
+            ],
             'libraries': [
-              ],
+              'libEGL.lib',
+              'libGLESv2.lib'
+            ],
             'defines' : [
               'WIN32_LEAN_AND_MEAN',
               'VC_EXTRALEAN'
             ],
-            'cflags' : [
-              '/O2','/Oy','/GL','/GF','/Gm-','/EHsc','/MT','/GS','/Gy','/GR-','/Gd','/wd"4530"','/wd"4251"'
-            ],
-            'ldflags' : [
-              '/OPT:REF','/OPT:ICF','/LTCG'
-            ]
+            'configurations': {
+              'Release': {
+                'msvs_settings': {
+                  'VCCLCompilerTool': {
+                    'RuntimeLibrary': 0, # static release
+                    'Optimization': 0, # /Od, disabled
+                    'FavorSizeOrSpeed': 1, # /Ot, favour speed over size
+                    'InlineFunctionExpansion': 2, # /Ob2, inline anything eligible
+                    'WholeProgramOptimization': 'false', # No
+                    'OmitFramePointers': 'true',
+                    'EnableFunctionLevelLinking': 'true',
+                    'EnableIntrinsicFunctions': 'true',
+                    'RuntimeTypeInfo': 'false',
+                    'ExceptionHandling': '0',
+                    'AdditionalOptions': [
+                      '/MP', # compile across multiple CPUs
+                    ]
+                  },
+                  'VCLinkerTool': {
+                    'LinkTimeCodeGeneration': 0, # Link Time Code generation default
+                    'OptimizeReferences': 1, # /OPT:NOREF
+                    'EnableCOMDATFolding': 1, # /OPT:NOICF
+                    'LinkIncremental': 2, # /INCREMENTAL
+                  }
+                },
+                'msvs_configuration_attributes':
+                {
+                    'OutputDirectory': '$(SolutionDir)$(ConfigurationName)',
+                    'IntermediateDirectory': '$(OutDir)\\obj\\$(ProjectName)'
+                }
+              }
+            },
+            "copies": [
+              {
+                'destination': '$(SolutionDir)$(ConfigurationName)',
+                'files': [
+                  '<(module_root_dir)/deps/windows/dll/<(target_arch)/libEGL.dll',
+                  '<(module_root_dir)/deps/windows/dll/<(target_arch)/libGLESv2.dll'
+                ]
+              }
+           ]
           }
         ]
       ]
