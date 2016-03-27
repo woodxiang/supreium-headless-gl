@@ -1,7 +1,7 @@
 var path = require('path');
-var createContext = require('../index');
-var utils = require('./utils.js');
-var utils_log = require('./utils_log.js');
+var createContext = require('../../index');
+var utils = require('../common/utils.js');
+var utils_log = require('../common/utils_log.js');
 var log = new utils_log.Log(path.basename(__filename),"DEBUG");
 
 function main() {
