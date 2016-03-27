@@ -53,6 +53,8 @@ $ sudo apt-get install -y build-essential libxi-dev libglu1-mesa-dev libglew-dev
 
 * Python 2.7
 * Microsoft Visual Studio
+* d3dcompiler_47.dll should be in c:\windows\system32 (you can find it on deps folder)
+* modern nodejs supporting es6 to run some examples https://iojs.org/en/es6.html
 
 ### npm
 Once your system is set up, installing the `headless-gl` module is pretty easy to do with [npm](http://docs.npmjs.org).  Just run the following command:
