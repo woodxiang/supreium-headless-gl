@@ -2992,7 +2992,16 @@ gl.renderbufferStorage = function renderbufferStorage (
     return
   }
 
+  if (internalformat !== gl.RGBA4 &&
+      internalformat !== gl.RGBA565 &&
+      internalformat !== gl.RGB5_A1 &&
+      internalformat !== gl.DEPTH_COMPONENT16) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
   saveError(this)
+
   _renderbufferStorage.call(
     this,
     target,
