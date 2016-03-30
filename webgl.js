@@ -3849,3 +3849,15 @@ function resizeDrawingBuffer (context, width, height) {
   context.bindTexture(gl.TEXTURE_2D, prevTexture)
   context.bindRenderbuffer(gl.RENDERBUFFER, prevRenderbuffer)
 }
+
+gl.isContextLost = function () {
+  return false
+}
+
+gl.compressedTexImage2D = function () {
+  // TODO not yet implemented
+}
+
+gl.compressedTexSubImage2D = function () {
+  // TODO not yet implemented
+}

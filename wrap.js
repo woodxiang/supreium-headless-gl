@@ -7,8 +7,7 @@ module.exports = function wrapContext (gl) {
   props.forEach(function (prop) {
     if (prop[0] === '_' ||
         prop[0] === '0' ||
-        prop[0] === '1' ||
-        prop === 'isContextLost') {
+        prop[0] === '1') {
       return
     }
     var value = gl[prop]
