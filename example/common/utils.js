@@ -1,10 +1,24 @@
-function dumpBuffer (gl, width, height) {
+var fs = require('fs')
+
+function bufferToStdout (gl, width, height) {
   // Write output
   var pixels = new Uint8Array(width * height * 4)
   gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
   process.stdout.write(['P3\n# gl.ppm\n', width, ' ', height, '\n255\n'].join(''))
   for (var i = 0; i < pixels.length; i += 4) {
     process.stdout.write(pixels[i] + ' ' + pixels[i + 1] + ' ' + pixels[i + 2] + ' ')
+  }
+}
+
+function bufferToFile (gl, width, height, filename) {
+  var file = fs.createWriteStream(filename)
+
+  // Write output
+  var pixels = new Uint8Array(width * height * 4)
+  gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+  file.write(['P3\n# gl.ppm\n', width, ' ', height, '\n255\n'].join(''))
+  for (var i = 0; i < pixels.length; i += 4) {
+    file.write(pixels[i] + ' ' + pixels[i + 1] + ' ' + pixels[i + 2] + ' ')
   }
 }
 
@@ -79,7 +93,8 @@ function createProgramFromSources (gl, shaderSources, opt_attribs, opt_locations
   return createProgram(gl, shaders, opt_attribs, opt_locations)
 }
 
-module.exports.dumpBuffer = dumpBuffer
+module.exports.bufferToStdout = bufferToStdout
+module.exports.bufferToFile = bufferToFile
 module.exports.drawTriangle = drawTriangle
 module.exports.loadShader = loadShader
 module.exports.createProgram = createProgram
