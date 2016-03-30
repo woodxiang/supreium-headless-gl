@@ -69,14 +69,14 @@ function createProgram(gl, shaders, opt_attribs, opt_locations) {
 
     // Check the link status
     var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
-    // if (!linked) {
-    //     // something went wrong with the link
-    //     var lastError = gl.getProgramInfoLog(program);
-    //     console.log("Error in program linking:" + lastError);
+    if (!linked) {
+        // something went wrong with the link
+        var lastError = gl.getProgramInfoLog(program);
+        console.log("Error in program linking:" + lastError);
 
-    //     gl.deleteProgram(program);
-    //     return null;
-    // }
+        gl.deleteProgram(program);
+        return null;
+    }
     return program;
 }
 
