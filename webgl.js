@@ -2408,7 +2408,7 @@ gl.getProgramInfoLog = function getProgramInfoLog (program) {
   } else if (checkWrapper(this, program, WebGLProgram)) {
     return program._linkInfoLog
   }
-  return ''
+  return null
 }
 
 var _getRenderbufferParameter = gl.getRenderbufferParameter
@@ -2469,7 +2469,7 @@ gl.getShaderInfoLog = function getShaderInfoLog (shader) {
   } else if (checkWrapper(this, shader, WebGLShader)) {
     return shader._compileInfo
   }
-  return ''
+  return null
 }
 
 gl.getShaderSource = function getShaderSource (shader) {
@@ -2478,7 +2478,7 @@ gl.getShaderSource = function getShaderSource (shader) {
   } else if (checkWrapper(this, shader, WebGLShader)) {
     return shader._source
   }
-  return ''
+  return null
 }
 
 var _getTexParameter = gl.getTexParameter
