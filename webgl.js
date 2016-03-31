@@ -938,20 +938,30 @@ gl.blendEquationSeparate = function blendEquationSeparate (modeRGB, modeAlpha) {
 
 function validBlendFunc (factor) {
   return factor === gl.ZERO ||
-  factor === gl.ONE ||
-  factor === gl.SRC_COLOR ||
-  factor === gl.ONE_MINUS_SRC_COLOR ||
-  factor === gl.DST_COLOR ||
-  factor === gl.ONE_MINUS_DST_COLOR ||
-  factor === gl.SRC_ALPHA ||
-  factor === gl.ONE_MINUS_SRC_ALPHA ||
-  factor === gl.DST_ALPHA ||
-  factor === gl.ONE_MINUS_DST_ALPHA ||
-  factor === gl.SRC_ALPHA_SATURATE ||
-  factor === gl.CONSTANT_COLOR ||
-  factor === gl.ONE_MINUS_CONSTANT_COLOR ||
-  factor === gl.CONSTANT_ALPHA ||
-  factor === gl.ONE_MINUS_CONSTANT_ALPHA
+    factor === gl.ONE ||
+    factor === gl.SRC_COLOR ||
+    factor === gl.ONE_MINUS_SRC_COLOR ||
+    factor === gl.DST_COLOR ||
+    factor === gl.ONE_MINUS_DST_COLOR ||
+    factor === gl.SRC_ALPHA ||
+    factor === gl.ONE_MINUS_SRC_ALPHA ||
+    factor === gl.DST_ALPHA ||
+    factor === gl.ONE_MINUS_DST_ALPHA ||
+    factor === gl.SRC_ALPHA_SATURATE ||
+    factor === gl.CONSTANT_COLOR ||
+    factor === gl.ONE_MINUS_CONSTANT_COLOR ||
+    factor === gl.CONSTANT_ALPHA ||
+    factor === gl.ONE_MINUS_CONSTANT_ALPHA
+}
+
+function isConstantBlendFunc (factor) {
+  return (
+    factor === gl.ZERO ||
+    factor === gl.ONE ||
+    factor === gl.CONSTANT_COLOR ||
+    factor === gl.ONE_MINUS_CONSTANT_COLOR ||
+    factor === gl.CONSTANT_ALPHA ||
+    factor === gl.ONE_MINUS_CONSTANT_ALPHA)
 }
 
 var _blendFunc = gl.blendFunc
@@ -961,6 +971,10 @@ gl.blendFunc = function blendFunc (sfactor, dfactor) {
   if (!validBlendFunc(sfactor) ||
     !validBlendFunc(dfactor)) {
     setError(this, gl.INVALID_ENUM)
+    return
+  }
+  if (isConstantBlendFunc(sfactor) && isConstantBlendFunc(dfactor)) {
+    setError(this, gl.INVALID_OPERATION)
     return
   }
   _blendFunc.call(this, sfactor, dfactor)
@@ -977,19 +991,26 @@ gl.blendFuncSeparate = function blendFuncSeparate (
   srcAlpha |= 0
   dstAlpha |= 0
 
-  if (validBlendFunc(srcRGB) &&
-    validBlendFunc(dstRGB) &&
-    validBlendFunc(srcAlpha) &&
-    validBlendFunc(dstAlpha)) {
-    return _blendFuncSeparate.call(
-      this,
-      srcRGB,
-      dstRGB,
-      srcAlpha,
-      dstAlpha)
+  if (!(validBlendFunc(srcRGB) &&
+        validBlendFunc(dstRGB) &&
+        validBlendFunc(srcAlpha) &&
+        validBlendFunc(dstAlpha))) {
+    setError(this, gl.INVALID_ENUM)
+    return
   }
 
-  setError(this, gl.INVALID_ENUM)
+  if ((isConstantBlendFunc(srcRGB) && isConstantBlendFunc(dstRGB)) ||
+      (isConstantBlendFunc(srcAlpha) && isConstantBlendFunc(dstAlpha))) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+
+  _blendFuncSeparate.call(
+    this,
+    srcRGB,
+    dstRGB,
+    srcAlpha,
+    dstAlpha)
 }
 
 var _bufferData = gl.bufferData
