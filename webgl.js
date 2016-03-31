@@ -1296,8 +1296,12 @@ gl.copyTexImage2D = function copyTexImage2D (
     return
   }
 
-  if (internalformat !== gl.RGBA) {
-    setError(this, gl.INVALID_VALUE)
+  if (internalformat !== gl.RGBA &&
+      internalformat !== gl.RGB &&
+      internalformat !== gl.ALPHA &&
+      internalformat !== gl.LUMINANCE &&
+      internalformat !== gl.LUMINANCE_ALPHA) {
+    setError(this, gl.INVALID_ENUM)
     return
   }
 
@@ -3014,7 +3018,7 @@ gl.renderbufferStorage = function renderbufferStorage (
   }
 
   if (internalformat !== gl.RGBA4 &&
-      internalformat !== gl.RGBA565 &&
+      internalformat !== gl.RGB565 &&
       internalformat !== gl.RGB5_A1 &&
       internalformat !== gl.DEPTH_COMPONENT16 &&
       internalformat !== gl.STENCIL_INDEX &&
