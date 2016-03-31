@@ -3688,7 +3688,7 @@ function makeVertexAttribs () {
     gl[func + 'v'] = function (idx, v) {
       if (typeof v === 'object' &&
         v !== null &&
-        v.length === i) {
+        v.length >= i) {
         switch (i) {
           case 1:
             return base.call(this, idx | 0, +v[0], 0, 0, 0)
