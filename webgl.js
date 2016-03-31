@@ -2639,6 +2639,10 @@ gl.getUniformLocation = function getUniformLocation (program, name) {
         var baseName = name.replace(/\[0\]$/, '')
         var arrayLocs = []
 
+        if (offset < 0 || offset >= info.size) {
+          return null
+        }
+
         saveError(this)
         for (i = 0; this.getError() === gl.NO_ERROR; ++i) {
           var xloc = _getUniformLocation.call(
@@ -2653,6 +2657,11 @@ gl.getUniformLocation = function getUniformLocation (program, name) {
         restoreError(this, gl.NO_ERROR)
 
         result._array = arrayLocs
+      } else if (/\[(\d+)\]$/.test(name)) {
+        var offset = +(/\[(\d+)\]$/.exec(name))[1]
+        if (offset < 0 || offset >= info.size) {
+          return null
+        }
       }
       return result
     }
