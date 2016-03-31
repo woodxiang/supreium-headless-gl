@@ -2462,6 +2462,7 @@ gl.getRenderbufferParameter = function getRenderbufferParameter (target, pname) 
     case gl.RENDERBUFFER_BLUE_SIZE:
     case gl.RENDERBUFFER_ALPHA_SIZE:
     case gl.RENDERBUFFER_DEPTH_SIZE:
+    case gl.RENDERBUFFER_STENCIL_SIZE:
       return _getRenderbufferParameter.call(this, target, pname)
   }
   setError(this, gl.INVALID_ENUM)
