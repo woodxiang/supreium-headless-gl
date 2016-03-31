@@ -3205,6 +3205,14 @@ function computeRowStride (context, width, pixelSize) {
   return rowStride
 }
 
+function checkFormat (format) {
+  return (
+    format === gl.ALPHA ||
+    format === gl.LUMINANCE_ALPHA ||
+    format === gl.RGB ||
+    format === gl.RGBA)
+}
+
 var _texImage2D = gl.texImage2D
 gl.texImage2D = function texImage2D (
   target,
@@ -3242,6 +3250,11 @@ gl.texImage2D = function texImage2D (
     throw new TypeError('texImage2D(GLenum, GLint, GLenum, GLint, GLint, GLint, GLenum, GLenum, Uint8Array)')
   }
 
+  if (!checkFormat(format) || !checkFormat(internalformat)) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
   var texture = getTexImage(this, target)
   if (!texture || format !== internalformat) {
     setError(this, gl.INVALID_OPERATION)
@@ -3273,7 +3286,7 @@ gl.texImage2D = function texImage2D (
   var imageSize = rowStride * height
 
   if (data && data.length < imageSize) {
-    setError(this, gl.INVALID_VALUE)
+    setError(this, gl.INVALID_OPERATION)
     return
   }
 
