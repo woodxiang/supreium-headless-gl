@@ -1,4 +1,4 @@
-test:
-  pre:
-    - git submodule init
-    - git submodule update
+checkout:
+  post:
+    - git submodule sync
+    - git submodule update --init
