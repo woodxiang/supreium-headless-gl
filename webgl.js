@@ -3297,12 +3297,6 @@ gl.texImage2D = function texImage2D (
     return
   }
 
-  if (border !== 0 ||
-    (validCubeTarget(target) && width !== height)) {
-    setError(this, gl.INVALID_VALUE)
-    return
-  }
-
   var data = convertPixels(pixels)
   var rowStride = computeRowStride(this, width, pixelSize)
   var imageSize = rowStride * height
@@ -3312,6 +3306,11 @@ gl.texImage2D = function texImage2D (
     return
   }
 
+  if (border !== 0 ||
+    (validCubeTarget(target) && width !== height)) {
+    setError(this, gl.INVALID_VALUE)
+    return
+  }
   // Need to check for out of memory error
   saveError(this)
   _texImage2D.call(
@@ -3418,7 +3417,7 @@ gl.texSubImage2D = function texSubImage2D (
   var imageSize = rowStride * height
 
   if (!data || data.length < imageSize) {
-    setError(this, gl.INVALID_VALUE)
+    setError(this, gl.INVALID_OPERATION)
     return
   }
 
