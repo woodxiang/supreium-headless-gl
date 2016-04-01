@@ -3231,6 +3231,7 @@ function checkFormat (format) {
   return (
     format === gl.ALPHA ||
     format === gl.LUMINANCE_ALPHA ||
+    format === gl.LUMINANCE ||
     format === gl.RGB ||
     format === gl.RGBA)
 }
