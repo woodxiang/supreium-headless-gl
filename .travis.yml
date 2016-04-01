@@ -76,6 +76,9 @@ before_script:
 script:
 - ./scripts/test.sh
 
+test:
+- ./scripts/test.sh
+
 after_success:
 - ./scripts/after_success.sh
 
