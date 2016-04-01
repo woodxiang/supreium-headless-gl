@@ -10,4 +10,5 @@ fi
 source ~/.nvm/nvm.sh
 nvm use ${NODE_VERSION}
 
-npm test
+npm run rebuild
+xvfb-run -s "-ac -screen 0 1280x1024x24” npm test
