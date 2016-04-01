@@ -494,7 +494,6 @@ function checkDelete (obj) {
     }
     obj._performDelete()
     obj._ = 0
-    obj._ctx = null
   }
 }
 
