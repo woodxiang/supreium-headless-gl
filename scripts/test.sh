@@ -8,9 +8,6 @@ nvm use ${NODE_VERSION}
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
   # source ./scripts/setup.sh
-  export DISPLAY=:99.0
-  sudo /etc/init.d/xvfb start
-  sleep 5
   sudo xvfb-run -s "-ac -screen 0 1280x1024x24" node_modules/bin/tape test/*.js
 else
   npm test
