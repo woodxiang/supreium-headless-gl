@@ -3,10 +3,7 @@
 set -e
 set -o pipefail
 
-if [[ -f /usr/local/opt/nvm ]]; then
-  sudo rm -rf /usr/local/opt/nvm
-fi
-
+sudo rm -rf /usr/local/opt/nvm
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.31.0/install.sh | bash
 
 source ~/.nvm/nvm.sh
