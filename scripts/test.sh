@@ -7,7 +7,7 @@ source ~/.nvm/nvm.sh
 nvm use ${NODE_VERSION}
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
-  #source ./scripts/setup.sh
+  # source ./scripts/setup.sh
   export DISPLAY=:99.0
   sh -e /etc/init.d/xvfb start
   sleep 5
