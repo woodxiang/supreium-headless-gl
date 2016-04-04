@@ -81,13 +81,12 @@ addons:
     - xvfb
     - libgl1-mesa-dri
 before_install:
-- ./scripts/install_node.sh
-install:
-- ./scripts/install.sh
-before_script:
 - ulimit -c unlimited -S
 - ulimit -a
 - ./scripts/setup.sh
+- ./scripts/install_node.sh
+install:
+- ./scripts/install.sh
 script:
 - ./scripts/test.sh
 test:
