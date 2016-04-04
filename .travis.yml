@@ -78,6 +78,7 @@ addons:
     - libxxf86vm-dev
     - x11proto-xf86vidmode-dev
     - mesa-utils
+    - xvfb
 before_install:
 - ./scripts/install_node.sh
 install:
@@ -85,6 +86,7 @@ install:
 before_script:
 - ulimit -c unlimited -S
 - ulimit -a
+- ./scripts/setup.sh
 script:
 - ./scripts/test.sh
 test:
