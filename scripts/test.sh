@@ -6,7 +6,7 @@ set -o pipefail
 pwd
 ls
 
-source ~/.nvm/nvm.sh
+# source ~/.nvm/nvm.sh
 nvm use ${NODE_VERSION}
 
 

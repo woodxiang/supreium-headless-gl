@@ -3,7 +3,7 @@
 set -e
 set -o pipefail
 
-source ~/.nvm/nvm.sh
+# source ~/.nvm/nvm.sh
 nvm use ${NODE_VERSION}
 
 npm install --compile
