@@ -9,9 +9,7 @@ fi
 
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.31.0/install.sh | bash
 
-if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
-  source ~/.nvm/nvm.sh
-fi
+source ~/.nvm/nvm.sh
 
 nvm install ${NODE_VERSION}
 nvm alias default ${NODE_VERSION}
