@@ -47,6 +47,7 @@ WebGLRenderingContext::WebGLRenderingContext(
     DISPLAY = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (DISPLAY == EGL_NO_DISPLAY) {
       printf("Bad display\n");
+      fflush(stdout);
       state = GLCONTEXT_STATE_ERROR;
       return;
     }
@@ -54,6 +55,7 @@ WebGLRenderingContext::WebGLRenderingContext(
     //Initialize EGL
     if (!eglInitialize(DISPLAY, NULL, NULL)) {
       printf("Couldn't initialize EGL\n");
+      fflush(stdout);
       state = GLCONTEXT_STATE_ERROR;
       return;
     }
@@ -82,6 +84,7 @@ WebGLRenderingContext::WebGLRenderingContext(
       &num_config) ||
       num_config != 1) {
     printf("Error configuring EGL\n");
+    fflush(stdout);
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
@@ -107,7 +110,7 @@ WebGLRenderingContext::WebGLRenderingContext(
   surface = eglCreatePbufferSurface(DISPLAY, config, surfaceAttribs);
   if (surface == EGL_NO_SURFACE) {
     printf("Error creating PBuffer\n");
-
+    fflush(stdout);
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
@@ -115,6 +118,7 @@ WebGLRenderingContext::WebGLRenderingContext(
   //Set active
   if (!eglMakeCurrent(DISPLAY, surface, surface, context)) {
     printf("Error setting PBuffer\n");
+    fflush(stdout);
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
@@ -123,6 +127,9 @@ WebGLRenderingContext::WebGLRenderingContext(
   state = GLCONTEXT_STATE_OK;
   registerContext();
   ACTIVE = this;
+
+  printf("context created successfully! loading pointers\n");
+  fflush(stdout);
 
   //Initialize function pointers
   initPointers();
