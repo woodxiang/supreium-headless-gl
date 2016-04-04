@@ -3,12 +3,12 @@
 set -e
 set -o pipefail
 
-pwd
-ls
-
-# source ~/.nvm/nvm.sh
+if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
+  source ~/.nvm/nvm.sh
+else
+  source ~/.bashrc
+fi
 nvm use ${NODE_VERSION}
-
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 

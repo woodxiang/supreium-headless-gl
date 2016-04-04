@@ -3,7 +3,12 @@
 set -e
 set -o pipefail
 
-# source ~/.nvm/nvm.sh
+if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
+  source ~/.nvm/nvm.sh
+else
+  source ~/.bashrc
+fi
+
 nvm use ${NODE_VERSION}
 
 npm install --compile

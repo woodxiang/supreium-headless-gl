@@ -12,6 +12,8 @@ else
   source ~/.bashrc
 fi
 
+which nvm
+
 nvm install ${NODE_VERSION}
 nvm alias default ${NODE_VERSION}
 nvm use ${NODE_VERSION}
