@@ -46,12 +46,14 @@ WebGLRenderingContext::WebGLRenderingContext(
   if (!HAS_DISPLAY) {
     DISPLAY = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (DISPLAY == EGL_NO_DISPLAY) {
+      printf("Bad display\n");
       state = GLCONTEXT_STATE_ERROR;
       return;
     }
 
     //Initialize EGL
     if (!eglInitialize(DISPLAY, NULL, NULL)) {
+      printf("Couldn't initialize EGL\n");
       state = GLCONTEXT_STATE_ERROR;
       return;
     }
@@ -79,6 +81,7 @@ WebGLRenderingContext::WebGLRenderingContext(
       1,
       &num_config) ||
       num_config != 1) {
+    printf("Error configuring EGL\n");
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
@@ -90,6 +93,8 @@ WebGLRenderingContext::WebGLRenderingContext(
   };
   context = eglCreateContext(DISPLAY, config, EGL_NO_CONTEXT, contextAttribs);
   if (context == EGL_NO_CONTEXT) {
+    printf("Error creating OpenGL ES 3 context\n");
+
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
@@ -101,12 +106,15 @@ WebGLRenderingContext::WebGLRenderingContext(
   };
   surface = eglCreatePbufferSurface(DISPLAY, config, surfaceAttribs);
   if (surface == EGL_NO_SURFACE) {
+    printf("Error creating PBuffer\n");
+
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
 
   //Set active
   if (!eglMakeCurrent(DISPLAY, surface, surface, context)) {
+    printf("Error setting PBuffer\n");
     state = GLCONTEXT_STATE_ERROR;
     return;
   }

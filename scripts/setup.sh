@@ -19,11 +19,5 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
   # Make sure we're loading the 10.4.3 libs we installed manually
   export LD_LIBRARY_PATH="`mason prefix mesa 10.4.3`/lib:${LD_LIBRARY_PATH:-}"
 
-  # Start the mock X server
-  if [ -f /etc/init.d/xvfb ] ; then
-    sudo Xvfb :99 -screen 0 1024x768x32 &
-    sleep 5 # sometimes, xvfb takes some time to start up
-  fi
-
   glxinfo
 fi
