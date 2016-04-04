@@ -14,10 +14,8 @@ mason install mesa 10.4.3
 ################################################################################
 
 # Start the mock X server
-if [ -f /etc/init.d/xvfb ] ; then
-    sh -e /etc/init.d/xvfb start
-    sleep 2 # sometimes, xvfb takes some time to start up
-fi
+sh -e /etc/init.d/xvfb start
+sleep 2 # sometimes, xvfb takes some time to start up
 
 # Make sure we're connecting to xvfb
 export DISPLAY=:99.0
