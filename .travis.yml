@@ -27,8 +27,6 @@ addons:
     - x11proto-xf86vidmode-dev
     - mesa-utils
     - xvfb
-    - libgl1-mesa-dri
-    - libgles2-mesa
 before_install:
 - ./scripts/install_node.sh
 install:
