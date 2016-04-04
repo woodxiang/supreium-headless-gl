@@ -21,7 +21,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 
   # Start the mock X server
   #if [ -f /etc/init.d/xvfb ] ; then
-  sudo sh -e /usr/bin/Xvfb start
+  sudo Xvfb start
   sleep 5 # sometimes, xvfb takes some time to start up
   #fi
 
