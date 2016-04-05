@@ -11,10 +11,3 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 else
   source ~/.bashrc
 fi
-
-nvm install ${NODE_VERSION}
-nvm alias default ${NODE_VERSION}
-nvm use ${NODE_VERSION}
-
-node --version
-npm --version
