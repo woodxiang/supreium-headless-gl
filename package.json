@@ -12,7 +12,7 @@
   },
   "scripts": {
     "test": "standard | snazzy && tape test/*.js | faucet",
-    "build": "node-gyp rebuild --verbose",
+    "rebuild": "node-gyp rebuild --verbose",
     "prebuild": "prebuild --all --strip",
     "install": "prebuild --install"
   },
