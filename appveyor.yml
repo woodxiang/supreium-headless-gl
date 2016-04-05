@@ -3,5 +3,5 @@ install:
   - cinst nodejs
   - npm install
 
-test:
+test_script:
   - npm test
