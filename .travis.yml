@@ -33,7 +33,7 @@ addons:
     - libglapi-mesa
     - libosmesa6
 before_install:
-- ./scripts/install_nvm.sh
+- ./scripts/before_install.sh
 install:
 - ./scripts/install.sh
 before_script:
