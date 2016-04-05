@@ -1,10 +1,11 @@
 language: c
-sudo: true
 git:
   submodules: true
 matrix:
   include:
   - os: linux
+    sudo: required
+    dist: trusty
     compiler: g++
     env: CXX=g++-4.9 NODE_VERSION=5
     secure: iKxK/0RIBC/iqPun3Bj3qtMDjIowdIe77MoejhqoczE3g/Fow57cbp3IApDEbbkD5wSm8PMdiPSIgjMt4ggCDCydJfLCTVDLbaYNfI3bc4ZfLPju1iSXF+4bbi39A5W/pv9ilFygP60W/eSupu8CmG6hnA4RYGlKUWxxPwolcMk=
@@ -27,6 +28,9 @@ addons:
     - x11proto-xf86vidmode-dev
     - mesa-utils
     - xvfb
+    - libgl1-mesa-dri
+    - libglapi-mesa
+    - libosmesa6
 before_install:
 - ./scripts/install_nvm.sh
 install:
@@ -35,8 +39,6 @@ before_script:
 - ulimit -c unlimited -S
 - ulimit -a
 script:
-- ./scripts/test.sh
-test:
 - ./scripts/test.sh
 after_success:
 - ./scripts/after_success.sh
