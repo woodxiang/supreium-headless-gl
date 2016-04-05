@@ -52,16 +52,12 @@ WebGLRenderingContext::WebGLRenderingContext(
   if (!HAS_DISPLAY) {
     DISPLAY = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (DISPLAY == EGL_NO_DISPLAY) {
-      printf("Bad display\n");
-      fflush(stdout);
       state = GLCONTEXT_STATE_ERROR;
       return;
     }
 
     //Initialize EGL
     if (!eglInitialize(DISPLAY, NULL, NULL)) {
-      printf("Couldn't initialize EGL\n");
-      fflush(stdout);
       state = GLCONTEXT_STATE_ERROR;
       return;
     }
@@ -89,8 +85,6 @@ WebGLRenderingContext::WebGLRenderingContext(
       1,
       &num_config) ||
       num_config != 1) {
-    printf("Error configuring EGL\n");
-    fflush(stdout);
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
@@ -102,7 +96,6 @@ WebGLRenderingContext::WebGLRenderingContext(
   };
   context = eglCreateContext(DISPLAY, config, EGL_NO_CONTEXT, contextAttribs);
   if (context == EGL_NO_CONTEXT) {
-    printf("Error creating OpenGL ES 2 context\n");
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
@@ -114,16 +107,12 @@ WebGLRenderingContext::WebGLRenderingContext(
   };
   surface = eglCreatePbufferSurface(DISPLAY, config, surfaceAttribs);
   if (surface == EGL_NO_SURFACE) {
-    printf("Error creating PBuffer\n");
-    fflush(stdout);
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
 
   //Set active
   if (!eglMakeCurrent(DISPLAY, surface, surface, context)) {
-    printf("Error setting PBuffer\n");
-    fflush(stdout);
     state = GLCONTEXT_STATE_ERROR;
     return;
   }
@@ -133,16 +122,10 @@ WebGLRenderingContext::WebGLRenderingContext(
   registerContext();
   ACTIVE = this;
 
-  printf("loading pointers\n");
-  fflush(stdout);
-
   //Initialize function pointers
   initPointers();
 
   //Check extensions
-  printf("checking extensions\n");
-  fflush(stdout);
-
   const char *extensionString = (const char*)((glGetString)(GL_EXTENSIONS));
 
   //Load required extensions
@@ -155,18 +138,12 @@ WebGLRenderingContext::WebGLRenderingContext(
   }
 
   //Select best preferred depth
-  printf("selecting depth component\n");
-  fflush(stdout);
-
   preferredDepth = GL_DEPTH_COMPONENT16;
   if(strstr(extensionString, "GL_OES_depth32")) {
     preferredDepth = GL_DEPTH_COMPONENT32_OES;
   } else if(strstr(extensionString, "GL_OES_depth24")) {
     preferredDepth = GL_DEPTH_COMPONENT24_OES;
   }
-
-  printf("context created successfully\n");
-  fflush(stdout);
 }
 
 bool WebGLRenderingContext::setActive() {
@@ -1026,8 +1003,6 @@ GL_METHOD(FramebufferTexture2D) {
 
   // Handle depth stencil case separately
   if(attachment == 0x821A) {
-    printf("depth_stencil attachment - texture\n");
-    fflush(stdout);
     (inst->glFramebufferTexture2D)(
         target
       , GL_DEPTH_ATTACHMENT
@@ -1521,8 +1496,6 @@ GL_METHOD(FramebufferRenderbuffer) {
 
   // Handle depth stencil case separately
   if(attachment == 0x821A) {
-    printf("depth_stencil attachment - renderuffer\n");
-    fflush(stdout);
     (inst->glFramebufferRenderbuffer)(
         target
       , GL_DEPTH_ATTACHMENT
