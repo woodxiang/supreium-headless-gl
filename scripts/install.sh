@@ -10,7 +10,7 @@ fi
 
 nvm install ${NODE_VERSION}
 nvm alias default ${NODE_VERSION}
-nvm use ${NODE_VERSION}
+nvm use --delete-prefix ${NODE_VERSION}
 
 node --version
 npm --version

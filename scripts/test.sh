@@ -7,7 +7,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 else
   source ~/.bashrc
 fi
-nvm use ${NODE_VERSION}
+nvm use --delete-prefix ${NODE_VERSION}
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
   sudo xvfb-run --auto-servernum --server-num=1 -s "-ac -screen 0 1280x1024x24" `which glxinfo`

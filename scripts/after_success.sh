@@ -16,6 +16,6 @@ PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
 
 if [[ ${TRAVIS_TAG} == v${PACKAGE_JSON_VERSION} ]] || test "${COMMIT_MESSAGE#*'[publish binary]'}" != "$COMMIT_MESSAGE" && [[ ${COVERAGE} == false ]]; then
     source ~/.nvm/nvm.sh
-    nvm use ${NODE_VERSION}
+    nvm use --delete-prefix ${NODE_VERSION}
     npm run prebuild
 fi
