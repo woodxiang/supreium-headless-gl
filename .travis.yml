@@ -28,7 +28,7 @@ addons:
     - mesa-utils
     - xvfb
 before_install:
-- ./scripts/install_node.sh
+- ./scripts/install_nvm.sh
 install:
 - ./scripts/install.sh
 before_script:
