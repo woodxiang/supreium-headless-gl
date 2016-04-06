@@ -14,11 +14,8 @@ fi
 COMMIT_MESSAGE=$(git show -s --format=%B $TRAVIS_COMMIT | tr -d '\n')
 PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
 
-echo ${TRAVIS_TAG}
-echo v${PACKAGE_JSON_VERSION}
-
-if [[ ${TRAVIS_TAG} == v${PACKAGE_JSON_VERSION} ]]; then
-    echo "running prebuild"
-    nvm use --delete-prefix ${NODE_VERSION}
-    npm run prebuild
-fi
+#if [[ ${TRAVIS_TAG} == v${PACKAGE_JSON_VERSION} ]]; then
+echo "running prebuild"
+nvm use --delete-prefix ${NODE_VERSION}
+node ./node_modules/prebuild/bin.js --all --strip -u <github-token>
+#fi
