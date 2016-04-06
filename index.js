@@ -23,7 +23,7 @@ function createContext (width, height, options) {
   }
 
   var contextAttributes = new webgl.WebGLContextAttributes(
-    true, // flag(options, 'alpha', true),
+    flag(options, 'alpha', true),
     flag(options, 'depth', true),
     flag(options, 'stencil', false),
     false, // flag(options, 'antialias', true),

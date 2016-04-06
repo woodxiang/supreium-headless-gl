@@ -15,5 +15,5 @@ PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
 #if [[ ${TRAVIS_TAG} == v${PACKAGE_JSON_VERSION} ]]; then
 echo "running prebuild"
 nvm use --delete-prefix ${NODE_VERSION}
-node ./node_modules/prebuild/bin.js --all --strip -u <github-token>
+node ./node_modules/prebuild/bin.js --all --strip -u ${GITHUB_TOKEN}
 #fi
