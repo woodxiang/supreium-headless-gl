@@ -5,10 +5,8 @@ set -eo pipefail
 # Inspect binary.
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     source ~/.nvm/nvm.sh
-    ldd ./build/Release/webgl.node
 else
     source ~/.bashrc
-    otool -L ./build/Release/webgl.node
 fi
 
 COMMIT_MESSAGE=$(git show -s --format=%B $TRAVIS_COMMIT | tr -d '\n')
