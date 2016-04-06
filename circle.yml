@@ -6,10 +6,6 @@ checkout:
   post:
     - git submodule update --init
 
-dependencies:
-  pre:
-    - npm install
-
 test:
   override:
     - npm test
