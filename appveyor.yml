@@ -1,6 +1,16 @@
+environment:
+  matrix:
+    - platform: x64
+      configuration: Release
+
 install:
   - cmd: git submodule update --init
-  - cinst nodejs
+  - ps: Install-Product node LTS x64
+  - npm config set msvs_version 2015 --global
+  - npm config set target_arch x64 --global
+  - npm install -g node-gyp
+
+build_script:
   - npm install
 
 test_script:
