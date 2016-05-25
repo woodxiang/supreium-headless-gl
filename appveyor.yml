@@ -5,9 +5,9 @@ environment:
 
 install:
   - cmd: git submodule update --init
-  - ps: Install-Product node LTS %PLATFORM%
+  - ps: Install-Product node LTS $env:PLATFORM
   - npm config set msvs_version 2015 --global
-  - npm config set target_arch %PLATFORM% --global
+  - npm config set target_arch $env:PLATFORM --global
   - npm install -g node-gyp
 
 build_script:
