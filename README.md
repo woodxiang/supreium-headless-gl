@@ -70,24 +70,7 @@ Destroys the WebGL context immediately, reclaiming all resources
 
 **Note** For long running jobs, garbage collection of contexts is often not fast enough.  To prevent the system from becoming overloaded with unused contexts, you can force the system to reclaim a WebGL context immediately by calling `.destroy()`.
 
-## Development
-Because `gl` uses native code, it is a bit more involved to set up than a typical JavaScript npm module.  Before you can use it, you will need to ensure that your system has the correct dependencies installed.  To get started, first make sure you have your system dependencies set up (see below), then do the following:
-
-1. Clone this repo: `git clone git@github.com:stackgl/headless-gl.git`
-1. Switch to the headless gl directory: `cd headless-gl`
-1. Initialize the angle submodule: `git submodule init`
-1. Update the angle submodule: `git submodule update`
-1. Install npm dependencies: `npm install`
-1. Run node-gyp to generate build scripts: `npm run build`
-
-Once this is done, you should be good to go!  A few more things
-
-* To run the test cases, use the command `npm test`, or execute specific by just running it using node.
-* On a Unix-like platform, you can do incremental rebuilds by going into the `build/` directory and running `make`.  This is **way faster** running `npm build` each time you make a change.
-
-Windows support is still pretty flaky.
-
-### System dependencies
+## System dependencies
 For general information on building native modules, see the [`node-gyp`](https://github.com/nodejs/node-gyp) documentation. System specific build instructions are as follows:
 
 #### Mac OS X
@@ -116,17 +99,6 @@ $ sudo apt-get install -y build-essential libxi-dev libglu1-mesa-dev libglew-dev
 
 ## More information
 
-### Improvements from version 1.0.0
-
-The previous version of `gl` (aka `headless-gl`) was pretty much a terrible hack. Thanks to the support of @mapbox and @google's ANGLE project, `gl` is now actually kind of good!  The following things are now way better in version >=2.0.0:
-
-* Vastly improved conformance
-* Khronos ARB test suite integration via `gl-conformance`
-* Works on node 0.12
-* Windows and Linux support
-* No default context
-* Added `.destroy()` and `.resize()` methods
-
 ### Why use this thing instead of `node-webgl`?
 
 It depends on what you are trying to do.  [node-webgl](https://github.com/mikeseven/node-webgl) is good if you are making a graphical application like a game, and allows for access to some features which are not part of ordinary WebGL.  On the other hand, because headless-gl does not create any windows, it is suitable for running in a server environment.  This means that you can use it to generate figures using OpenGL or perform GPGPU computations using shaders. Also, unlike `node-webgl`, `headless-gl` attempts to correctly implement the full WebGL standard making it more reliable.
@@ -145,7 +117,9 @@ See https://github.com/stackgl/headless-gl/issues/5 for current status.
 
 ### How can `headless-gl` be used on a headless Linux machine?
 
-A minimal server install of Linux, such as the one one would want to use on Amazon AWS or equivalent will likely not provide an X11 nor an OpenGL environment. To setup such an environment you can use those two packages:
+By default `headless-gl` just works (tm) on most common CI environments like travis-ci, circle CI or appveyor.  
+
+If you are running your own minimal Linux server, such as the one one would want to use on Amazon AWS or equivalent will likely not provide an X11 nor an OpenGL environment. To setup such an environment you can use those two packages:
 
 1. [Xvfb](https://en.wikipedia.org/wiki/Xvfb) is a lightweight X11 server which provides a back buffer for displaying X11 application offscreen and reading back the pixels which were drawn offscreen. It is typically used in Continuous Integration systems. It can be installed on CentOS with `yum install -y Xvfb`, and comes preinstalled on Ubuntu.
 2. [Mesa](http://www.mesa3d.org/intro.html) is the reference open source software implementation of OpenGL. It can be installed on CentOS with `yum install -y mesa-dri-drivers`, or `apt-get install libgl1-mesa-dev`. Since a cloud Linux instance will typically run on a machine that does not have a GPU, a software implementation of OpenGL will be required.
@@ -153,6 +127,21 @@ A minimal server install of Linux, such as the one one would want to use on Amaz
 Interacting with `Xvfb` requires to start it on the background and to execute your `node` program with the DISPLAY environment variable set to whatever was configured when running Xvfb (the default being :99). If you want to do that reliably you'll have to start Xvfb from an init.d script at boot time, which is extra configuration burden. Fortunately there is a wrapper script shipped with Xvfb known as `xvfb-run` which can start Xvfb on the fly, execute your node program and finally shut Xvfb down. Here's how to run it:
 
     xvfb-run -s "-ac -screen 0 1280x1024x24” <node program>
+
+### Development
+Because `gl` uses native code, it is a bit more involved to set up than a typical JavaScript npm module.  Before you can use it, you will need to ensure that your system has the correct dependencies installed.  To get started, first make sure you have your system dependencies set up (see below), then do the following:
+
+1. Clone this repo: `git clone git@github.com:stackgl/headless-gl.git`
+1. Switch to the headless gl directory: `cd headless-gl`
+1. Initialize the angle submodule: `git submodule init`
+1. Update the angle submodule: `git submodule update`
+1. Install npm dependencies: `npm install`
+1. Run node-gyp to generate build scripts: `npm run build`
+
+Once this is done, you should be good to go!  A few more things
+
+* To run the test cases, use the command `npm test`, or execute specific by just running it using node.
+* On a Unix-like platform, you can do incremental rebuilds by going into the `build/` directory and running `make`.  This is **way faster** running `npm build` each time you make a change.
 
 ## License
 
