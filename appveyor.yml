@@ -18,4 +18,4 @@ test_script:
   - npm test
 
 deploy_script:
-  - If ($env:APPVEYOR_REPO_TAG) { ./node_modules/.bin/prebuild --all --strip -u $env:GITHUB_TOKEN }
+  - IF %APPVEYOR_REPO_TAG%==true ./node_modules/.bin/prebuild --all --strip -u %GITHUB_TOKEN%
