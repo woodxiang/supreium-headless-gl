@@ -1,6 +1,5 @@
 platform:
   - x64
-  - x86
 
 install:
   - cmd: git submodule update --init
