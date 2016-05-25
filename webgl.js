@@ -204,6 +204,15 @@ function WebGLDrawingBufferWrapper (
 }
 exports.WebGLDrawingBufferWrapper = WebGLDrawingBufferWrapper
 
+function ANGLE_instanced_arrays () {
+}
+
+function STACKGL_resize_drawingbuffer () {
+}
+
+function STACKGL_destroy_context () {
+}
+
 function unpackTypedArray (array) {
   return (new Uint8Array(array.buffer)).subarray(
     array.byteOffset,
@@ -648,16 +657,51 @@ gl.getContextAttributes = function () {
   return this._contextattributes
 }
 
-// var _getSupportedExtensions = gl.getSupportedExtensions
 gl.getSupportedExtensions = function getSupportedExtensions () {
-  // TODO
-  return []
+  return [
+    'ANGLE_instanced_arrays',
+    'STACKGL_resize_drawingbuffer',
+    'STACKGL_destroy_context'
+  ]
 }
 
-// var _getExtension = gl.getExtension
+function createANGLEInstancedArrays (context) {
+  var result = new ANGLE_instanced_arrays()
+  result.VERTEX_ATTRIB_ARRAY_DIVISOR_ANGLE = 0x88fe
+  result.drawArraysInstancedANGLE = function (mode, first, count, primCount) {
+
+  }
+  result.drawElementsInstancedANGLE = function (mode, count, type, offset, primCount) {
+
+  }
+  result.vertexAttribDivisorANGLE = function (index, divisor) {
+  }
+  return result
+}
+
 gl.getExtension = function getExtension (name) {
-  // TODO
-  return null
+  var str = name.toLowerCase()
+  if (str in this._extensions) {
+    return this._extensions[str]
+  }
+  var ext = null
+  switch (str) {
+    case 'angle_instanced_arrays':
+      ext = createANGLEInstancedArrays(this)
+      break
+    case 'stackgl_destroy_context':
+      ext = new STACKGL_destroy_context()
+      ext.destroy = this.destroy.bind(this)
+      break
+    case 'stackgl_resize_drawingbuffer':
+      ext = new STACKGL_resize_drawingbuffer()
+      ext.resize = this.resize.bind(this)
+      break
+  }
+  if (ext) {
+    this._extensions[str] = ext
+  }
+  return ext
 }
 
 var _activeTexture = gl.activeTexture

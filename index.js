@@ -61,6 +61,7 @@ function createContext (width, height, options) {
 
   gl._contextattributes = contextAttributes
 
+  gl._extensions = {}
   gl._programs = {}
   gl._shaders = {}
   gl._buffers = {}
