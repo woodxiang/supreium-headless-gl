@@ -1,6 +1,12 @@
 'use strict'
 
 function createContext (width, height, options) {
+  width = width | 0
+  height = height | 0
+  if (!(width > 0 && height > 0)) {
+    return null
+  }
+
   var canvas = document.createElement('canvas')
   if (!canvas) {
     return null
