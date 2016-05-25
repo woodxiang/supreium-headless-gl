@@ -97,15 +97,21 @@ $ sudo apt-get install -y build-essential libxi-dev libglu1-mesa-dev libglew-dev
 * d3dcompiler_47.dll should be in c:\windows\system32, but if isn't then you can find another copy in the deps/ folder
 * (optional) A modern nodejs supporting es6 to run some examples https://iojs.org/en/es6.html
 
-## More information
+## FAQ
 
 ### Why use this thing instead of `node-webgl`?
 
-It depends on what you are trying to do.  [node-webgl](https://github.com/mikeseven/node-webgl) is good if you are making a graphical application like a game, and allows for access to some features which are not part of ordinary WebGL.  On the other hand, because headless-gl does not create any windows, it is suitable for running in a server environment.  This means that you can use it to generate figures using OpenGL or perform GPGPU computations using shaders. Also, unlike `node-webgl`, `headless-gl` attempts to correctly implement the full WebGL standard making it more reliable.
+Despite the name [node-webgl](https://github.com/mikeseven/node-webgl) doesn't actually implement WebGL - rather it gives you WebGL-flavored bindings to whatever OpenGL driver is configured on your system.  If you are starting from an existing WebGL application or library, this means you'll have to do a bunch of work rewriting your WebGL code and shaders to deal with all the idiosyncrasies and bugs present on whatever platforms you try to run on.  The upside though is that `node-webgl` exposes a lot of non-WebGL stuff that might be useful for games like window creation, mouse and keyboard input, requestAnimationFrame emulation, and some native OpenGL features.
 
-### Why use this thing instead of `nw.js`/electron/atom shell/Chromium?
+`headless-gl` on the other hand just implements WebGL.  It is built on top of [ANGLE](https://bugs.chromium.org/p/angleproject/issues/list) and passes the full Khronos ARB conformance suite, which means it works exactly the same on all supported systems.  This makes it a great choice for running on a server or in a command line tool.  You can use it to run tests, generate images or perform GPGPU computations using shaders.
 
-`nw.js` is good if you need a full DOM implementation.  On the other hand, because it is a larger dependency it can be more difficult to set up and configure.  `headless-gl` is lighter weight and more modular in the sense that it just implements WebGL and nothing else.
+### Why use this thing instead of [electron](http://electron.atom.io/)?
+
+Electron is fantastic if you are writing a desktop application or if you need a full DOM implementation.  On the other hand, because it is a larger dependency electron is more difficult to set up and configure in a server-side/CI environment. `headless-gl` is also more modular in the sense that it just implements WebGL and nothing else.  As a result creating a `headless-gl` context takes just a few milliseconds on most systems, while spawning a full electron instance can take upwards of 15 seconds. If you are using WebGL in a command line interface or need to execute WebGL on your server, `headless-gl` might be a better choice.
+
+### Does headless-gl work in a browser?
+
+Yes, with [browserify](http://browserify.org/).
 
 ### How are `<image>` and `<video>` elements implemented?
 
@@ -115,9 +121,34 @@ They aren't for now.  If you want to upload data to a texture, you will need to 
 
 See https://github.com/stackgl/headless-gl/issues/5 for current status.
 
-### How can `headless-gl` be used on a headless Linux machine?
+### How can I use headless-gl with a continuous integration service?
 
-By default `headless-gl` just works (tm) on most common CI environments like travis-ci, circle CI or appveyor.  
+`headless-gl` should work out of the box on most CI systems.  Some notes on specific CI systems:
+
+* [CircleCI](https://circleci.com/): `headless-gl` should just work in the default node environment.
+* [AppVeyor](http://www.appveyor.com/): Again it should just work
+* [TravisCI](https://travis-ci.org/): Works out of the box on the OS X image.  For Linux VMs, you need to install mesa and xvfb.  To do this, create a file in the root of your main repo called `.travis.yml` and paste the following into it:
+
+```
+language: node_js
+os: linux
+sudo: required
+dist: trusty
+addons:
+  apt:
+    packages:
+    - mesa-utils
+    - xvfb
+    - libgl1-mesa-dri
+    - libglapi-mesa
+    - libosmesa6
+node_js:
+  - '6'
+before_script:
+  - export DISPLAY=:99.0; sh -e /etc/init.d/xvfb start
+```
+
+### How can `headless-gl` be used on a headless Linux machine?
 
 If you are running your own minimal Linux server, such as the one one would want to use on Amazon AWS or equivalent will likely not provide an X11 nor an OpenGL environment. To setup such an environment you can use those two packages:
 
@@ -128,8 +159,8 @@ Interacting with `Xvfb` requires to start it on the background and to execute yo
 
     xvfb-run -s "-ac -screen 0 1280x1024x24” <node program>
 
-### Development
-Because `gl` uses native code, it is a bit more involved to set up than a typical JavaScript npm module.  Before you can use it, you will need to ensure that your system has the correct dependencies installed.  To get started, first make sure you have your system dependencies set up (see below), then do the following:
+### How should I set up a development environment for headless-gl?
+After you have your [system dependencies installed](#system-dependencies), do the following:
 
 1. Clone this repo: `git clone git@github.com:stackgl/headless-gl.git`
 1. Switch to the headless gl directory: `cd headless-gl`
