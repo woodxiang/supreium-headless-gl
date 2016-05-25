@@ -1,7 +1,3 @@
-branches:
-  only:
-    - master
-
 matrix:
   - platform: x64
   - platform: x86
@@ -13,12 +9,14 @@ install:
   - npm config set target_arch %PLATFORM% --global
   - npm install -g node-gyp
 
-build:
+build_script:
   - npm install
   - npm run rebuild
 
 test_script:
   - npm test
 
-deploy:
+deploy_script:
+  on:
+      branch: master
   - ./node_modules/.bin/prebuild --all --strip -u %GITHUB_TOKEN%
