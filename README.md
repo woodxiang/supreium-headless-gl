@@ -61,15 +61,7 @@ In addition to all the usual WebGL methods, `headless-gl` exposes some custom ex
 
 This extension provides a mechanism to resize the drawing buffer of a WebGL context once it is created.
 
-In a pure DOM implementation, this method would implemented by resizing the WebGLContext's canvas element by modifying its `width/height` properties.
-
-#### IDL
-```
-[NoInterfaceObject]
-interface STACKGL_resize_drawingbuffer {
-    void resize(GLint width, GLint height);
-};
-```
+In a pure DOM implementation, this method would implemented by resizing the WebGLContext's canvas element by modifying its `width/height` properties.  This canvas manipulation is not possible in headless-gl, since a headless context doesn't have a DOM or a canvas element associated to it.
 
 #### Example
 
@@ -81,6 +73,14 @@ assert(gl.drawingBufferHeight === 10 && gl.drawingBufferWidth === 10)
 var ext = gl.getExtension('STACKGL_resize_drawingbuffer')
 ext.resize(20, 5)
 assert(gl.drawingBufferHeight === 20 && gl.drawingBufferWidth === 5)
+```
+
+#### IDL
+```
+[NoInterfaceObject]
+interface STACKGL_resize_drawingbuffer {
+    void resize(GLint width, GLint height);
+};
 ```
 
 #### `ext.resize(width, height)`
@@ -95,15 +95,6 @@ Destroys the WebGL context immediately, reclaiming all resources associated with
 
 For long running jobs, garbage collection of contexts is often not fast enough.  To prevent the system from becoming overloaded with unused contexts, you can force the system to reclaim a WebGL context immediately by calling `.destroy()`.
 
-#### IDL
-
-```
-[NoInterfaceObject]
-interface STACKGL_destroy_context {
-    void destroy();
-};
-```
-
 #### Example
 
 ```javascript
@@ -111,6 +102,15 @@ var gl = require('gl')(10, 10)
 
 var ext = gl.getExtension('STACKGL_destroy_context')
 ext.destroy()
+```
+
+#### IDL
+
+```
+[NoInterfaceObject]
+interface STACKGL_destroy_context {
+    void destroy();
+};
 ```
 
 #### `gl.getExtension('STACKGL_destroy_context').destroy()`
