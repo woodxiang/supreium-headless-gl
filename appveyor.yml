@@ -17,4 +17,4 @@ test_script:
 
 build_script:
   - npm install
-  - ./node_modules/.bin/prebuild --all --strip -u ${GITHUB_TOKEN}
+  - ./node_modules/.bin/prebuild --all --strip -u %GITHUB_TOKEN%
