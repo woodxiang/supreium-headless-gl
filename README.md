@@ -71,7 +71,7 @@ Destroys the WebGL context immediately, reclaiming all resources
 **Note** For long running jobs, garbage collection of contexts is often not fast enough.  To prevent the system from becoming overloaded with unused contexts, you can force the system to reclaim a WebGL context immediately by calling `.destroy()`.
 
 ## System dependencies
-For general information on building native modules, see the [`node-gyp`](https://github.com/nodejs/node-gyp) documentation. System specific build instructions are as follows:
+For general information on building native modules, see the [`node-gyp`](https://github.com/nodejs/node-gyp) documentation.
 
 #### Mac OS X
 
