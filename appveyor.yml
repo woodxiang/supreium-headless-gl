@@ -11,7 +11,7 @@ install:
   - npm install -g node-gyp
 
 build_script:
-  - npm install
+  - npm install --ignore-scripts
   - npm run rebuild
 
 test_script:
