@@ -10,8 +10,11 @@ install:
   - npm config set target_arch x64 --global
   - npm install -g node-gyp
 
+test_script:
+  - npm install
+  - npm rebuild
+  - npm test
+
 build_script:
   - npm install
-
-test_script:
-  - npm test
+  - ./node_modules/.bin/prebuild --all --strip -u ${GITHUB_TOKEN}
