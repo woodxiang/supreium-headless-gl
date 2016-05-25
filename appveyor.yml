@@ -2,6 +2,8 @@ environment:
   matrix:
     - platform: x64
       configuration: Release
+    - platform: x86
+      configuration: Release
 
 install:
   - cmd: git submodule update --init
@@ -15,6 +17,5 @@ test_script:
   - npm rebuild
   - npm test
 
-build_script:
-  - npm install
+after_test:
   - ./node_modules/.bin/prebuild --all --strip -u %GITHUB_TOKEN%
