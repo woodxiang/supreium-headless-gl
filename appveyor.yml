@@ -1,7 +1,6 @@
-environment:
-  matrix:
-    - platform: x64
-    - platform: x86
+platform:
+  - x64
+  - x86
 
 install:
   - cmd: git submodule update --init
