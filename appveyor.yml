@@ -18,6 +18,4 @@ test_script:
   - npm test
 
 deploy_script:
-  on:
-      branch: master
-  - ./node_modules/.bin/prebuild --all --strip -u %GITHUB_TOKEN%
+  - if %APPVEYOR_REPO_TAG% ./node_modules/.bin/prebuild --all --strip -u %GITHUB_TOKEN%
