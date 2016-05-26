@@ -206,7 +206,7 @@ Despite the name [node-webgl](https://github.com/mikeseven/node-webgl) doesn't a
 
 ### Why use this thing instead of [electron](http://electron.atom.io/)?
 
-Electron is fantastic if you are writing a desktop application or if you need a full DOM implementation.  On the other hand, because it is a larger dependency electron is more difficult to set up and configure in a server-side/CI environment. `headless-gl` is also more modular in the sense that it just implements WebGL and nothing else.  As a result creating a `headless-gl` context takes just a few milliseconds on most systems, while spawning a full electron instance can take upwards of 15 seconds. If you are using WebGL in a command line interface or need to execute WebGL on your server, `headless-gl` might be a better choice.
+Electron is fantastic if you are writing a desktop application or if you need a full DOM implementation.  On the other hand, because it is a larger dependency electron is more difficult to set up and configure in a server-side/CI environment. `headless-gl` is more modular in the sense that it just implements WebGL and nothing else.  As a result creating a `headless-gl` context takes just a few milliseconds on most systems, while spawning a full electron instance can take upwards of 15-30 seconds. If you are using WebGL in a command line interface or need to execute WebGL on your server, `headless-gl` might be a more efficient and simpler choice.
 
 ### How should I set up a development environment for headless-gl?
 After you have your [system dependencies installed](#system-dependencies), do the following:
