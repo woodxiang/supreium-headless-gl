@@ -54,10 +54,10 @@ tape('blending', function (t) {
   gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
 
   for (i = 0; i < width * height * 4; i += 4) {
-    t.equals(pixels[i], 255, 'red')
-    t.equals(pixels[i + 1], 255, 'green')
-    t.equals(pixels[i + 2], 255, 'blue')
-    t.equals(pixels[i + 3], 255, 'alpha')
+    t.ok(pixels[i] > 253, 'red')
+    t.ok(pixels[i + 1] > 253, 'green')
+    t.ok(pixels[i + 2] > 253, 'blue')
+    t.ok(pixels[i + 3] > 253, 'alpha')
   }
 
   t.end()

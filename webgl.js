@@ -1205,8 +1205,6 @@ function validBlendFunc (factor) {
 
 function isConstantBlendFunc (factor) {
   return (
-    factor === gl.ZERO ||
-    factor === gl.ONE ||
     factor === gl.CONSTANT_COLOR ||
     factor === gl.ONE_MINUS_CONSTANT_COLOR ||
     factor === gl.CONSTANT_ALPHA ||
