@@ -194,7 +194,9 @@ They aren't for now.  If you want to upload data to a texture, you will need to 
 
 ### What extensions are supported?
 
-See https://github.com/stackgl/headless-gl/issues/5 for current status.
+* [`STACKGL_resize_drawingbuffer`](https://github.com/stackgl/headless-gl#stackgl_resize_drawingbuffer)
+* [`STACKGL_destroy_context`](https://github.com/stackgl/headless-gl#stackgl_destroy_context)
+* [`ANGLE_instanced_arrays`](https://www.khronos.org/registry/webgl/extensions/ANGLE_instanced_arrays/)
 
 ### Why use this thing instead of `node-webgl`?
 
