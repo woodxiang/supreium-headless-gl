@@ -1,5 +1,5 @@
 # gl
-[![NPM](https://nodei.co/npm/gl.png?compact=true)](https://nodei.co/npm/gl/)
+
 [![Travis CI](https://travis-ci.org/stackgl/headless-gl.svg?branch=master)](https://travis-ci.org/stackgl/headless-gl)
 [![Appveyor](https://ci.appveyor.com/api/projects/status/github/stackgl/headless-gl?svg=true)](https://ci.appveyor.com/project/mikolalysenko/headless-gl)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com/)
