@@ -205,6 +205,10 @@ Only the following for now:
 * [`STACKGL_destroy_context`](https://github.com/stackgl/headless-gl#stackgl_destroy_context)
 * [`ANGLE_instanced_arrays`](https://www.khronos.org/registry/webgl/extensions/ANGLE_instanced_arrays/)
 
+### How can I keep up to date with what has changed in headless-gl?
+
+There is a [change log](CHANGES.md).
+
 ### Why use this thing instead of `node-webgl`?
 
 Despite the name [node-webgl](https://github.com/mikeseven/node-webgl) doesn't actually implement WebGL - rather it gives you "WebGL"-flavored bindings to whatever OpenGL driver is configured on your system.  If you are starting from an existing WebGL application or library, this means you'll have to do a bunch of work rewriting your WebGL code and shaders to deal with all the idiosyncrasies and bugs present on whatever platforms you try to run on.  The upside though is that `node-webgl` exposes a lot of non-WebGL stuff that might be useful for games like window creation, mouse and keyboard input, requestAnimationFrame emulation, and some native OpenGL features.
