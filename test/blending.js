@@ -39,7 +39,6 @@ tape('blending', function (t) {
   var program = makeShader(gl, vertex_src, fragment_src)
 
   gl.useProgram(program)
-  gl.uniform1i(gl.getUniformLocation(program, 'tex'), 0)
 
   gl.enable(gl.BLEND)
   gl.blendEquation(gl.FUNC_ADD)
