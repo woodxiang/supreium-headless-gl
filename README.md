@@ -152,7 +152,7 @@ $ sudo apt-get install -y build-essential libxi-dev libglu1-mesa-dev libglew-dev
 
 * [CircleCI](https://circleci.com/): `headless-gl` should just work in the default node environment.
 * [AppVeyor](http://www.appveyor.com/): Again it should just work
-* [TravisCI](https://travis-ci.org/): Works out of the box on the OS X image.  For Linux VMs, you need to install mesa and xvfb.  To do this, create a file in the root of your main repo called `.travis.yml` and paste the following into it:
+* [TravisCI](https://travis-ci.org/): Works out of the box on the OS X image.  For Linux VMs, you need to install mesa and xvfb.  To do this, create a file in the root of your repo called `.travis.yml` and paste the following into it:
 
 ```
 language: node_js
@@ -173,14 +173,16 @@ before_script:
   - export DISPLAY=:99.0; sh -e /etc/init.d/xvfb start
 ```
 
+If you know of a service not listed here, open an issue I'll add it to the list.
+
 ### How can `headless-gl` be used on a headless Linux machine?
 
-If you are running your own minimal Linux server, such as the one one would want to use on Amazon AWS or equivalent will likely not provide an X11 nor an OpenGL environment. To setup such an environment you can use those two packages:
+If you are running your own minimal Linux server, such as the one one would want to use on Amazon AWS or equivalent, it will likely not provide an X11 nor an OpenGL environment. To setup such an environment you can use those two packages:
 
 1. [Xvfb](https://en.wikipedia.org/wiki/Xvfb) is a lightweight X11 server which provides a back buffer for displaying X11 application offscreen and reading back the pixels which were drawn offscreen. It is typically used in Continuous Integration systems. It can be installed on CentOS with `yum install -y Xvfb`, and comes preinstalled on Ubuntu.
 2. [Mesa](http://www.mesa3d.org/intro.html) is the reference open source software implementation of OpenGL. It can be installed on CentOS with `yum install -y mesa-dri-drivers`, or `apt-get install libgl1-mesa-dev`. Since a cloud Linux instance will typically run on a machine that does not have a GPU, a software implementation of OpenGL will be required.
 
-Interacting with `Xvfb` requires to start it on the background and to execute your `node` program with the DISPLAY environment variable set to whatever was configured when running Xvfb (the default being :99). If you want to do that reliably you'll have to start Xvfb from an init.d script at boot time, which is extra configuration burden. Fortunately there is a wrapper script shipped with Xvfb known as `xvfb-run` which can start Xvfb on the fly, execute your node program and finally shut Xvfb down. Here's how to run it:
+Interacting with `Xvfb` requires you to start it on the background and to execute your `node` program with the DISPLAY environment variable set to whatever was configured when running Xvfb (the default being :99). If you want to do that reliably you'll have to start Xvfb from an init.d script at boot time, which is extra configuration burden. Fortunately there is a wrapper script shipped with Xvfb known as `xvfb-run` which can start Xvfb on the fly, execute your node program and finally shut Xvfb down. Here's how to run it:
 
     xvfb-run -s "-ac -screen 0 1280x1024x24” <node program>
 
@@ -190,9 +192,14 @@ Yes, with [browserify](http://browserify.org/).  The `STACKGL_destroy_context` a
 
 ### How are `<image>` and `<video>` elements implemented?
 
-They aren't for now.  If you want to upload data to a texture, you will need to unpack the pixels into a `Uint8Array` and feed it into `texImage2D`.
+They aren't for now.  If you want to upload data to a texture, you will need to unpack the pixels into a `Uint8Array` and feed it into `texImage2D`.  To help reading and saving images, you should check out the following modules:
+
+* [`get-pixels`](https://www.npmjs.com/package/get-pixels)
+* [`save-pixels`](https://www.npmjs.com/package/save-pixels)
 
 ### What extensions are supported?
+
+Only the following for now:
 
 * [`STACKGL_resize_drawingbuffer`](https://github.com/stackgl/headless-gl#stackgl_resize_drawingbuffer)
 * [`STACKGL_destroy_context`](https://github.com/stackgl/headless-gl#stackgl_destroy_context)
@@ -200,15 +207,16 @@ They aren't for now.  If you want to upload data to a texture, you will need to 
 
 ### Why use this thing instead of `node-webgl`?
 
-Despite the name [node-webgl](https://github.com/mikeseven/node-webgl) doesn't actually implement WebGL - rather it gives you WebGL-flavored bindings to whatever OpenGL driver is configured on your system.  If you are starting from an existing WebGL application or library, this means you'll have to do a bunch of work rewriting your WebGL code and shaders to deal with all the idiosyncrasies and bugs present on whatever platforms you try to run on.  The upside though is that `node-webgl` exposes a lot of non-WebGL stuff that might be useful for games like window creation, mouse and keyboard input, requestAnimationFrame emulation, and some native OpenGL features.
+Despite the name [node-webgl](https://github.com/mikeseven/node-webgl) doesn't actually implement WebGL - rather it gives you "WebGL"-flavored bindings to whatever OpenGL driver is configured on your system.  If you are starting from an existing WebGL application or library, this means you'll have to do a bunch of work rewriting your WebGL code and shaders to deal with all the idiosyncrasies and bugs present on whatever platforms you try to run on.  The upside though is that `node-webgl` exposes a lot of non-WebGL stuff that might be useful for games like window creation, mouse and keyboard input, requestAnimationFrame emulation, and some native OpenGL features.
 
 `headless-gl` on the other hand just implements WebGL.  It is built on top of [ANGLE](https://bugs.chromium.org/p/angleproject/issues/list) and passes the full Khronos ARB conformance suite, which means it works exactly the same on all supported systems.  This makes it a great choice for running on a server or in a command line tool.  You can use it to run tests, generate images or perform GPGPU computations using shaders.
 
 ### Why use this thing instead of [electron](http://electron.atom.io/)?
 
-Electron is fantastic if you are writing a desktop application or if you need a full DOM implementation.  On the other hand, because it is a larger dependency electron is more difficult to set up and configure in a server-side/CI environment. `headless-gl` is more modular in the sense that it just implements WebGL and nothing else.  As a result creating a `headless-gl` context takes just a few milliseconds on most systems, while spawning a full electron instance can take upwards of 15-30 seconds. If you are using WebGL in a command line interface or need to execute WebGL on your server, `headless-gl` might be a more efficient and simpler choice.
+Electron is fantastic if you are writing a desktop application or if you need a full DOM implementation.  On the other hand, because it is a larger dependency electron is more difficult to set up and configure in a server-side/CI environment. `headless-gl` is more modular in the sense that it just implements WebGL and nothing else.  As a result creating a `headless-gl` context takes just a few milliseconds on most systems, while spawning a full electron instance can take upwards of 15-30 seconds. If you are using WebGL in a command line interface or need to execute WebGL in a service, `headless-gl` might be a more efficient and simpler choice.
 
 ### How should I set up a development environment for headless-gl?
+
 After you have your [system dependencies installed](#system-dependencies), do the following:
 
 1. Clone this repo: `git clone git@github.com:stackgl/headless-gl.git`
