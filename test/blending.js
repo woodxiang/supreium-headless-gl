@@ -5,60 +5,111 @@ var createContext = require('../index')
 var drawTriangle = require('./util/draw-triangle')
 var makeShader = require('./util/make-program')
 
-tape('blending', function (t) {
-  var width = 16
-  var height = 16
-  var gl = createContext(width, height)
+var width = 2
+var height = 2
+var gl = createContext(width, height)
 
-  var vertex_src = [
-    'precision mediump float;',
-    'attribute vec2 position;',
-    'void main() {',
-    'gl_Position = vec4(position,0,1);',
-    '}'
-  ].join('\n')
+var getVec4 = function (array) {
+  return 'vec4(' + array[0] + ',' + array[1] + ',' + array[2] + ',' + array[3] + ');'
+}
 
-  var fragment_src = [
-    'precision mediump float;',
-    'void main() {',
-    'gl_FragColor = vec4(0.5, 0.5, 0.5, 1);',
-    '}'
-  ].join('\n')
+var tests = [
+  {
+    name: 'Blend: ADD ONE ONE',
+    equn: gl.FUNC_ADD,
+    func1: gl.ONE,
+    func2: gl.ONE,
+    dstColor: [0.5, 0.5, 0.5, 1],
+    srcColor: getVec4([0.5, 0.5, 0.5, 1]),
+    expectedColor: [1, 1, 1, 1]
+  },
 
-  gl.clearColor(0.5, 0.5, 0.5, 0.5)
-  gl.clear(gl.COLOR_BUFFER_BIT)
+  {
+    name: 'BLend: ADD ONE ZERO',
+    equn: gl.FUNC_ADD,
+    func1: gl.ONE,
+    func2: gl.ZERO,
+    dstColor: [0.5, 0.5, 0.5, 0.5],
+    srcColor: getVec4([0.2, 0.2, 0.2, 1]),
+    expectedColor: [0.2, 0.2, 0.2, 1]
+  },
 
-  var data = new Uint8Array(width * height * 4)
-  for (var i = 0; i < width * height * 4; i += 4) {
-    data[i] = 127
-    data[i] = 127
-    data[i] = 127
-    data[i] = 255
+  {
+    name: 'BLEND: ADD ZERO SRC',
+    equn: gl.FUNC_ADD,
+    func1: gl.ZERO,
+    func2: gl.SRC_COLOR,
+    dstColor: [0.8, 0.8, 0.8, 1],
+    srcColor: getVec4([0.5, 0.5, 0.5, 0.5]),
+    expectedColor: [0.4, 0.4, 0.4, 0.5]
+  },
+
+  {
+    name: 'Blend: ADD DST ZERO',
+    equn: gl.FUNC_ADD,
+    func1: gl.DST_COLOR,
+    func2: gl.ZERO,
+    dstColor: [0.8, 0.8, 0.8, 1],
+    srcColor: getVec4([0.5, 0.5, 0.5, 0.5]),
+    expectedColor: [0.4, 0.4, 0.4, 0.5]
+  },
+
+  {
+    name: 'Blend: ADD SRC_ALPHA ONE_MINUS_SRC_ALPHA',
+    equn: gl.FUNC_ADD,
+    func1: gl.SRC_ALPHA,
+    func2: gl.ONE_MINUS_SRC_ALPHA,
+    dstColor: [0.5, 0, 0.5, 1],
+    srcColor: getVec4([0.5, 1, 0, 0.5]),
+    expectedColor: [0.5, 0.5, 0.25, 0.75]
   }
+]
 
-  var program = makeShader(gl, vertex_src, fragment_src)
+for (var j = 0; j < tests.length; j++) {
+  var test = tests[j]
+  tape(test.name, function (t) {
+    var vertex_src = [
+      'precision mediump float;',
+      'attribute vec2 position;',
+      'void main() {',
+      'gl_Position = vec4(position,0,1);',
+      '}'
+    ].join('\n')
 
-  gl.useProgram(program)
+    var fragment_src = [
+      'precision mediump float;',
+      'void main() {',
+      'gl_FragColor = ' + test.srcColor,
+      '}'
+    ].join('\n')
 
-  gl.enable(gl.BLEND)
-  gl.blendEquation(gl.FUNC_ADD)
-  gl.blendFunc(gl.ONE, gl.ONE)
+    gl.clearColor(test.dstColor[0], test.dstColor[1], test.dstColor[2], test.dstColor[3])
+    gl.clear(gl.COLOR_BUFFER_BIT)
 
-  drawTriangle(gl)
+    var program = makeShader(gl, vertex_src, fragment_src)
 
-  t.equals(gl.getError(), gl.NO_ERROR)
+    gl.useProgram(program)
 
-  gl.disable(gl.BLEND)
+    gl.enable(gl.BLEND)
+    gl.blendEquation(test.equn)
+    gl.blendFunc(test.func1, test.func2)
 
-  var pixels = new Uint8Array(width * height * 4)
-  gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+    drawTriangle(gl)
 
-  for (i = 0; i < width * height * 4; i += 4) {
-    t.ok(pixels[i] > 253, 'red')
-    t.ok(pixels[i + 1] > 253, 'green')
-    t.ok(pixels[i + 2] > 253, 'blue')
-    t.ok(pixels[i + 3] > 253, 'alpha')
-  }
+    t.equals(gl.getError(), gl.NO_ERROR)
 
-  t.end()
-})
+    gl.disable(gl.BLEND)
+
+    var pixels = new Uint8Array(width * height * 4)
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
+
+    for (var i = 0; i < width * height * 4; i += 4) {
+      t.ok(pixels[i] - test.expectedColor[0] * 255 < 3, 'red')
+      t.ok(pixels[i] - test.expectedColor[0] * 255 < 3, 'green')
+      t.ok(pixels[i] - test.expectedColor[0] * 255 < 3, 'blue')
+      t.ok(pixels[i] - test.expectedColor[0] * 255 < 3, 'alpha')
+    }
+
+    t.end()
+  })
+}
