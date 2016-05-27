@@ -104,10 +104,10 @@ for (var j = 0; j < tests.length; j++) {
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
 
     for (var i = 0; i < width * height * 4; i += 4) {
-      t.ok(pixels[i] - test.expectedColor[0] * 255 < 3, 'red')
-      t.ok(pixels[i] - test.expectedColor[0] * 255 < 3, 'green')
-      t.ok(pixels[i] - test.expectedColor[0] * 255 < 3, 'blue')
-      t.ok(pixels[i] - test.expectedColor[0] * 255 < 3, 'alpha')
+      t.ok(Math.abs(pixels[i] - test.expectedColor[0] * 255) < 3, 'red')
+      t.ok(Math.abs(pixels[i] - test.expectedColor[0] * 255) < 3, 'green')
+      t.ok(Math.abs(pixels[i] - test.expectedColor[0] * 255) < 3, 'blue')
+      t.ok(Math.abs(pixels[i] - test.expectedColor[0] * 255) < 3, 'alpha')
     }
 
     t.end()
