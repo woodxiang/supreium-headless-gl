@@ -1,5 +1,9 @@
 # headless-gl change log
 
+## 4.0.2
+
+* Now works correctly when running in `electron`
+
 ## 4.0.1
 
 * Fix a bug with blend mode constants
