@@ -2199,25 +2199,26 @@ function updateFramebufferAttachments (framebuffer) {
   var prevStatus = framebuffer._status
   var ctx = framebuffer._ctx
   var i
+  var attachmentEnum
   framebuffer._status = precheckFramebufferStatus(framebuffer)
   if (framebuffer._status !== gl.FRAMEBUFFER_COMPLETE) {
     if (prevStatus === gl.FRAMEBUFFER_COMPLETE) {
       for (i = 0; i < ATTACHMENTS.length; ++i) {
-        var attachmentEnum = ATTACHMENTS[i]
+        attachmentEnum = ATTACHMENTS[i]
         _framebufferTexture2D.call(
           ctx,
           gl.FRAMEBUFFER,
           attachmentEnum,
           framebuffer._attachmentFace[attachmentEnum],
           0,
-          framebuffer._attachmentLevel[attachmentEnum] )
+          framebuffer._attachmentLevel[attachmentEnum])
       }
     }
     return
   }
 
   for (i = 0; i < ATTACHMENTS.length; ++i) {
-    var attachmentEnum = ATTACHMENTS[i]
+    attachmentEnum = ATTACHMENTS[i]
     _framebufferTexture2D.call(
       ctx,
       gl.FRAMEBUFFER,
@@ -2228,7 +2229,7 @@ function updateFramebufferAttachments (framebuffer) {
   }
 
   for (i = 0; i < ATTACHMENTS.length; ++i) {
-    var attachmentEnum = ATTACHMENTS[i]
+    attachmentEnum = ATTACHMENTS[i]
     var attachment = framebuffer._attachments[attachmentEnum]
     if (attachment instanceof WebGLTexture) {
       _framebufferTexture2D.call(
