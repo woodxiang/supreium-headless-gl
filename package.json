@@ -25,9 +25,11 @@
     "prebuild": "^4.1.2"
   },
   "devDependencies": {
+    "angle-normals": "^1.0.0",
+    "bunny": "^1.0.1",
     "faucet": "0.0.1",
-    "snazzy": "^3.0.0",
     "gl-conformance": "^2.0.9",
+    "snazzy": "^3.0.0",
     "standard": "^6.0.8",
     "tape": "^4.0.1"
   },
