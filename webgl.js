@@ -673,7 +673,7 @@ gl.getSupportedExtensions = function getSupportedExtensions () {
 }
 
 function createANGLEInstancedArrays (context) {
-  function checkInstancedVertexAttribState (maxIndex, primCount) {
+  function checkInstancedVertexAttribState (context, maxIndex, primCount) {
     var program = context._activeProgram
     if (!program) {
       setError(context, gl.INVALID_OPERATION)
