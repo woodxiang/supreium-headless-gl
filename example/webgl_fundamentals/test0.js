@@ -12,18 +12,18 @@ function main () {
   var gl = createContext(width, height)
 
   var vertex_src = `
-        attribute vec2 a_position
+  attribute vec2 a_position;
 
-        void main() {
-          gl_Position = vec4(a_position, 0, 1)
-        }
-    `
+  void main() {
+    gl_Position = vec4(a_position, 0, 1);
+  }
+  `
 
   var fragment_src = `
-        void main() {
-          gl_FragColor = vec4(0, 1, 0, 1)  // green
-        }
-    `
+  void main() {
+    gl_FragColor = vec4(0, 1, 0, 1);  // green
+  }
+  `
 
   // setup a GLSL program
   var program = utils.createProgramFromSources(gl, [vertex_src, fragment_src])
