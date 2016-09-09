@@ -184,7 +184,7 @@ If you are running your own minimal Linux server, such as the one one would want
 
 Interacting with `Xvfb` requires you to start it on the background and to execute your `node` program with the DISPLAY environment variable set to whatever was configured when running Xvfb (the default being :99). If you want to do that reliably you'll have to start Xvfb from an init.d script at boot time, which is extra configuration burden. Fortunately there is a wrapper script shipped with Xvfb known as `xvfb-run` which can start Xvfb on the fly, execute your node program and finally shut Xvfb down. Here's how to run it:
 
-    xvfb-run -s "-ac -screen 0 1280x1024x24” <node program>
+    xvfb-run -s "-ac -screen 0 1280x1024x24" <node program>
 
 ### Does headless-gl work in a browser?
 
