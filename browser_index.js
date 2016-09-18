@@ -17,10 +17,13 @@ function createContext (width, height, options) {
 
   try {
     gl = canvas.getContext('experimental-webgl', options)
-  } catch (e) {}
-  try {
-    gl = canvas.getContext('webgl', options)
-  } catch (e) {}
+  } catch (e) {
+    try {
+      gl = canvas.getContext('webgl', options)
+    } catch (e) {
+      return null
+    }
+  }
 
   var _getExtension = gl.getExtension
   var extDestroy = {
