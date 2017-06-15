@@ -1605,7 +1605,7 @@ GL_METHOD(GetShaderSource) {
   GLchar *source = new GLchar[len];
   (inst->glGetShaderSource)(shader, len, NULL, source);
   v8::Local<v8::String> str = Nan::New<v8::String>(source).ToLocalChecked();
-  delete source;
+  delete[] source;
 
   info.GetReturnValue().Set(str);
 }
