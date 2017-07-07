@@ -2,8 +2,8 @@
 var path = require('path')
 var createContext = require('../../index')
 var utils = require('../common/utils.js')
-var utils_log = require('../common/utils_log.js')
-var log = new utils_log.Log(path.basename(__filename), 'DEBUG')
+var utilsLog = require('../common/utils_log.js')
+var log = new utilsLog.Log(path.basename(__filename), 'DEBUG')
 
 function main () {
   // Create context
@@ -11,7 +11,7 @@ function main () {
   var height = 512
   var gl = createContext(width, height)
 
-  var vertex_src = `
+  var vertexSrc = `
   attribute vec2 a_position;
 
   void main() {
@@ -19,14 +19,14 @@ function main () {
   }
   `
 
-  var fragment_src = `
+  var fragmentSrc = `
   void main() {
     gl_FragColor = vec4(0, 1, 0, 1);  // green
   }
   `
 
   // setup a GLSL program
-  var program = utils.createProgramFromSources(gl, [vertex_src, fragment_src])
+  var program = utils.createProgramFromSources(gl, [vertexSrc, fragmentSrc])
   gl.useProgram(program)
 
   // look up where the vertex data needs to go.

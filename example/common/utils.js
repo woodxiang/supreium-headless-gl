@@ -52,16 +52,16 @@ function loadShader (gl, shaderSource, shaderType) {
   return shader
 }
 
-function createProgram (gl, shaders, opt_attribs, opt_locations) {
+function createProgram (gl, shaders, optAttribs, optLocations) {
   var program = gl.createProgram()
   shaders.forEach(function (shader) {
     gl.attachShader(program, shader)
   })
-  if (opt_attribs) {
-    opt_attribs.forEach(function (attrib, ndx) {
+  if (optAttribs) {
+    optAttribs.forEach(function (attrib, ndx) {
       gl.bindAttribLocation(
         program,
-        opt_locations ? opt_locations[ndx] : ndx,
+        optLocations ? optLocations[ndx] : ndx,
         attrib)
     })
   }
@@ -80,7 +80,7 @@ function createProgram (gl, shaders, opt_attribs, opt_locations) {
   return program
 }
 
-function createProgramFromSources (gl, shaderSources, opt_attribs, opt_locations) {
+function createProgramFromSources (gl, shaderSources, optAttribs, optLocations) {
   var defaultShaderType = [
     'VERTEX_SHADER',
     'FRAGMENT_SHADER'
@@ -90,7 +90,7 @@ function createProgramFromSources (gl, shaderSources, opt_attribs, opt_locations
   for (var ii = 0; ii < shaderSources.length; ++ii) {
     shaders.push(loadShader(gl, shaderSources[ii], gl[defaultShaderType[ii]]))
   }
-  return createProgram(gl, shaders, opt_attribs, opt_locations)
+  return createProgram(gl, shaders, optAttribs, optLocations)
 }
 
 module.exports.bufferToStdout = bufferToStdout

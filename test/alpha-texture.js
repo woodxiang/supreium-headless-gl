@@ -10,7 +10,7 @@ tape('alpha texture', function (t) {
   var height = 64
   var gl = createContext(width, height)
 
-  var vertex_src = [
+  var vertexSrc = [
     'precision mediump float;',
     'attribute vec2 position;',
     'varying vec2 texCoord;',
@@ -20,7 +20,7 @@ tape('alpha texture', function (t) {
     '}'
   ].join('\n')
 
-  var fragment_src = [
+  var fragmentSrc = [
     'precision mediump float;',
     'uniform sampler2D tex;',
     'varying vec2 texCoord;',
@@ -55,7 +55,7 @@ tape('alpha texture', function (t) {
     gl.UNSIGNED_BYTE,
     data)
 
-  var program = makeShader(gl, vertex_src, fragment_src)
+  var program = makeShader(gl, vertexSrc, fragmentSrc)
 
   gl.useProgram(program)
   gl.uniform1i(gl.getUniformLocation(program, 'tex'), 0)

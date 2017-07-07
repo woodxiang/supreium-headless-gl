@@ -10,13 +10,13 @@ tape('depth-buffer', function (t) {
   var height = 50
   var gl = createContext(width, height)
 
-  var vertex_src = [
+  var vertexSrc = [
     'attribute vec2 position;',
     'uniform float depth;',
     'void main() { gl_Position = vec4(position,depth,1); }'
   ].join('\n')
 
-  var fragment_src = [
+  var fragmentSrc = [
     'precision mediump float;',
     'uniform vec4 color;',
     'void main() { gl_FragColor = color; }'
@@ -29,7 +29,7 @@ tape('depth-buffer', function (t) {
   gl.enable(gl.DEPTH_TEST)
   gl.depthFunc(gl.NOTEQUAL)
 
-  var program = makeShader(gl, vertex_src, fragment_src)
+  var program = makeShader(gl, vertexSrc, fragmentSrc)
   gl.useProgram(program)
   gl.uniform1f(gl.getUniformLocation(program, 'depth'), 0)
   gl.uniform4f(gl.getUniformLocation(program, 'color'), 1, 0, 0, 1)

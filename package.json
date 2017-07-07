@@ -29,9 +29,9 @@
     "bunny": "^1.0.1",
     "faucet": "0.0.1",
     "gl-conformance": "^2.0.9",
-    "snazzy": "^3.0.0",
-    "standard": "^6.0.8",
-    "tape": "^4.0.1"
+    "snazzy": "^7.0.0",
+    "standard": "^10.0.2",
+    "tape": "^4.7.0"
   },
   "repository": {
     "type": "git",

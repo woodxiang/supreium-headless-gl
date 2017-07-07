@@ -7,21 +7,21 @@ function main () {
   var height = 64
   var gl = createContext(width, height)
 
-  var vertex_src = [
+  var vertexSrc = [
     'attribute vec2 a_position;',
     'void main() {',
     'gl_Position = vec4(a_position, 0, 1);',
     '}'
   ].join('\n')
 
-  var fragment_src = [
+  var fragmentSrc = [
     'void main() {',
     'gl_FragColor = vec4(0, 1, 0, 1);  // green',
     '}'
   ].join('\n')
 
   // setup a GLSL program
-  var program = utils.createProgramFromSources(gl, [vertex_src, fragment_src])
+  var program = utils.createProgramFromSources(gl, [vertexSrc, fragmentSrc])
 
   if (!program) {
     return

@@ -10,19 +10,19 @@ tape('simple-shader', function (t) {
   var height = 50
   var gl = createContext(width, height)
 
-  var vertex_src = [
+  var vertexSrc = [
     'attribute vec2 position;',
     'void main() { gl_Position = vec4(position,0,1); }'
   ].join('\n')
 
-  var fragment_src = [
+  var fragmentSrc = [
     'void main() { gl_FragColor = vec4(0,1,0,1); }'
   ].join('\n')
 
   gl.clearColor(0, 0, 0, 0)
   gl.clear(gl.COLOR_BUFFER_BIT)
 
-  var program = makeShader(gl, vertex_src, fragment_src)
+  var program = makeShader(gl, vertexSrc, fragmentSrc)
   gl.useProgram(program)
   drawTriangle(gl)
 

@@ -205,6 +205,7 @@ function WebGLDrawingBufferWrapper (
 }
 exports.WebGLDrawingBufferWrapper = WebGLDrawingBufferWrapper
 
+/* eslint-disable camelcase */
 function ANGLE_instanced_arrays () {
 }
 
@@ -213,6 +214,7 @@ function STACKGL_resize_drawingbuffer () {
 
 function STACKGL_destroy_context () {
 }
+/* eslint-enable camelcase */
 
 function unpackTypedArray (array) {
   return (new Uint8Array(array.buffer)).subarray(
@@ -224,7 +226,7 @@ function unpackTypedArray (array) {
 function isValidString (str) {
   // Remove comments first
   var c = str.replace(/(?:\/\*(?:[\s\S]*?)\*\/)|(?:([\s;])+\/\/(?:.*)$)/gm, '')
-  return !(/[\"\$\`\@\\\'\0]/.test(c))
+  return !(/["$`@\\'\0]/.test(c))
 }
 
 function isTypedArray (data) {
@@ -272,7 +274,7 @@ function precheckFramebufferStatus (framebuffer) {
   var depthStencilAttachment = attachments[gl.DEPTH_STENCIL_ATTACHMENT]
   var stencilAttachment = attachments[gl.STENCIL_ATTACHMENT]
 
-  if (depthStencilAttachment && (stencilAttachment || depthAttachment) ||
+  if ((depthStencilAttachment && (stencilAttachment || depthAttachment)) ||
       (stencilAttachment && depthAttachment)) {
     return gl.FRAMEBUFFER_UNSUPPORTED
   }
@@ -947,10 +949,8 @@ gl.bindAttribLocation = function bindAttribLocation (program, index, name) {
   name += ''
   if (!isValidString(name) || name.length > MAX_ATTRIBUTE_LENGTH) {
     setError(this, gl.INVALID_VALUE)
-    return
   } else if (/^_?webgl_a/.test(name)) {
     setError(this, gl.INVALID_OPERATION)
-    return
   } else if (checkWrapper(this, program, WebGLProgram)) {
     return _bindAttribLocation.call(
       this,
@@ -1102,7 +1102,7 @@ gl.bindTexture = function bindTexture (target, texture) {
   }
 
   // Get texture id
-  var texture_id = 0
+  var textureId = 0
   if (!texture) {
     texture = null
   } else if (texture instanceof WebGLTexture &&
@@ -1117,7 +1117,7 @@ gl.bindTexture = function bindTexture (target, texture) {
     }
     texture._binding = target
 
-    texture_id = texture._ | 0
+    textureId = texture._ | 0
   } else {
     return
   }
@@ -1126,7 +1126,7 @@ gl.bindTexture = function bindTexture (target, texture) {
   _bindTexture.call(
     this,
     target,
-    texture_id)
+    textureId)
   var error = this.getError()
   restoreError(this, error)
 
@@ -1310,8 +1310,6 @@ gl.bufferData = function bufferData (target, data, usage) {
     if (target === gl.ELEMENT_ARRAY_BUFFER) {
       active._elements = new Uint8Array(u8Data)
     }
-
-    return
   } else if (typeof data === 'number') {
     var size = data | 0
     if (size < 0) {
@@ -1335,11 +1333,8 @@ gl.bufferData = function bufferData (target, data, usage) {
     if (target === gl.ELEMENT_ARRAY_BUFFER) {
       active._elements = new Uint8Array(size)
     }
-
-    return
   } else {
     setError(this, gl.INVALID_VALUE)
-    return
   }
 }
 
@@ -1471,7 +1466,7 @@ function checkShaderSource (context, shader) {
         }
         break
       case 'preprocessor':
-        var bodyToks = tokenize(tok.data.match(/^\s*\#\s*(.*)$/)[1])
+        var bodyToks = tokenize(tok.data.match(/^\s*#\s*(.*)$/)[1])
         for (var j = 0; j < bodyToks.length; ++j) {
           var btok = bodyToks[j]
           if (btok.type === 'ident' || btok.type === void 0) {
@@ -1897,7 +1892,6 @@ gl.depthFunc = function depthFunc (func) {
       return _depthFunc.call(this, func)
     default:
       setError(this, gl.INVALID_ENUM)
-      return
   }
 }
 
@@ -2890,9 +2884,9 @@ gl.getUniformLocation = function getUniformLocation (program, name) {
         var baseName = name.replace(/\[0\]$/, '')
         var arrayLocs = []
 
-        if (offset < 0 || offset >= info.size) {
-          return null
-        }
+        // if (offset < 0 || offset >= info.size) {
+        //   return null
+        // }
 
         saveError(this)
         for (i = 0; this.getError() === gl.NO_ERROR; ++i) {
@@ -3353,7 +3347,6 @@ gl.shaderSource = function shaderSource (shader, source) {
   source += ''
   if (!isValidString(source)) {
     setError(this, gl.INVALID_VALUE)
-    return
   } else if (checkWrapper(this, shader, WebGLShader)) {
     _shaderSource.call(this, shader._ | 0, wrapShader(shader._type, source))
     shader._source = source
@@ -3696,7 +3689,6 @@ gl.texParameterf = function texParameterf (target, pname, param) {
     }
 
     setError(this, gl.INVALID_ENUM)
-    return
   }
 }
 
@@ -3715,7 +3707,6 @@ gl.texParameteri = function texParameteri (target, pname, param) {
     }
 
     setError(this, gl.INVALID_ENUM)
-    return
   }
 }
 
@@ -3789,7 +3780,6 @@ function makeUniforms () {
         }
       } else {
         setError(this, gl.INVALID_VALUE)
-        return
       }
     }
   }
@@ -3808,7 +3798,7 @@ function makeUniforms () {
         if (!checkObject(location)) {
           throw new TypeError(func + '(WebGLUniformLocation, ...)')
         } else if (!location) {
-          return
+
         } else if (checkLocationActive(this, location)) {
           var utype = location._activeInfo.type
           if (utype === gl.SAMPLER_2D ||

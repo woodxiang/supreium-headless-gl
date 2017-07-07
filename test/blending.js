@@ -68,7 +68,7 @@ var tests = [
 for (var j = 0; j < tests.length; j++) {
   var test = tests[j]
   tape(test.name, function (t) {
-    var vertex_src = [
+    var vertexSrc = [
       'precision mediump float;',
       'attribute vec2 position;',
       'void main() {',
@@ -76,7 +76,7 @@ for (var j = 0; j < tests.length; j++) {
       '}'
     ].join('\n')
 
-    var fragment_src = [
+    var fragmentSrc = [
       'precision mediump float;',
       'void main() {',
       'gl_FragColor = ' + test.srcColor,
@@ -86,7 +86,7 @@ for (var j = 0; j < tests.length; j++) {
     gl.clearColor(test.dstColor[0], test.dstColor[1], test.dstColor[2], test.dstColor[3])
     gl.clear(gl.COLOR_BUFFER_BIT)
 
-    var program = makeShader(gl, vertex_src, fragment_src)
+    var program = makeShader(gl, vertexSrc, fragmentSrc)
 
     gl.useProgram(program)
 
