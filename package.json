@@ -14,17 +14,18 @@
     "test": "standard | snazzy && tape test/*.js | faucet",
     "rebuild": "node-gyp rebuild --verbose",
     "prebuild": "prebuild --all --strip",
-    "install": "prebuild --install"
+    "install": "prebuild-install || node-gyp rebuild"
   },
   "dependencies": {
     "bindings": "^1.2.1",
     "bit-twiddle": "^1.0.2",
     "glsl-tokenizer": "^2.0.2",
-    "nan": "^2.3.3",
-    "node-gyp": "^3.3.1",
-    "prebuild": "^5.1.2"
+    "nan": "^2.6.2",
+    "node-gyp": "^3.6.2",
+    "prebuild-install": "^2.1.1"
   },
   "devDependencies": {
+    "prebuild": "^6.2.0",
     "angle-normals": "^1.0.0",
     "bunny": "^1.0.1",
     "faucet": "0.0.1",
