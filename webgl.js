@@ -214,6 +214,9 @@ function STACKGL_resize_drawingbuffer () {
 
 function STACKGL_destroy_context () {
 }
+
+function OESElementIndexUint () {
+}
 /* eslint-enable camelcase */
 
 function unpackTypedArray (array) {
@@ -666,12 +669,21 @@ gl.getContextAttributes = function () {
   return this._contextattributes
 }
 
+var _getSupportedExtensions = gl.getSupportedExtensions
 gl.getSupportedExtensions = function getSupportedExtensions () {
-  return [
+  var exts = [
     'ANGLE_instanced_arrays',
     'STACKGL_resize_drawingbuffer',
     'STACKGL_destroy_context'
   ]
+
+  var supportedExts = _getSupportedExtensions.call(this)
+
+  if (supportedExts.indexOf('GL_OES_element_index_uint') >= 0) {
+    exts.push('OES_element_index_uint')
+  }
+
+  return exts
 }
 
 function createANGLEInstancedArrays (context) {
@@ -787,6 +799,13 @@ function createANGLEInstancedArrays (context) {
       }
       offset >>= 1
       elementData = new Uint16Array(elementBuffer._elements.buffer)
+    } else if (context._extensions.oes_element_index_uint && type === gl.UNSIGNED_INT) {
+      if (offset % 4) {
+        setError(context, gl.INVALID_OPERATION)
+        return
+      }
+      offset >>= 2
+      elementData = new Uint32Array(elementBuffer._elements.buffer)
     } else if (type === gl.UNSIGNED_BYTE) {
       elementData = elementBuffer._elements
     } else {
@@ -874,6 +893,17 @@ function createANGLEInstancedArrays (context) {
   return result
 }
 
+function getOESElementIndexUint (context) {
+  var result = null
+  var exts = context.getSupportedExtensions()
+
+  if (exts && exts.indexOf('OES_element_index_uint') >= 0) {
+    result = new OESElementIndexUint()
+  }
+
+  return result
+}
+
 gl.getExtension = function getExtension (name) {
   var str = name.toLowerCase()
   if (str in this._extensions) {
@@ -891,6 +921,9 @@ gl.getExtension = function getExtension (name) {
     case 'stackgl_resize_drawingbuffer':
       ext = new STACKGL_resize_drawingbuffer()
       ext.resize = this.resize.bind(this)
+      break
+    case 'oes_element_index_uint':
+      ext = getOESElementIndexUint(this)
       break
   }
   if (ext) {
@@ -1380,7 +1413,7 @@ gl.bufferSubData = function bufferSubData (target, offset, data) {
   }
 
   if (offset + u8Data.length > active._size) {
-    setError(this, gl.INVALID_OPERATION)
+    setError(this, gl.INVALID_VALUE)
     return
   }
 
@@ -2082,6 +2115,13 @@ gl.drawElements = function drawElements (mode, count, type, ioffset) {
     }
     offset >>= 1
     elementData = new Uint16Array(elementBuffer._elements.buffer)
+  } else if (this._extensions.oes_element_index_uint && type === gl.UNSIGNED_INT) {
+    if (offset % 4) {
+      setError(this, gl.INVALID_OPERATION)
+      return
+    }
+    offset >>= 2
+    elementData = new Uint32Array(elementBuffer._elements.buffer)
   } else if (type === gl.UNSIGNED_BYTE) {
     elementData = elementBuffer._elements
   } else {
