@@ -136,9 +136,10 @@ In most cases installing `headless-gl` from npm should just work.  However, if y
 * [libxi-dev](http://www.x.org/wiki/)
 * Working and up to date OpenGL drivers
 * [GLEW](http://glew.sourceforge.net/)
+* [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/)
 
 ```
-$ sudo apt-get install -y build-essential libxi-dev libglu1-mesa-dev libglew-dev
+$ sudo apt-get install -y build-essential libxi-dev libglu1-mesa-dev libglew-dev pkg-config
 ```
 
 #### Windows
