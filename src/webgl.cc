@@ -853,6 +853,9 @@ GL_METHOD(TexImage2D) {
     }
   } else {
     size_t length = width * height * 4;
+    if(type == GL_FLOAT) {
+      length *= 4;
+    }
     char* data = new char[length];
     memset(data, 0, length);
     (inst->glTexImage2D)(

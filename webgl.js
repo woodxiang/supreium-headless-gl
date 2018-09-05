@@ -217,6 +217,9 @@ function STACKGL_destroy_context () {
 
 function OESElementIndexUint () {
 }
+
+function OES_texture_float () {
+}
 /* eslint-enable camelcase */
 
 function unpackTypedArray (array) {
@@ -318,8 +321,8 @@ function precheckFramebufferStatus (framebuffer) {
 
   if (colorAttachment instanceof WebGLTexture) {
     if (colorAttachment._format !== gl.RGBA ||
-        colorAttachment._type !== gl.UNSIGNED_BYTE) {
-      return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+      !(colorAttachment._type === gl.UNSIGNED_BYTE || colorAttachment._type === gl.FLOAT)) {
+        return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
     }
     var level = framebuffer._attachmentLevel[gl.COLOR_ATTACHMENT0]
     width.push(colorAttachment._levelWidth[level])
@@ -683,6 +686,10 @@ gl.getSupportedExtensions = function getSupportedExtensions () {
     exts.push('OES_element_index_uint')
   }
 
+  if (supportedExts.indexOf('GL_OES_texture_float') >= 0) {
+    exts.push('OES_texture_float')
+  }
+
   return exts
 }
 
@@ -904,6 +911,11 @@ function getOESElementIndexUint (context) {
   return result
 }
 
+function getOESTextureFloat (context) {
+  return (context.getSupportedExtensions().indexOf('OES_texture_float') >= 0) 
+    ? new OES_texture_float() : null;
+}
+
 gl.getExtension = function getExtension (name) {
   var str = name.toLowerCase()
   if (str in this._extensions) {
@@ -924,6 +936,9 @@ gl.getExtension = function getExtension (name) {
       break
     case 'oes_element_index_uint':
       ext = getOESElementIndexUint(this)
+      break
+    case 'oes_texture_float':
+      ext = getOESTextureFloat(this)
       break
   }
   if (ext) {
@@ -3445,6 +3460,8 @@ function computePixelSize (context, type, internalformat) {
         break
       }
       return 2
+    case gl.FLOAT:
+      return 1
   }
   setError(context, gl.INVALID_ENUM)
   return 0
