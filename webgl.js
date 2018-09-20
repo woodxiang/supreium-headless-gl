@@ -322,7 +322,7 @@ function precheckFramebufferStatus (framebuffer) {
   if (colorAttachment instanceof WebGLTexture) {
     if (colorAttachment._format !== gl.RGBA ||
       !(colorAttachment._type === gl.UNSIGNED_BYTE || colorAttachment._type === gl.FLOAT)) {
-        return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+      return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
     }
     var level = framebuffer._attachmentLevel[gl.COLOR_ATTACHMENT0]
     width.push(colorAttachment._levelWidth[level])
@@ -912,8 +912,14 @@ function getOESElementIndexUint (context) {
 }
 
 function getOESTextureFloat (context) {
-  return (context.getSupportedExtensions().indexOf('OES_texture_float') >= 0) 
-    ? new OES_texture_float() : null;
+  var result = null
+  var exts = context.getSupportedExtensions()
+
+  if (exts && exts.indexOf('OES_texture_float') >= 0) {
+    result = new OES_texture_float()
+  }
+
+  return result
 }
 
 gl.getExtension = function getExtension (name) {
@@ -2590,6 +2596,10 @@ gl.getParameter = function getParameter (pname) {
     case gl.UNPACK_COLORSPACE_CONVERSION_WEBGL:
       return _getParameter.call(this, pname) | 0
 
+    case gl.IMPLEMENTATION_COLOR_READ_FORMAT:
+    case gl.IMPLEMENTATION_COLOR_READ_TYPE:
+      return _getParameter.call(this, pname)
+
     default:
       setError(this, gl.INVALID_ENUM)
       return null
@@ -3506,7 +3516,8 @@ function convertPixels (pixels) {
       return new Uint8Array(pixels)
     } else if (pixels instanceof Uint8Array ||
       pixels instanceof Uint16Array ||
-      pixels instanceof Uint8ClampedArray) {
+      pixels instanceof Uint8ClampedArray ||
+      pixels instanceof Float32Array) {
       return unpackTypedArray(pixels)
     } else if (pixels instanceof Buffer) {
       return new Uint8Array(pixels)
@@ -3603,6 +3614,11 @@ gl.texImage2D = function texImage2D (
   }
 
   if (!checkFormat(format) || !checkFormat(internalformat)) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  if (type === gl.FLOAT && !this._extensions.oes_texture_float) {
     setError(this, gl.INVALID_ENUM)
     return
   }
@@ -3726,6 +3742,11 @@ gl.texSubImage2D = function texSubImage2D (
     return
   }
 
+  if (type === gl.FLOAT && !this._extensions.oes_texture_float) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
   var pixelSize = computePixelSize(this, type, format)
   if (pixelSize === 0) {
     return
@@ -3796,7 +3817,7 @@ gl.texParameteri = function texParameteri (target, pname, param) {
       case gl.TEXTURE_MAG_FILTER:
       case gl.TEXTURE_WRAP_S:
       case gl.TEXTURE_WRAP_T:
-        return _texParameterf.call(this, target, pname, param)
+        return _texParameteri.call(this, target, pname, param)
     }
 
     setError(this, gl.INVALID_ENUM)
