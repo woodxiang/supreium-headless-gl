@@ -3210,7 +3210,8 @@ gl.readPixels = function readPixels (x, y, width, height, format, type, pixels) 
   width |= 0
   height |= 0
 
-  if (format === gl.RGB ||
+  if (this._extensions.oes_texture_float && type === gl.FLOAT && format === gl.RGBA) {
+  } else if (format === gl.RGB ||
     format === gl.ALPHA ||
     type !== gl.UNSIGNED_BYTE) {
     setError(this, gl.INVALID_OPERATION)
@@ -3791,12 +3792,35 @@ gl.texSubImage2D = function texSubImage2D (
     data)
 }
 
+function verifyTextureCompleteness (context, target, pname, param) {
+  var unit = activeTextureUnit(context)
+  var texture = null
+  if (target === gl.TEXTURE_2D) {
+    texture = unit._bind2D
+  } else if (validCubeTarget(target)) {
+    texture = unit._bindCube
+  }
+
+  // oes_texture_float
+  if (context._extensions.oes_texture_float && texture && texture._type === gl.FLOAT && (pname === gl.TEXTURE_MAG_FILTER || pname === gl.TEXTURE_MIN_FILTER) && (param === gl.LINEAR || param === gl.LINEAR_MIPMAP_NEAREST || param === gl.NEAREST_MIPMAP_LINEAR || param === gl.LINEAR_MIPMAP_LINEAR)) {
+    texture._complete = false
+    context.bindTexture(target, texture)
+    return
+  }
+
+  if (texture && texture._complete === false) {
+    texture._complete = true
+    context.bindTexture(target, texture)
+  }
+}
+
 var _texParameterf = gl.texParameterf
 gl.texParameterf = function texParameterf (target, pname, param) {
   target |= 0
   pname |= 0
   param = +param
   if (checkTextureTarget(this, target)) {
+    verifyTextureCompleteness(this, target, pname, param)
     switch (pname) {
       case gl.TEXTURE_MIN_FILTER:
       case gl.TEXTURE_MAG_FILTER:
@@ -3816,27 +3840,7 @@ gl.texParameteri = function texParameteri (target, pname, param) {
   param |= 0
 
   if (checkTextureTarget(this, target)) {
-    var unit = activeTextureUnit(this)
-    var texture = null
-    if (target === gl.TEXTURE_2D) {
-      texture = unit._bind2D
-    } else if (validCubeTarget(target)) {
-      texture = unit._bindCube
-    }
-
-    // oes_texture_float
-    if (this._extensions.oes_texture_float && texture && texture._type === gl.FLOAT && (pname === gl.TEXTURE_MAG_FILTER || pname === gl.TEXTURE_MIN_FILTER) && (param === gl.LINEAR || param === gl.LINEAR_MIPMAP_NEAREST || param === gl.NEAREST_MIPMAP_LINEAR || param === gl.LINEAR_MIPMAP_LINEAR)) {
-      setError(this, gl.INVALID_ENUM)
-      texture._complete = false
-      this.bindTexture(target, texture)
-      return
-    }
-
-    if (texture && texture._complete === false) {
-      texture._complete = true
-      this.bindTexture(target, texture)
-    }
-
+    verifyTextureCompleteness(this, target, pname, param)
     switch (pname) {
       case gl.TEXTURE_MIN_FILTER:
       case gl.TEXTURE_MAG_FILTER:
