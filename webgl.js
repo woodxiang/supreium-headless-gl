@@ -123,6 +123,7 @@ function WebGLTexture (_, ctx) {
   this._levelHeight = new Int32Array(32)
   this._format = 0
   this._type = 0
+  this._complete = true
 }
 exports.WebGLTexture = WebGLTexture
 
@@ -1171,7 +1172,9 @@ gl.bindTexture = function bindTexture (target, texture) {
     }
     texture._binding = target
 
-    textureId = texture._ | 0
+    if (texture._complete) {
+      textureId = texture._ | 0
+    }
   } else {
     return
   }
@@ -3811,7 +3814,29 @@ gl.texParameteri = function texParameteri (target, pname, param) {
   target |= 0
   pname |= 0
   param |= 0
+
   if (checkTextureTarget(this, target)) {
+    var unit = activeTextureUnit(this)
+    var texture = null
+    if (target === gl.TEXTURE_2D) {
+      texture = unit._bind2D
+    } else if (validCubeTarget(target)) {
+      texture = unit._bindCube
+    }
+
+    // oes_texture_float
+    if (this._extensions.oes_texture_float && texture && texture._type === gl.FLOAT && (pname === gl.TEXTURE_MAG_FILTER || pname === gl.TEXTURE_MIN_FILTER) && (param === gl.LINEAR || param === gl.LINEAR_MIPMAP_NEAREST || param === gl.NEAREST_MIPMAP_LINEAR || param === gl.LINEAR_MIPMAP_LINEAR)) {
+      setError(this, gl.INVALID_ENUM)
+      texture._complete = false
+      this.bindTexture(target, texture)
+      return
+    }
+
+    if (texture && texture._complete === false) {
+      texture._complete = true
+      this.bindTexture(target, texture)
+    }
+
     switch (pname) {
       case gl.TEXTURE_MIN_FILTER:
       case gl.TEXTURE_MAG_FILTER:
