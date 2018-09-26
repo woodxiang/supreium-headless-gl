@@ -123,6 +123,7 @@ function WebGLTexture (_, ctx) {
   this._levelHeight = new Int32Array(32)
   this._format = 0
   this._type = 0
+  this._complete = true
 }
 exports.WebGLTexture = WebGLTexture
 
@@ -216,6 +217,9 @@ function STACKGL_destroy_context () {
 }
 
 function OESElementIndexUint () {
+}
+
+function OES_texture_float () {
 }
 /* eslint-enable camelcase */
 
@@ -318,7 +322,7 @@ function precheckFramebufferStatus (framebuffer) {
 
   if (colorAttachment instanceof WebGLTexture) {
     if (colorAttachment._format !== gl.RGBA ||
-        colorAttachment._type !== gl.UNSIGNED_BYTE) {
+      !(colorAttachment._type === gl.UNSIGNED_BYTE || colorAttachment._type === gl.FLOAT)) {
       return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
     }
     var level = framebuffer._attachmentLevel[gl.COLOR_ATTACHMENT0]
@@ -683,6 +687,10 @@ gl.getSupportedExtensions = function getSupportedExtensions () {
     exts.push('OES_element_index_uint')
   }
 
+  if (supportedExts.indexOf('GL_OES_texture_float') >= 0) {
+    exts.push('OES_texture_float')
+  }
+
   return exts
 }
 
@@ -904,6 +912,17 @@ function getOESElementIndexUint (context) {
   return result
 }
 
+function getOESTextureFloat (context) {
+  var result = null
+  var exts = context.getSupportedExtensions()
+
+  if (exts && exts.indexOf('OES_texture_float') >= 0) {
+    result = new OES_texture_float()
+  }
+
+  return result
+}
+
 gl.getExtension = function getExtension (name) {
   var str = name.toLowerCase()
   if (str in this._extensions) {
@@ -924,6 +943,9 @@ gl.getExtension = function getExtension (name) {
       break
     case 'oes_element_index_uint':
       ext = getOESElementIndexUint(this)
+      break
+    case 'oes_texture_float':
+      ext = getOESTextureFloat(this)
       break
   }
   if (ext) {
@@ -1150,7 +1172,9 @@ gl.bindTexture = function bindTexture (target, texture) {
     }
     texture._binding = target
 
-    textureId = texture._ | 0
+    if (texture._complete) {
+      textureId = texture._ | 0
+    }
   } else {
     return
   }
@@ -2575,6 +2599,10 @@ gl.getParameter = function getParameter (pname) {
     case gl.UNPACK_COLORSPACE_CONVERSION_WEBGL:
       return _getParameter.call(this, pname) | 0
 
+    case gl.IMPLEMENTATION_COLOR_READ_FORMAT:
+    case gl.IMPLEMENTATION_COLOR_READ_TYPE:
+      return _getParameter.call(this, pname)
+
     default:
       setError(this, gl.INVALID_ENUM)
       return null
@@ -3182,7 +3210,8 @@ gl.readPixels = function readPixels (x, y, width, height, format, type, pixels) 
   width |= 0
   height |= 0
 
-  if (format === gl.RGB ||
+  if (this._extensions.oes_texture_float && type === gl.FLOAT && format === gl.RGBA) {
+  } else if (format === gl.RGB ||
     format === gl.ALPHA ||
     type !== gl.UNSIGNED_BYTE) {
     setError(this, gl.INVALID_OPERATION)
@@ -3445,6 +3474,8 @@ function computePixelSize (context, type, internalformat) {
         break
       }
       return 2
+    case gl.FLOAT:
+      return 1
   }
   setError(context, gl.INVALID_ENUM)
   return 0
@@ -3489,7 +3520,8 @@ function convertPixels (pixels) {
       return new Uint8Array(pixels)
     } else if (pixels instanceof Uint8Array ||
       pixels instanceof Uint16Array ||
-      pixels instanceof Uint8ClampedArray) {
+      pixels instanceof Uint8ClampedArray ||
+      pixels instanceof Float32Array) {
       return unpackTypedArray(pixels)
     } else if (pixels instanceof Buffer) {
       return new Uint8Array(pixels)
@@ -3586,6 +3618,11 @@ gl.texImage2D = function texImage2D (
   }
 
   if (!checkFormat(format) || !checkFormat(internalformat)) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
+  if (type === gl.FLOAT && !this._extensions.oes_texture_float) {
     setError(this, gl.INVALID_ENUM)
     return
   }
@@ -3709,6 +3746,11 @@ gl.texSubImage2D = function texSubImage2D (
     return
   }
 
+  if (type === gl.FLOAT && !this._extensions.oes_texture_float) {
+    setError(this, gl.INVALID_ENUM)
+    return
+  }
+
   var pixelSize = computePixelSize(this, type, format)
   if (pixelSize === 0) {
     return
@@ -3750,12 +3792,35 @@ gl.texSubImage2D = function texSubImage2D (
     data)
 }
 
+function verifyTextureCompleteness (context, target, pname, param) {
+  var unit = activeTextureUnit(context)
+  var texture = null
+  if (target === gl.TEXTURE_2D) {
+    texture = unit._bind2D
+  } else if (validCubeTarget(target)) {
+    texture = unit._bindCube
+  }
+
+  // oes_texture_float
+  if (context._extensions.oes_texture_float && texture && texture._type === gl.FLOAT && (pname === gl.TEXTURE_MAG_FILTER || pname === gl.TEXTURE_MIN_FILTER) && (param === gl.LINEAR || param === gl.LINEAR_MIPMAP_NEAREST || param === gl.NEAREST_MIPMAP_LINEAR || param === gl.LINEAR_MIPMAP_LINEAR)) {
+    texture._complete = false
+    context.bindTexture(target, texture)
+    return
+  }
+
+  if (texture && texture._complete === false) {
+    texture._complete = true
+    context.bindTexture(target, texture)
+  }
+}
+
 var _texParameterf = gl.texParameterf
 gl.texParameterf = function texParameterf (target, pname, param) {
   target |= 0
   pname |= 0
   param = +param
   if (checkTextureTarget(this, target)) {
+    verifyTextureCompleteness(this, target, pname, param)
     switch (pname) {
       case gl.TEXTURE_MIN_FILTER:
       case gl.TEXTURE_MAG_FILTER:
@@ -3773,13 +3838,15 @@ gl.texParameteri = function texParameteri (target, pname, param) {
   target |= 0
   pname |= 0
   param |= 0
+
   if (checkTextureTarget(this, target)) {
+    verifyTextureCompleteness(this, target, pname, param)
     switch (pname) {
       case gl.TEXTURE_MIN_FILTER:
       case gl.TEXTURE_MAG_FILTER:
       case gl.TEXTURE_WRAP_S:
       case gl.TEXTURE_WRAP_T:
-        return _texParameterf.call(this, target, pname, param)
+        return _texParameteri.call(this, target, pname, param)
     }
 
     setError(this, gl.INVALID_ENUM)
