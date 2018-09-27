@@ -1,5 +1,10 @@
 # headless-gl change log
 
+## 4.1.1
+
+* OES_element_index_uint extension support
+* OES_texture_float extension support
+
 ## 4.0.2
 
 * Now works correctly when running in `electron`
