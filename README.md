@@ -209,6 +209,8 @@ Only the following for now:
 * [`STACKGL_resize_drawingbuffer`](https://github.com/stackgl/headless-gl#stackgl_resize_drawingbuffer)
 * [`STACKGL_destroy_context`](https://github.com/stackgl/headless-gl#stackgl_destroy_context)
 * [`ANGLE_instanced_arrays`](https://www.khronos.org/registry/webgl/extensions/ANGLE_instanced_arrays/)
+* [`OES_element_index_uint`](https://www.khronos.org/registry/webgl/extensions/OES_element_index_uint/)
+* [`OES_texture_float](https://www.khronos.org/registry/webgl/extensions/OES_texture_float/)
 
 ### How can I keep up to date with what has changed in headless-gl?
 
