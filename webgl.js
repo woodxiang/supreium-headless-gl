@@ -23,6 +23,29 @@ var ATTACHMENTS = [
   gl.DEPTH_STENCIL_ATTACHMENT
 ]
 
+var drawBuffers = gl.extWEBGL_draw_buffers()
+var DRAW_BUFFERS_ATTACHMENTS = [
+  drawBuffers.COLOR_ATTACHMENT0_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT1_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT2_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT3_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT4_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT5_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT6_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT7_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT8_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT9_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT10_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT11_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT12_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT13_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT14_WEBGL,
+  drawBuffers.COLOR_ATTACHMENT15_WEBGL,
+  gl.DEPTH_ATTACHMENT,
+  gl.STENCIL_ATTACHMENT,
+  gl.DEPTH_STENCIL_ATTACHMENT
+]
+
 // Hook clean up
 process.on('exit', nativeGL.cleanup)
 
@@ -96,6 +119,57 @@ function WebGLFramebuffer (_, ctx) {
   this._attachmentFace[gl.DEPTH_ATTACHMENT] = 0
   this._attachmentFace[gl.STENCIL_ATTACHMENT] = 0
   this._attachmentFace[gl.DEPTH_STENCIL_ATTACHMENT] = 0
+
+  if (ctx._extensions.webgl_draw_buffers) {
+    var webgl_draw_buffers = ctx._extensions.webgl_draw_buffers // eslint-disable-line
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT1_WEBGL] = null
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT2_WEBGL] = null
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT3_WEBGL] = null
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT4_WEBGL] = null
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT5_WEBGL] = null
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT6_WEBGL] = null
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT7_WEBGL] = null
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT8_WEBGL] = null
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT9_WEBGL] = null
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT10_WEBGL] = null
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT11_WEBGL] = null
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT12_WEBGL] = null
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL] = null
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL] = null
+    this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL] = null
+
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT1_WEBGL] = 0
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT2_WEBGL] = 0
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT3_WEBGL] = 0
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT4_WEBGL] = 0
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT5_WEBGL] = 0
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT6_WEBGL] = 0
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT7_WEBGL] = 0
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT8_WEBGL] = 0
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT9_WEBGL] = 0
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT10_WEBGL] = 0
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT11_WEBGL] = 0
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT12_WEBGL] = 0
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL] = 0
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL] = 0
+    this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL] = 0
+
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT1_WEBGL] = 0
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT2_WEBGL] = 0
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT3_WEBGL] = 0
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT4_WEBGL] = 0
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT5_WEBGL] = 0
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT6_WEBGL] = 0
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT7_WEBGL] = 0
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT8_WEBGL] = 0
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT9_WEBGL] = 0
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT10_WEBGL] = 0
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT11_WEBGL] = 0
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT12_WEBGL] = 0
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL] = 0
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL] = 0
+    this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL] = 0
+  }
 }
 exports.WebGLFramebuffer = WebGLFramebuffer
 
@@ -271,12 +345,10 @@ function validCubeTarget (target) {
   target === gl.TEXTURE_CUBE_MAP_NEGATIVE_Z
 }
 
-function precheckFramebufferStatus (framebuffer) {
+function precheckFramebufferStatus (framebuffer, webgl_draw_buffers) { // eslint-disable-line
   var attachments = framebuffer._attachments
   var width = []
   var height = []
-
-  var colorAttachment = attachments[gl.COLOR_ATTACHMENT0]
   var depthAttachment = attachments[gl.DEPTH_ATTACHMENT]
   var depthStencilAttachment = attachments[gl.DEPTH_STENCIL_ATTACHMENT]
   var stencilAttachment = attachments[gl.STENCIL_ATTACHMENT]
@@ -286,8 +358,65 @@ function precheckFramebufferStatus (framebuffer) {
     return gl.FRAMEBUFFER_UNSUPPORTED
   }
 
-  if (!colorAttachment) {
-    return gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
+  var colorAttachments
+  var colorAttachment0 = attachments[gl.COLOR_ATTACHMENT0]
+  if (webgl_draw_buffers) {  // eslint-disable-line
+    var colorAttachment1 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT1_WEBGL] // eslint-disable-line
+    var colorAttachment2 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT2_WEBGL] // eslint-disable-line
+    var colorAttachment3 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT3_WEBGL] // eslint-disable-line
+    var colorAttachment4 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT4_WEBGL] // eslint-disable-line
+    var colorAttachment5 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT5_WEBGL] // eslint-disable-line
+    var colorAttachment6 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT6_WEBGL] // eslint-disable-line
+    var colorAttachment7 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT7_WEBGL] // eslint-disable-line
+    var colorAttachment8 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT8_WEBGL] // eslint-disable-line
+    var colorAttachment9 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT9_WEBGL] // eslint-disable-line
+    var colorAttachment10 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT10_WEBGL] // eslint-disable-line
+    var colorAttachment11 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT11_WEBGL] // eslint-disable-line
+    var colorAttachment12 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT12_WEBGL] // eslint-disable-line
+    var colorAttachment13 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL] // eslint-disable-line
+    var colorAttachment14 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL] // eslint-disable-line
+    var colorAttachment15 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL] // eslint-disable-line
+    colorAttachments = [
+      colorAttachment0,
+      colorAttachment1,
+      colorAttachment2,
+      colorAttachment3,
+      colorAttachment4,
+      colorAttachment5,
+      colorAttachment6,
+      colorAttachment7,
+      colorAttachment8,
+      colorAttachment9,
+      colorAttachment10,
+      colorAttachment11,
+      colorAttachment12,
+      colorAttachment13,
+      colorAttachment14,
+      colorAttachment15
+    ]
+    if (!colorAttachment0 &&
+      !colorAttachment1 &&
+      !colorAttachment2 &&
+      !colorAttachment3 &&
+      !colorAttachment4 &&
+      !colorAttachment5 &&
+      !colorAttachment6 &&
+      !colorAttachment7 &&
+      !colorAttachment8 &&
+      !colorAttachment9 &&
+      !colorAttachment10 &&
+      !colorAttachment11 &&
+      !colorAttachment12 &&
+      !colorAttachment13 &&
+      !colorAttachment14 &&
+      !colorAttachment15) {
+      return gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
+    }
+  } else {
+    colorAttachments = []
+    if (!colorAttachment0) {
+      return gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
+    }
   }
 
   if (depthStencilAttachment instanceof WebGLTexture) {
@@ -320,29 +449,35 @@ function precheckFramebufferStatus (framebuffer) {
     height.push(stencilAttachment._height)
   }
 
-  if (colorAttachment instanceof WebGLTexture) {
-    if (colorAttachment._format !== gl.RGBA ||
-      !(colorAttachment._type === gl.UNSIGNED_BYTE || colorAttachment._type === gl.FLOAT)) {
-      return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+  var colorAttached = false
+  for (var colorAttachmentIndex = 0; colorAttachmentIndex < colorAttachments.length; ++colorAttachmentIndex) {
+    var colorAttachment = colorAttachments[colorAttachmentIndex]
+    if (colorAttachment instanceof WebGLTexture) {
+      if (colorAttachment._format !== gl.RGBA ||
+        !(colorAttachment._type === gl.UNSIGNED_BYTE || colorAttachment._type === gl.FLOAT)) {
+        return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+      }
+      colorAttached = true
+      var level = framebuffer._attachmentLevel[gl.COLOR_ATTACHMENT0]
+      width.push(colorAttachment._levelWidth[level])
+      height.push(colorAttachment._levelHeight[level])
+    } else if (colorAttachment instanceof WebGLRenderbuffer) {
+      var format = colorAttachment._format
+      if (format !== gl.RGBA4 &&
+        format !== gl.RGB565 &&
+        format !== gl.RGB5_A1) {
+        return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+      }
+      colorAttached = true
+      width.push(colorAttachment._width)
+      height.push(colorAttachment._height)
     }
-    var level = framebuffer._attachmentLevel[gl.COLOR_ATTACHMENT0]
-    width.push(colorAttachment._levelWidth[level])
-    height.push(colorAttachment._levelHeight[level])
-  } else if (colorAttachment instanceof WebGLRenderbuffer) {
-    var format = colorAttachment._format
-    if (format !== gl.RGBA4 &&
-      format !== gl.RGB565 &&
-      format !== gl.RGB5_A1) {
-      return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT
-    }
-    width.push(colorAttachment._width)
-    height.push(colorAttachment._height)
   }
 
-  if (!colorAttachment &&
-      !stencilAttachment &&
-      !depthAttachment &&
-      !depthStencilAttachment) {
+  if (!colorAttached &&
+    !stencilAttachment &&
+    !depthAttachment &&
+    !depthStencilAttachment) {
     return gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
   }
 
@@ -370,7 +505,7 @@ function precheckFramebufferStatus (framebuffer) {
 function framebufferOk (context) {
   var framebuffer = context._activeFramebuffer
   if (framebuffer &&
-    precheckFramebufferStatus(framebuffer) !== gl.FRAMEBUFFER_COMPLETE) {
+    precheckFramebufferStatus(framebuffer, context._extensions.webgl_draw_buffers) !== gl.FRAMEBUFFER_COMPLETE) {
     setError(context, gl.INVALID_FRAMEBUFFER_OPERATION)
     return false
   }
@@ -393,11 +528,37 @@ function checkObject (object) {
   (object === void 0)
 }
 
-function validFramebufferAttachment (attachment) {
-  return attachment === gl.COLOR_ATTACHMENT0 ||
-  attachment === gl.DEPTH_ATTACHMENT ||
-  attachment === gl.STENCIL_ATTACHMENT ||
-  attachment === gl.DEPTH_STENCIL_ATTACHMENT
+function validFramebufferAttachment (attachment, webgl_draw_buffers) { // eslint-disable-line
+  switch (attachment) {
+    case gl.DEPTH_ATTACHMENT:
+    case gl.STENCIL_ATTACHMENT:
+    case gl.DEPTH_STENCIL_ATTACHMENT:
+    case gl.COLOR_ATTACHMENT0:
+      return true
+  }
+
+  if (webgl_draw_buffers) { // eslint-disable-line
+    switch (attachment) {
+      case webgl_draw_buffers.COLOR_ATTACHMENT1_WEBGL: // eslint-disable-line
+      case webgl_draw_buffers.COLOR_ATTACHMENT2_WEBGL: // eslint-disable-line
+      case webgl_draw_buffers.COLOR_ATTACHMENT3_WEBGL: // eslint-disable-line
+      case webgl_draw_buffers.COLOR_ATTACHMENT4_WEBGL: // eslint-disable-line
+      case webgl_draw_buffers.COLOR_ATTACHMENT5_WEBGL: // eslint-disable-line
+      case webgl_draw_buffers.COLOR_ATTACHMENT6_WEBGL: // eslint-disable-line
+      case webgl_draw_buffers.COLOR_ATTACHMENT7_WEBGL: // eslint-disable-line
+      case webgl_draw_buffers.COLOR_ATTACHMENT8_WEBGL: // eslint-disable-line
+      case webgl_draw_buffers.COLOR_ATTACHMENT9_WEBGL: // eslint-disable-line
+      case webgl_draw_buffers.COLOR_ATTACHMENT10_WEBGL: // eslint-disable-line
+      case webgl_draw_buffers.COLOR_ATTACHMENT11_WEBGL: // eslint-disable-line
+      case webgl_draw_buffers.COLOR_ATTACHMENT12_WEBGL: // eslint-disable-line
+      case webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL: // eslint-disable-line
+      case webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL: // eslint-disable-line
+      case webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL: // eslint-disable-line
+        return true
+    }
+  }
+
+  return false
 }
 
 function validTextureTarget (target) {
@@ -691,6 +852,10 @@ gl.getSupportedExtensions = function getSupportedExtensions () {
     exts.push('OES_texture_float')
   }
 
+  if (supportedExts.indexOf('EXT_draw_buffers') >= 0) {
+    exts.push('WEBGL_draw_buffers')
+  }
+
   return exts
 }
 
@@ -946,6 +1111,10 @@ gl.getExtension = function getExtension (name) {
       break
     case 'oes_texture_float':
       ext = getOESTextureFloat(this)
+      break
+    case 'webgl_draw_buffers':
+      ext = this.extWEBGL_draw_buffers()
+      ext.drawBuffersWEBGL = this.drawBuffersWEBGL.bind(this)
       break
   }
   if (ext) {
@@ -1463,7 +1632,7 @@ gl.checkFramebufferStatus = function checkFramebufferStatus (target) {
     return gl.FRAMEBUFFER_COMPLETE
   }
 
-  return precheckFramebufferStatus(framebuffer)
+  return precheckFramebufferStatus(framebuffer, this._extensions.webgl_draw_buffers)
 }
 
 var _clear = gl.clear
@@ -1849,14 +2018,15 @@ gl.deleteRenderbuffer = function deleteRenderbuffer (renderbuffer) {
 
   var ctx = this
   var activeFramebuffer = this._activeFramebuffer
+  var attachmentArray = ctx._extensions.webgl_draw_buffers ? DRAW_BUFFERS_ATTACHMENTS : ATTACHMENTS
   function tryDetach (framebuffer) {
     if (framebuffer && linked(framebuffer, renderbuffer)) {
       var attachments = Object.keys(framebuffer._attachments)
       for (var i = 0; i < attachments.length; ++i) {
-        if (framebuffer._attachments[ATTACHMENTS[i]] === renderbuffer) {
+        if (framebuffer._attachments[attachmentArray[i]] === renderbuffer) {
           ctx.framebufferTexture2D(
             gl.FRAMEBUFFER,
-            ATTACHMENTS[i] | 0,
+            attachmentArray[i] | 0,
             gl.TEXTURE_2D,
             null)
         }
@@ -1910,11 +2080,11 @@ gl.deleteTexture = function deleteTexture (texture) {
   // active FBO?
   var ctx = this
   var activeFramebuffer = this._activeFramebuffer
-
+  var attachmentArray = ctx._extensions.webgl_draw_buffers ? DRAW_BUFFERS_ATTACHMENTS : ATTACHMENTS
   function tryDetach (framebuffer) {
     if (framebuffer && linked(framebuffer, texture)) {
-      for (var i = 0; i < ATTACHMENTS.length; ++i) {
-        var attachment = ATTACHMENTS[i]
+      for (var i = 0; i < attachmentArray.length; ++i) {
+        var attachment = attachmentArray[i]
         if (framebuffer._attachments[attachment] === texture) {
           ctx.framebufferTexture2D(
             gl.FRAMEBUFFER,
@@ -2258,11 +2428,12 @@ function updateFramebufferAttachments (framebuffer) {
   var ctx = framebuffer._ctx
   var i
   var attachmentEnum
-  framebuffer._status = precheckFramebufferStatus(framebuffer)
+  var attachmentArray = ctx._extensions.webgl_draw_buffers ? DRAW_BUFFERS_ATTACHMENTS : ATTACHMENTS
+  framebuffer._status = precheckFramebufferStatus(framebuffer, ctx._extensions.webgl_draw_buffers)
   if (framebuffer._status !== gl.FRAMEBUFFER_COMPLETE) {
     if (prevStatus === gl.FRAMEBUFFER_COMPLETE) {
-      for (i = 0; i < ATTACHMENTS.length; ++i) {
-        attachmentEnum = ATTACHMENTS[i]
+      for (i = 0; i < attachmentArray.length; ++i) {
+        attachmentEnum = attachmentArray[i]
         _framebufferTexture2D.call(
           ctx,
           gl.FRAMEBUFFER,
@@ -2275,8 +2446,8 @@ function updateFramebufferAttachments (framebuffer) {
     return
   }
 
-  for (i = 0; i < ATTACHMENTS.length; ++i) {
-    attachmentEnum = ATTACHMENTS[i]
+  for (i = 0; i < attachmentArray.length; ++i) {
+    attachmentEnum = attachmentArray[i]
     _framebufferTexture2D.call(
       ctx,
       gl.FRAMEBUFFER,
@@ -2286,8 +2457,8 @@ function updateFramebufferAttachments (framebuffer) {
       framebuffer._attachmentLevel[attachmentEnum])
   }
 
-  for (i = 0; i < ATTACHMENTS.length; ++i) {
-    attachmentEnum = ATTACHMENTS[i]
+  for (i = 0; i < attachmentArray.length; ++i) {
+    attachmentEnum = attachmentArray[i]
     var attachment = framebuffer._attachments[attachmentEnum]
     if (attachment instanceof WebGLTexture) {
       _framebufferTexture2D.call(
@@ -2323,7 +2494,7 @@ gl.framebufferRenderbuffer = function framebufferRenderbuffer (
   }
 
   if (target !== gl.FRAMEBUFFER ||
-    !validFramebufferAttachment(attachment) ||
+    !validFramebufferAttachment(attachment, this._extensions.webgl_draw_buffers) ||
     renderbuffertarget !== gl.RENDERBUFFER) {
     setError(this, gl.INVALID_ENUM)
     return
@@ -2360,7 +2531,7 @@ gl.framebufferTexture2D = function framebufferTexture2D (
 
   // Check parameters are ok
   if (target !== gl.FRAMEBUFFER ||
-    !validFramebufferAttachment(attachment)) {
+    !validFramebufferAttachment(attachment, this._extensions.webgl_draw_buffers)) {
     setError(this, gl.INVALID_ENUM)
     return
   }
@@ -2604,6 +2775,30 @@ gl.getParameter = function getParameter (pname) {
       return _getParameter.call(this, pname)
 
     default:
+      if (this._extensions.webgl_draw_buffers) {
+        var ext = this._extensions.webgl_draw_buffers
+        switch (pname) {
+          case ext.DRAW_BUFFER0_WEBGL:
+          case ext.DRAW_BUFFER1_WEBGL:
+          case ext.DRAW_BUFFER2_WEBGL:
+          case ext.DRAW_BUFFER3_WEBGL:
+          case ext.DRAW_BUFFER4_WEBGL:
+          case ext.DRAW_BUFFER5_WEBGL:
+          case ext.DRAW_BUFFER6_WEBGL:
+          case ext.DRAW_BUFFER7_WEBGL:
+          case ext.DRAW_BUFFER8_WEBGL:
+          case ext.DRAW_BUFFER9_WEBGL:
+          case ext.DRAW_BUFFER10_WEBGL:
+          case ext.DRAW_BUFFER11_WEBGL:
+          case ext.DRAW_BUFFER12_WEBGL:
+          case ext.DRAW_BUFFER13_WEBGL:
+          case ext.DRAW_BUFFER14_WEBGL:
+          case ext.DRAW_BUFFER15_WEBGL:
+          case ext.MAX_DRAW_BUFFERS_WEBGL:
+          case ext.MAX_COLOR_ATTACHMENTS_WEBGL:
+            return _getParameter.call(this, pname)
+        }
+      }
       setError(this, gl.INVALID_ENUM)
       return null
   }
@@ -2667,7 +2862,7 @@ gl.getFramebufferAttachmentParameter = function getFramebufferAttachmentParamete
   pname |= 0
 
   if (target !== gl.FRAMEBUFFER ||
-    !validFramebufferAttachment(attachment)) {
+    !validFramebufferAttachment(attachment, this._extensions.webgl_draw_buffers)) {
     setError(this, gl.INVALID_ENUM)
     return null
   }
@@ -3377,10 +3572,11 @@ gl.renderbufferStorage = function renderbufferStorage (
   renderbuffer._format = internalformat
 
   var activeFramebuffer = this._activeFramebuffer
+  var attachmentArray = this._extensions.webgl_draw_buffers ? DRAW_BUFFERS_ATTACHMENTS : ATTACHMENTS
   if (activeFramebuffer) {
     var needsUpdate = false
-    for (var i = 0; i < ATTACHMENTS.length; ++i) {
-      if (activeFramebuffer._attachments[ATTACHMENTS[i]] === renderbuffer) {
+    for (var i = 0; i < attachmentArray.length; ++i) {
+      if (activeFramebuffer._attachments[attachmentArray[i]] === renderbuffer) {
         needsUpdate = true
       }
     }
@@ -3401,7 +3597,8 @@ gl.scissor = function scissor (x, y, width, height) {
 }
 
 function wrapShader (type, source) {
-  return '#define gl_MaxDrawBuffers 1\n' + source
+  // return '#define gl_MaxDrawBuffers 1\n' + source
+  return source
 }
 
 var _shaderSource = gl.shaderSource
@@ -3687,10 +3884,11 @@ gl.texImage2D = function texImage2D (
   texture._type = type
 
   var activeFramebuffer = this._activeFramebuffer
+  var attachmentArray = this._extensions.webgl_draw_buffers ? DRAW_BUFFERS_ATTACHMENTS : ATTACHMENTS
   if (activeFramebuffer) {
     var needsUpdate = false
-    for (var i = 0; i < ATTACHMENTS.length; ++i) {
-      if (activeFramebuffer._attachments[ATTACHMENTS[i]] === texture) {
+    for (var i = 0; i < attachmentArray.length; ++i) {
+      if (activeFramebuffer._attachments[attachmentArray[i]] === texture) {
         needsUpdate = true
       }
     }
@@ -4223,13 +4421,13 @@ function resizeDrawingBuffer (context, width, height) {
 
   var drawingBuffer = context._drawingBuffer
   _bindFramebuffer.call(context, gl.FRAMEBUFFER, drawingBuffer._framebuffer)
-
+  var attachmentArray = context._extensions.webgl_draw_buffers ? DRAW_BUFFERS_ATTACHMENTS : ATTACHMENTS
   // Clear all attachments
-  for (var i = 0; i < ATTACHMENTS.length; ++i) {
+  for (var i = 0; i < attachmentArray.length; ++i) {
     _framebufferTexture2D.call(
       context,
       gl.FRAMEBUFFER,
-      ATTACHMENTS[i],
+      attachmentArray[i],
       gl.TEXTURE_2D,
       0,
       0)
