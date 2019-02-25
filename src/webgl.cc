@@ -1,8 +1,3 @@
-#define ANGLE_ENABLE_DEBUG_TRACE = 1
-#define NDEBUG = 1
-#define ANGLE_ENABLE_DEBUG_ANNOTATIONS = 1
-#define ANGLE_ENABLE_DEBUG_TRACE_TO_DEBUGGER = 1
-
 #include <cstring>
 #include <vector>
 #include <iostream>
