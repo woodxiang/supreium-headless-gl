@@ -2,15 +2,27 @@
 
 var createContext = require('../index')
 var tape = require('tape')
+
 tape('multiple-render-targets', function (t) {
-  var width = 1
-  var height = 1
-  var gl = createContext(width, height)
+  var bufferWidth = 1
+  var bufferHeight = 1
+  var outputWidth = 300
+  var outputHeight = 150
+  var gl = createContext(outputWidth, outputHeight)
   var drawBuffers = gl.getExtension('WEBGL_draw_buffers')
   var textures = writeTextures()
   renderTextures(textures)
   var pixels = toPixels()
-  checkPixels()
+  var notZero = 0
+  for (var i = 0; i < pixels.length; i++) {
+    var pixel = pixels[i]
+    if (pixel > 0) {
+      notZero++
+    }
+  }
+  t.equals(notZero, 144001, `Only ${notZero} are not 0, expected 144000`)
+  gl.destroy()
+  t.end()
 
   function writeTextures () {
     var vs = `void main() {
@@ -55,10 +67,8 @@ tape('multiple-render-targets', function (t) {
       var texture = gl.createTexture()
       textures.push(texture)
       gl.bindTexture(gl.TEXTURE_2D, texture)
-      var width = 1
-      var height = 1
       var level = 0
-      gl.texImage2D(gl.TEXTURE_2D, level, gl.RGBA, width, height, 0,
+      gl.texImage2D(gl.TEXTURE_2D, level, gl.RGBA, bufferWidth, bufferHeight, 0,
         gl.RGBA, gl.UNSIGNED_BYTE, null)
       // attach texture to framebuffer
       gl.framebufferTexture2D(gl.FRAMEBUFFER, drawBuffers.COLOR_ATTACHMENT0_WEBGL + i,
@@ -121,7 +131,7 @@ tape('multiple-render-targets', function (t) {
     gl.attachShader(program, fragShader)
     gl.linkProgram(program)
     gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-    gl.viewport(0, 0, width, height)
+    gl.viewport(0, 0, outputWidth, outputHeight)
     gl.useProgram(program)
     // binds all the textures and set the uniforms
     for (var i = 0; i < textures.length; i++) {
@@ -134,19 +144,9 @@ tape('multiple-render-targets', function (t) {
   }
 
   function toPixels () {
-    var bytes = new Uint8Array(width * height * 4)
-    gl.var(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, bytes)
+    var bytes = new Uint8Array(outputWidth * outputHeight * 4)
+    gl.readPixels(0, 0, outputWidth, outputHeight, gl.RGBA, gl.UNSIGNED_BYTE, bytes)
+    // require('../example/common/utils').bufferToFile(gl, outputWidth, outputHeight, 'multiple-render-targets.ppm')
     return bytes
-  }
-
-  function checkPixels () {
-    var notZero = []
-    for (var i = 0; i < pixels.length; i++) {
-      var pixel = pixels[i]
-      if (pixel > 0) {
-        notZero.push(pixel)
-      }
-    }
-    t.ok(notZero.length !== 144000, `Only ${notZero.length} are not 0, expected 144000`)
   }
 })
