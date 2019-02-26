@@ -20,7 +20,7 @@ tape('multiple-render-targets', function (t) {
       notZero++
     }
   }
-  t.equals(notZero, 144001, `Only ${notZero} are not 0, expected 144000`)
+  t.equals(notZero, 144000, `Only ${notZero} are not 0, expected 144000`)
   gl.destroy()
   t.end()
 

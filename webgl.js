@@ -41,7 +41,6 @@ var DRAW_BUFFERS_ATTACHMENTS = [
   drawBuffers.COLOR_ATTACHMENT13_WEBGL,
   drawBuffers.COLOR_ATTACHMENT14_WEBGL,
   drawBuffers.COLOR_ATTACHMENT15_WEBGL,
-  gl.NONE,
   gl.DEPTH_ATTACHMENT,
   gl.STENCIL_ATTACHMENT,
   gl.DEPTH_STENCIL_ATTACHMENT
@@ -138,7 +137,6 @@ function WebGLFramebuffer (_, ctx) {
     this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL] = null
     this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL] = null
     this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL] = null
-    this._attachments[gl.NONE] = null
 
     this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT1_WEBGL] = 0
     this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT2_WEBGL] = 0
@@ -155,7 +153,6 @@ function WebGLFramebuffer (_, ctx) {
     this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL] = 0
     this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL] = 0
     this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL] = 0
-    this._attachmentLevel[gl.NONE] = 0
 
     this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT1_WEBGL] = 0
     this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT2_WEBGL] = 0
@@ -172,7 +169,6 @@ function WebGLFramebuffer (_, ctx) {
     this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL] = 0
     this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL] = 0
     this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL] = 0
-    this._attachmentFace[gl.NONE] = 0
   }
 }
 exports.WebGLFramebuffer = WebGLFramebuffer
@@ -380,7 +376,6 @@ function precheckFramebufferStatus (framebuffer, webgl_draw_buffers) { // eslint
     var colorAttachment13 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL] // eslint-disable-line
     var colorAttachment14 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL] // eslint-disable-line
     var colorAttachment15 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL] // eslint-disable-line
-    var colorNone = attachments[gl.NONE]
     colorAttachments = [
       colorAttachment0,
       colorAttachment1,
@@ -397,8 +392,7 @@ function precheckFramebufferStatus (framebuffer, webgl_draw_buffers) { // eslint
       colorAttachment12,
       colorAttachment13,
       colorAttachment14,
-      colorAttachment15,
-      colorNone
+      colorAttachment15
     ]
     if (!colorAttachment0 &&
       !colorAttachment1 &&
@@ -415,8 +409,7 @@ function precheckFramebufferStatus (framebuffer, webgl_draw_buffers) { // eslint
       !colorAttachment12 &&
       !colorAttachment13 &&
       !colorAttachment14 &&
-      !colorAttachment15 &&
-      !colorNone) {
+      !colorAttachment15) {
       return gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
     }
   } else {
