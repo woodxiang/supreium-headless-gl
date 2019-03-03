@@ -16,35 +16,18 @@ gl.VERSION = 0x1F02
 gl.IMPLEMENTATION_COLOR_READ_TYPE = 0x8B9A
 gl.IMPLEMENTATION_COLOR_READ_FORMAT = 0x8B9B
 
-var ATTACHMENTS = [
+var DEFAULT_ATTACHMENTS = [
   gl.COLOR_ATTACHMENT0,
   gl.DEPTH_ATTACHMENT,
   gl.STENCIL_ATTACHMENT,
   gl.DEPTH_STENCIL_ATTACHMENT
 ]
 
-var drawBuffers = gl.extWEBGL_draw_buffers()
-var DRAW_BUFFERS_ATTACHMENTS = [
-  drawBuffers.COLOR_ATTACHMENT0_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT1_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT2_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT3_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT4_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT5_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT6_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT7_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT8_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT9_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT10_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT11_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT12_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT13_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT14_WEBGL,
-  drawBuffers.COLOR_ATTACHMENT15_WEBGL,
-  gl.DEPTH_ATTACHMENT,
-  gl.STENCIL_ATTACHMENT,
-  gl.DEPTH_STENCIL_ATTACHMENT
-]
+var WEBGL_DRAW_BUFFERS_ATTACHMENTS = null
+
+function getAttachments (context) {
+  return context._extensions.webgl_draw_buffers ? WEBGL_DRAW_BUFFERS_ATTACHMENTS : DEFAULT_ATTACHMENTS
+}
 
 // Hook clean up
 process.on('exit', nativeGL.cleanup)
@@ -137,6 +120,8 @@ function WebGLFramebuffer (_, ctx) {
     this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL] = null
     this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL] = null
     this._attachments[webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL] = null
+    this._attachments[gl.NONE] = null
+    this._attachments[gl.BACK] = null
 
     this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT1_WEBGL] = 0
     this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT2_WEBGL] = 0
@@ -153,6 +138,8 @@ function WebGLFramebuffer (_, ctx) {
     this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL] = 0
     this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL] = 0
     this._attachmentLevel[webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL] = 0
+    this._attachmentLevel[gl.NONE] = null
+    this._attachmentLevel[gl.BACK] = null
 
     this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT1_WEBGL] = 0
     this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT2_WEBGL] = 0
@@ -169,6 +156,8 @@ function WebGLFramebuffer (_, ctx) {
     this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL] = 0
     this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL] = 0
     this._attachmentFace[webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL] = 0
+    this._attachmentFace[gl.NONE] = null
+    this._attachmentFace[gl.BACK] = null
   }
 }
 exports.WebGLFramebuffer = WebGLFramebuffer
@@ -358,7 +347,7 @@ function precheckFramebufferStatus (framebuffer, webgl_draw_buffers) { // eslint
     return gl.FRAMEBUFFER_UNSUPPORTED
   }
 
-  var colorAttachments
+  var colorAttachments = null
   var colorAttachment0 = attachments[gl.COLOR_ATTACHMENT0]
   if (webgl_draw_buffers) {  // eslint-disable-line
     var colorAttachment1 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT1_WEBGL] // eslint-disable-line
@@ -376,24 +365,6 @@ function precheckFramebufferStatus (framebuffer, webgl_draw_buffers) { // eslint
     var colorAttachment13 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL] // eslint-disable-line
     var colorAttachment14 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL] // eslint-disable-line
     var colorAttachment15 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL] // eslint-disable-line
-    colorAttachments = [
-      colorAttachment0,
-      colorAttachment1,
-      colorAttachment2,
-      colorAttachment3,
-      colorAttachment4,
-      colorAttachment5,
-      colorAttachment6,
-      colorAttachment7,
-      colorAttachment8,
-      colorAttachment9,
-      colorAttachment10,
-      colorAttachment11,
-      colorAttachment12,
-      colorAttachment13,
-      colorAttachment14,
-      colorAttachment15
-    ]
     if (!colorAttachment0 &&
       !colorAttachment1 &&
       !colorAttachment2 &&
@@ -412,11 +383,29 @@ function precheckFramebufferStatus (framebuffer, webgl_draw_buffers) { // eslint
       !colorAttachment15) {
       return gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
     }
+    colorAttachments = [
+      colorAttachment0,
+      colorAttachment1,
+      colorAttachment2,
+      colorAttachment3,
+      colorAttachment4,
+      colorAttachment5,
+      colorAttachment6,
+      colorAttachment7,
+      colorAttachment8,
+      colorAttachment9,
+      colorAttachment10,
+      colorAttachment11,
+      colorAttachment12,
+      colorAttachment13,
+      colorAttachment14,
+      colorAttachment15
+    ]
   } else {
-    colorAttachments = []
     if (!colorAttachment0) {
       return gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
     }
+    colorAttachments = [colorAttachment0]
   }
 
   if (depthStencilAttachment instanceof WebGLTexture) {
@@ -1088,6 +1077,72 @@ function getOESTextureFloat (context) {
   return result
 }
 
+var _drawBuffersWEBGL = gl.drawBuffersWEBGL
+function drawBuffersWEBGL (buffers) {
+  if (buffers.length < 1) {
+    setError(this, gl.INVALID_OPERATION)
+    return
+  }
+  if (buffers.length === 1 && buffers[0] === gl.BACK) {
+    this._extensions.webgl_draw_buffers._buffersState = buffers
+    _drawBuffersWEBGL.call(this, buffers)
+    var error = this.getError()
+    if (error !== gl.INVALID_OPERATION) {
+      restoreError(this, error)
+    }
+    return
+  } else if (!this._activeFramebuffer) {
+    if (buffers.length > 1) {
+      setError(this, gl.INVALID_OPERATION)
+      return
+    }
+    for (var i = 0; i < buffers.length; i++) {
+      if (buffers[i] > gl.NONE) {
+        setError(this, gl.INVALID_OPERATION)
+        return
+      }
+    }
+  }
+  this._extensions.webgl_draw_buffers._buffersState = buffers
+  _drawBuffersWEBGL.call(this, buffers)
+}
+
+function getWebGLDrawBuffers (context) {
+  var result = null
+  var exts = context.getSupportedExtensions()
+
+  if (exts && exts.indexOf('WEBGL_draw_buffers') >= 0) {
+    result = context.extWEBGL_draw_buffers()
+    result.drawBuffersWEBGL = drawBuffersWEBGL.bind(context)
+    result._buffersState = [context.BACK]
+    if (!WEBGL_DRAW_BUFFERS_ATTACHMENTS) {
+      WEBGL_DRAW_BUFFERS_ATTACHMENTS = [
+        result.COLOR_ATTACHMENT0_WEBGL,
+        result.COLOR_ATTACHMENT1_WEBGL,
+        result.COLOR_ATTACHMENT2_WEBGL,
+        result.COLOR_ATTACHMENT3_WEBGL,
+        result.COLOR_ATTACHMENT4_WEBGL,
+        result.COLOR_ATTACHMENT5_WEBGL,
+        result.COLOR_ATTACHMENT6_WEBGL,
+        result.COLOR_ATTACHMENT7_WEBGL,
+        result.COLOR_ATTACHMENT8_WEBGL,
+        result.COLOR_ATTACHMENT9_WEBGL,
+        result.COLOR_ATTACHMENT10_WEBGL,
+        result.COLOR_ATTACHMENT11_WEBGL,
+        result.COLOR_ATTACHMENT12_WEBGL,
+        result.COLOR_ATTACHMENT13_WEBGL,
+        result.COLOR_ATTACHMENT14_WEBGL,
+        result.COLOR_ATTACHMENT15_WEBGL,
+        gl.DEPTH_ATTACHMENT,
+        gl.STENCIL_ATTACHMENT,
+        gl.DEPTH_STENCIL_ATTACHMENT
+      ]
+    }
+  }
+
+  return result
+}
+
 gl.getExtension = function getExtension (name) {
   var str = name.toLowerCase()
   if (str in this._extensions) {
@@ -1113,8 +1168,7 @@ gl.getExtension = function getExtension (name) {
       ext = getOESTextureFloat(this)
       break
     case 'webgl_draw_buffers':
-      ext = this.extWEBGL_draw_buffers()
-      ext.drawBuffersWEBGL = this.drawBuffersWEBGL.bind(this)
+      ext = getWebGLDrawBuffers(this)
       break
   }
   if (ext) {
@@ -2018,15 +2072,15 @@ gl.deleteRenderbuffer = function deleteRenderbuffer (renderbuffer) {
 
   var ctx = this
   var activeFramebuffer = this._activeFramebuffer
-  var attachmentArray = ctx._extensions.webgl_draw_buffers ? DRAW_BUFFERS_ATTACHMENTS : ATTACHMENTS
   function tryDetach (framebuffer) {
     if (framebuffer && linked(framebuffer, renderbuffer)) {
-      var attachments = Object.keys(framebuffer._attachments)
-      for (var i = 0; i < attachments.length; ++i) {
-        if (framebuffer._attachments[attachmentArray[i]] === renderbuffer) {
+      var attachments = getAttachments(ctx)
+      var framebufferAttachments = Object.keys(framebuffer._attachments)
+      for (var i = 0; i < framebufferAttachments.length; ++i) {
+        if (framebuffer._attachments[attachments[i]] === renderbuffer) {
           ctx.framebufferTexture2D(
             gl.FRAMEBUFFER,
-            attachmentArray[i] | 0,
+            attachments[i] | 0,
             gl.TEXTURE_2D,
             null)
         }
@@ -2080,11 +2134,11 @@ gl.deleteTexture = function deleteTexture (texture) {
   // active FBO?
   var ctx = this
   var activeFramebuffer = this._activeFramebuffer
-  var attachmentArray = ctx._extensions.webgl_draw_buffers ? DRAW_BUFFERS_ATTACHMENTS : ATTACHMENTS
   function tryDetach (framebuffer) {
     if (framebuffer && linked(framebuffer, texture)) {
-      for (var i = 0; i < attachmentArray.length; ++i) {
-        var attachment = attachmentArray[i]
+      var attachments = getAttachments(ctx)
+      for (var i = 0; i < attachments.length; ++i) {
+        var attachment = attachments[i]
         if (framebuffer._attachments[attachment] === texture) {
           ctx.framebufferTexture2D(
             gl.FRAMEBUFFER,
@@ -2428,12 +2482,12 @@ function updateFramebufferAttachments (framebuffer) {
   var ctx = framebuffer._ctx
   var i
   var attachmentEnum
-  var attachmentArray = ctx._extensions.webgl_draw_buffers ? DRAW_BUFFERS_ATTACHMENTS : ATTACHMENTS
+  var attachments = getAttachments(ctx)
   framebuffer._status = precheckFramebufferStatus(framebuffer, ctx._extensions.webgl_draw_buffers)
   if (framebuffer._status !== gl.FRAMEBUFFER_COMPLETE) {
     if (prevStatus === gl.FRAMEBUFFER_COMPLETE) {
-      for (i = 0; i < attachmentArray.length; ++i) {
-        attachmentEnum = attachmentArray[i]
+      for (i = 0; i < attachments.length; ++i) {
+        attachmentEnum = attachments[i]
         _framebufferTexture2D.call(
           ctx,
           gl.FRAMEBUFFER,
@@ -2446,8 +2500,8 @@ function updateFramebufferAttachments (framebuffer) {
     return
   }
 
-  for (i = 0; i < attachmentArray.length; ++i) {
-    attachmentEnum = attachmentArray[i]
+  for (i = 0; i < attachments.length; ++i) {
+    attachmentEnum = attachments[i]
     _framebufferTexture2D.call(
       ctx,
       gl.FRAMEBUFFER,
@@ -2457,8 +2511,8 @@ function updateFramebufferAttachments (framebuffer) {
       framebuffer._attachmentLevel[attachmentEnum])
   }
 
-  for (i = 0; i < attachmentArray.length; ++i) {
-    attachmentEnum = attachmentArray[i]
+  for (i = 0; i < attachments.length; ++i) {
+    attachmentEnum = attachments[i]
     var attachment = framebuffer._attachments[attachmentEnum]
     if (attachment instanceof WebGLTexture) {
       _framebufferTexture2D.call(
@@ -2794,6 +2848,9 @@ gl.getParameter = function getParameter (pname) {
           case ext.DRAW_BUFFER13_WEBGL:
           case ext.DRAW_BUFFER14_WEBGL:
           case ext.DRAW_BUFFER15_WEBGL:
+            if (ext._buffersState.length === 1 && ext._buffersState[0] === gl.BACK) {
+              return gl.BACK
+            }
           case ext.MAX_DRAW_BUFFERS_WEBGL:
           case ext.MAX_COLOR_ATTACHMENTS_WEBGL:
             return _getParameter.call(this, pname)
@@ -3572,12 +3629,13 @@ gl.renderbufferStorage = function renderbufferStorage (
   renderbuffer._format = internalformat
 
   var activeFramebuffer = this._activeFramebuffer
-  var attachmentArray = this._extensions.webgl_draw_buffers ? DRAW_BUFFERS_ATTACHMENTS : ATTACHMENTS
   if (activeFramebuffer) {
     var needsUpdate = false
-    for (var i = 0; i < attachmentArray.length; ++i) {
-      if (activeFramebuffer._attachments[attachmentArray[i]] === renderbuffer) {
+    var attachments = getAttachments(this)
+    for (var i = 0; i < attachments.length; ++i) {
+      if (activeFramebuffer._attachments[attachments[i]] === renderbuffer) {
         needsUpdate = true
+        break
       }
     }
     if (needsUpdate) {
@@ -3596,9 +3654,8 @@ gl.scissor = function scissor (x, y, width, height) {
   return _scissor.call(this, x | 0, y | 0, width | 0, height | 0)
 }
 
-function wrapShader (type, source) {
-  // return '#define gl_MaxDrawBuffers 1\n' + source
-  return source
+function wrapShader (type, source, webgl_draw_buffers) { // eslint-disable-line
+  return webgl_draw_buffers ? source : '#define gl_MaxDrawBuffers 1\n' + source // eslint-disable-line
 }
 
 var _shaderSource = gl.shaderSource
@@ -3614,7 +3671,7 @@ gl.shaderSource = function shaderSource (shader, source) {
   if (!isValidString(source)) {
     setError(this, gl.INVALID_VALUE)
   } else if (checkWrapper(this, shader, WebGLShader)) {
-    _shaderSource.call(this, shader._ | 0, wrapShader(shader._type, source))
+    _shaderSource.call(this, shader._ | 0, wrapShader(shader._type, source, this._extensions.webgl_draw_buffers)) // eslint-disable-line
     shader._source = source
   }
 }
@@ -3884,12 +3941,13 @@ gl.texImage2D = function texImage2D (
   texture._type = type
 
   var activeFramebuffer = this._activeFramebuffer
-  var attachmentArray = this._extensions.webgl_draw_buffers ? DRAW_BUFFERS_ATTACHMENTS : ATTACHMENTS
   if (activeFramebuffer) {
     var needsUpdate = false
-    for (var i = 0; i < attachmentArray.length; ++i) {
-      if (activeFramebuffer._attachments[attachmentArray[i]] === texture) {
+    var attachments = getAttachments(this)
+    for (var i = 0; i < attachments.length; ++i) {
+      if (activeFramebuffer._attachments[attachments[i]] === texture) {
         needsUpdate = true
+        break
       }
     }
     if (needsUpdate) {
@@ -4421,13 +4479,13 @@ function resizeDrawingBuffer (context, width, height) {
 
   var drawingBuffer = context._drawingBuffer
   _bindFramebuffer.call(context, gl.FRAMEBUFFER, drawingBuffer._framebuffer)
-  var attachmentArray = context._extensions.webgl_draw_buffers ? DRAW_BUFFERS_ATTACHMENTS : ATTACHMENTS
+  var attachments = getAttachments(context)
   // Clear all attachments
-  for (var i = 0; i < attachmentArray.length; ++i) {
+  for (var i = 0; i < attachments.length; ++i) {
     _framebufferTexture2D.call(
       context,
       gl.FRAMEBUFFER,
-      attachmentArray[i],
+      attachments[i],
       gl.TEXTURE_2D,
       0,
       0)
