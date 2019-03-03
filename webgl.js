@@ -1115,6 +1115,7 @@ function getWebGLDrawBuffers (context) {
     result = context.extWEBGL_draw_buffers()
     result.drawBuffersWEBGL = drawBuffersWEBGL.bind(context)
     result._buffersState = [context.BACK]
+    result._maxDrawBuffers = _getParameter.call(context, result.MAX_DRAW_BUFFERS_WEBGL)
     if (!WEBGL_DRAW_BUFFERS_ATTACHMENTS) {
       WEBGL_DRAW_BUFFERS_ATTACHMENTS = [
         result.COLOR_ATTACHMENT0_WEBGL,
@@ -3655,7 +3656,11 @@ gl.scissor = function scissor (x, y, width, height) {
 }
 
 function wrapShader (type, source, webgl_draw_buffers) { // eslint-disable-line
-  return webgl_draw_buffers ? source : '#define gl_MaxDrawBuffers 1\n' + source // eslint-disable-line
+  var maxDrawBuffers = 1
+  if (webgl_draw_buffers) { // eslint-disable-line
+    maxDrawBuffers = webgl_draw_buffers._maxDrawBuffers // eslint-disable-line
+  }
+  return webgl_draw_buffers ? source : '#define gl_MaxDrawBuffers ' + maxDrawBuffers + '\n' + source // eslint-disable-line
 }
 
 var _shaderSource = gl.shaderSource
