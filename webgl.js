@@ -1079,17 +1079,14 @@ function getOESTextureFloat (context) {
 
 var _drawBuffersWEBGL = gl.drawBuffersWEBGL
 function drawBuffersWEBGL (buffers) {
+  var ext = this._extensions.webgl_draw_buffers
   if (buffers.length < 1) {
     setError(this, gl.INVALID_OPERATION)
     return
   }
   if (buffers.length === 1 && buffers[0] === gl.BACK) {
-    this._extensions.webgl_draw_buffers._buffersState = buffers
-    _drawBuffersWEBGL.call(this, buffers)
-    var error = this.getError()
-    if (error !== gl.INVALID_OPERATION) {
-      restoreError(this, error)
-    }
+    ext._buffersState = buffers
+    _drawBuffersWEBGL.call(this, [ext.COLOR_ATTACHMENT0_WEBGL])
     return
   } else if (!this._activeFramebuffer) {
     if (buffers.length > 1) {
@@ -1103,7 +1100,7 @@ function drawBuffersWEBGL (buffers) {
       }
     }
   }
-  this._extensions.webgl_draw_buffers._buffersState = buffers
+  ext._buffersState = buffers
   _drawBuffersWEBGL.call(this, buffers)
 }
 
@@ -3656,11 +3653,10 @@ gl.scissor = function scissor (x, y, width, height) {
 }
 
 function wrapShader (type, source, webgl_draw_buffers) { // eslint-disable-line
-  var maxDrawBuffers = 1
   if (webgl_draw_buffers) { // eslint-disable-line
-    maxDrawBuffers = webgl_draw_buffers._maxDrawBuffers // eslint-disable-line
+    return source
   }
-  return webgl_draw_buffers ? source : '#define gl_MaxDrawBuffers ' + maxDrawBuffers + '\n' + source // eslint-disable-line
+  return webgl_draw_buffers ? source : '#define gl_MaxDrawBuffers 1\n' + source // eslint-disable-line
 }
 
 var _shaderSource = gl.shaderSource
