@@ -527,23 +527,8 @@ function validFramebufferAttachment (attachment, webgl_draw_buffers) { // eslint
   }
 
   if (webgl_draw_buffers) { // eslint-disable-line
-    switch (attachment) {
-      case webgl_draw_buffers.COLOR_ATTACHMENT1_WEBGL: // eslint-disable-line
-      case webgl_draw_buffers.COLOR_ATTACHMENT2_WEBGL: // eslint-disable-line
-      case webgl_draw_buffers.COLOR_ATTACHMENT3_WEBGL: // eslint-disable-line
-      case webgl_draw_buffers.COLOR_ATTACHMENT4_WEBGL: // eslint-disable-line
-      case webgl_draw_buffers.COLOR_ATTACHMENT5_WEBGL: // eslint-disable-line
-      case webgl_draw_buffers.COLOR_ATTACHMENT6_WEBGL: // eslint-disable-line
-      case webgl_draw_buffers.COLOR_ATTACHMENT7_WEBGL: // eslint-disable-line
-      case webgl_draw_buffers.COLOR_ATTACHMENT8_WEBGL: // eslint-disable-line
-      case webgl_draw_buffers.COLOR_ATTACHMENT9_WEBGL: // eslint-disable-line
-      case webgl_draw_buffers.COLOR_ATTACHMENT10_WEBGL: // eslint-disable-line
-      case webgl_draw_buffers.COLOR_ATTACHMENT11_WEBGL: // eslint-disable-line
-      case webgl_draw_buffers.COLOR_ATTACHMENT12_WEBGL: // eslint-disable-line
-      case webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL: // eslint-disable-line
-      case webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL: // eslint-disable-line
-      case webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL: // eslint-disable-line
-        return true
+    if (attachment < (webgl_draw_buffers.COLOR_ATTACHMENT0_WEBGL + webgl_draw_buffers._maxDrawBuffers)) { // eslint-disable-line
+      return true
     }
   }
 
