@@ -1099,7 +1099,8 @@ function getWebGLDrawBuffers (context) {
     result._buffersState = [context.BACK]
     result._maxDrawBuffers = _getParameter.call(context, result.MAX_DRAW_BUFFERS_WEBGL)
     if (!WEBGL_DRAW_BUFFERS_ATTACHMENTS) {
-      WEBGL_DRAW_BUFFERS_ATTACHMENTS = [
+      WEBGL_DRAW_BUFFERS_ATTACHMENTS = []
+      var allColorAttachments = [
         result.COLOR_ATTACHMENT0_WEBGL,
         result.COLOR_ATTACHMENT1_WEBGL,
         result.COLOR_ATTACHMENT2_WEBGL,
@@ -1115,11 +1116,16 @@ function getWebGLDrawBuffers (context) {
         result.COLOR_ATTACHMENT12_WEBGL,
         result.COLOR_ATTACHMENT13_WEBGL,
         result.COLOR_ATTACHMENT14_WEBGL,
-        result.COLOR_ATTACHMENT15_WEBGL,
+        result.COLOR_ATTACHMENT15_WEBGL
+      ]
+      while (WEBGL_DRAW_BUFFERS_ATTACHMENTS.length < result._maxDrawBuffers) {
+        WEBGL_DRAW_BUFFERS_ATTACHMENTS.push(allColorAttachments.shift())
+      }
+      WEBGL_DRAW_BUFFERS_ATTACHMENTS.push(
         gl.DEPTH_ATTACHMENT,
         gl.STENCIL_ATTACHMENT,
         gl.DEPTH_STENCIL_ATTACHMENT
-      ]
+      )
     }
   }
 
@@ -3333,7 +3339,7 @@ function fixupLink (context, program) {
     return false
   }
 
-  // Record attribute locations
+  // Record attribute attributeLocations
   var numAttribs = context.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES)
   var names = new Array(numAttribs)
   program._attributes.length = numAttribs
