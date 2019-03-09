@@ -2840,6 +2840,7 @@ gl.getParameter = function getParameter (pname) {
             if (ext._buffersState.length === 1 && ext._buffersState[0] === gl.BACK) {
               return gl.BACK
             }
+            return _getParameter.call(this, pname)
           case ext.MAX_DRAW_BUFFERS_WEBGL:
           case ext.MAX_COLOR_ATTACHMENTS_WEBGL:
             return _getParameter.call(this, pname)
