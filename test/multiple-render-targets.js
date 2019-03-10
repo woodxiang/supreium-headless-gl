@@ -20,7 +20,7 @@ tape('multiple-render-targets', function (t) {
       notZero++
     }
   }
-  t.equals(notZero, 15, `Only ${notZero} are not 0, expected 15`)
+  t.equals(notZero, 16, `Only ${notZero} are not 0, expected 16`)
   gl.destroy()
   t.end()
 
@@ -36,7 +36,7 @@ tape('multiple-render-targets', function (t) {
   void main() {
     gl_FragData[0] = vec4(1, .5, .3, .7);
     gl_FragData[1] = vec4(.6, .5, .4, .3);
-    gl_FragData[2] = vec4(.2, .8, .0,  1);
+    gl_FragData[2] = vec4(.2, .8, .01,  1);
     gl_FragData[3] = vec4(.3, .4, .9, .6);
   }`
 
