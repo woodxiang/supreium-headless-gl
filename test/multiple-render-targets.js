@@ -6,8 +6,8 @@ var tape = require('tape')
 tape('multiple-render-targets', function (t) {
   var bufferWidth = 1
   var bufferHeight = 1
-  var outputWidth = 300
-  var outputHeight = 150
+  var outputWidth = 4
+  var outputHeight = 1
   var gl = createContext(outputWidth, outputHeight)
   var drawBuffers = gl.getExtension('WEBGL_draw_buffers')
   var textures = writeTextures()
@@ -20,13 +20,13 @@ tape('multiple-render-targets', function (t) {
       notZero++
     }
   }
-  t.equals(notZero, 144000, `Only ${notZero} are not 0, expected 144000`)
+  t.equals(notZero, 15, `Only ${notZero} are not 0, expected 15`)
   gl.destroy()
   t.end()
 
   function writeTextures () {
     var vs = `void main() {
-    gl_PointSize = 300.0;
+    gl_PointSize = 1.0;
     gl_Position = vec4(0, 0, 0, 1);
   }`
 
@@ -94,7 +94,7 @@ tape('multiple-render-targets', function (t) {
 
   function renderTextures () {
     var vs = `void main() {
-    gl_PointSize = 300.0;
+    gl_PointSize = 4.0;
     gl_Position = vec4(0, 0, 0, 1);
   }`
 
