@@ -396,6 +396,7 @@ GL_METHOD(PixelStorei) {
     case GL_MAX_DRAW_BUFFERS_EXT:
       (inst->glPixelStorei)(pname, param);
     break;
+
     default:
       (inst->glPixelStorei)(pname, param);
     break;
