@@ -350,21 +350,21 @@ function precheckFramebufferStatus (framebuffer, webgl_draw_buffers) { // eslint
   var colorAttachments = null
   var colorAttachment0 = attachments[gl.COLOR_ATTACHMENT0]
   if (webgl_draw_buffers) {  // eslint-disable-line
-    var colorAttachment1 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT1_WEBGL] // eslint-disable-line
-    var colorAttachment2 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT2_WEBGL] // eslint-disable-line
-    var colorAttachment3 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT3_WEBGL] // eslint-disable-line
-    var colorAttachment4 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT4_WEBGL] // eslint-disable-line
-    var colorAttachment5 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT5_WEBGL] // eslint-disable-line
-    var colorAttachment6 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT6_WEBGL] // eslint-disable-line
-    var colorAttachment7 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT7_WEBGL] // eslint-disable-line
-    var colorAttachment8 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT8_WEBGL] // eslint-disable-line
-    var colorAttachment9 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT9_WEBGL] // eslint-disable-line
-    var colorAttachment10 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT10_WEBGL] // eslint-disable-line
-    var colorAttachment11 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT11_WEBGL] // eslint-disable-line
-    var colorAttachment12 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT12_WEBGL] // eslint-disable-line
-    var colorAttachment13 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL] // eslint-disable-line
-    var colorAttachment14 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL] // eslint-disable-line
-    var colorAttachment15 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL] // eslint-disable-line
+    var colorAttachment1 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT1_WEBGL]
+    var colorAttachment2 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT2_WEBGL]
+    var colorAttachment3 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT3_WEBGL]
+    var colorAttachment4 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT4_WEBGL]
+    var colorAttachment5 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT5_WEBGL]
+    var colorAttachment6 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT6_WEBGL]
+    var colorAttachment7 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT7_WEBGL]
+    var colorAttachment8 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT8_WEBGL]
+    var colorAttachment9 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT9_WEBGL]
+    var colorAttachment10 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT10_WEBGL]
+    var colorAttachment11 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT11_WEBGL]
+    var colorAttachment12 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT12_WEBGL]
+    var colorAttachment13 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT13_WEBGL]
+    var colorAttachment14 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT14_WEBGL]
+    var colorAttachment15 = attachments[webgl_draw_buffers.COLOR_ATTACHMENT15_WEBGL]
     if (!colorAttachment0 &&
       !colorAttachment1 &&
       !colorAttachment2 &&
@@ -527,9 +527,7 @@ function validFramebufferAttachment (attachment, webgl_draw_buffers) { // eslint
   }
 
   if (webgl_draw_buffers) { // eslint-disable-line
-    if (attachment < (webgl_draw_buffers.COLOR_ATTACHMENT0_WEBGL + webgl_draw_buffers._maxDrawBuffers)) { // eslint-disable-line
-      return true
-    }
+    return attachment < (webgl_draw_buffers.COLOR_ATTACHMENT0_WEBGL + webgl_draw_buffers._maxDrawBuffers) // eslint-disable-line
   }
 
   return false
