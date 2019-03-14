@@ -1062,7 +1062,7 @@ GL_METHOD(BufferSubData) {
 GL_METHOD(BlendEquation) {
   GL_BOILERPLATE;
 
-  GLenum mode = info[0]->Int32Value();;
+  GLenum mode = info[0]->Int32Value();
 
   (inst->glBlendEquation)(mode);
 }
