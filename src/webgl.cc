@@ -1062,7 +1062,7 @@ GL_METHOD(BufferSubData) {
 GL_METHOD(BlendEquation) {
   GL_BOILERPLATE;
 
-  GLenum mode = info[0]->Int32Value();;
+  GLenum mode = info[0]->Int32Value();
 
   (inst->glBlendEquation)(mode);
 }
@@ -2072,12 +2072,15 @@ GL_METHOD(DrawBuffersWEBGL) {
 
   v8::Local<v8::Array> buffersArray = v8::Local<v8::Array>::Cast(info[0]);
   GLuint numBuffers = buffersArray->Length();
-  GLenum buffers[numBuffers];
+  GLenum* buffers = new GLenum[numBuffers];
+
   for (GLuint i = 0; i < numBuffers; i++) {
     buffers[i] = buffersArray->Get(i)->Uint32Value();
   }
 
   (inst->glDrawBuffersEXT)(numBuffers, buffers);
+
+  delete[] buffers;
 }
 
 GL_METHOD(EXTWEBGL_draw_buffers) {
