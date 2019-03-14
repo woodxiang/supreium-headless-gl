@@ -211,6 +211,7 @@ Only the following for now:
 * [`ANGLE_instanced_arrays`](https://www.khronos.org/registry/webgl/extensions/ANGLE_instanced_arrays/)
 * [`OES_element_index_uint`](https://www.khronos.org/registry/webgl/extensions/OES_element_index_uint/)
 * [`OES_texture_float`](https://www.khronos.org/registry/webgl/extensions/OES_texture_float/)
+* [`WEBGL_draw_buffers`](https://www.khronos.org/registry/webgl/extensions/WEBGL_draw_buffers/)
 
 ### How can I keep up to date with what has changed in headless-gl?
 

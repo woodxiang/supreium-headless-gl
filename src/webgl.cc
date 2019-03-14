@@ -393,6 +393,10 @@ GL_METHOD(PixelStorei) {
       (inst->glPixelStorei)(pname, param);
     break;
 
+    case GL_MAX_DRAW_BUFFERS_EXT:
+      (inst->glPixelStorei)(pname, param);
+    break;
+
     default:
       (inst->glPixelStorei)(pname, param);
     break;
@@ -2061,4 +2065,59 @@ GL_METHOD(CheckFramebufferStatus) {
   info.GetReturnValue().Set(
     Nan::New<v8::Integer>(
       static_cast<int>((inst->glCheckFramebufferStatus)(target))));
+}
+
+GL_METHOD(DrawBuffersWEBGL) {
+  GL_BOILERPLATE;
+
+  v8::Local<v8::Array> buffersArray = v8::Local<v8::Array>::Cast(info[0]);
+  GLuint numBuffers = buffersArray->Length();
+  GLenum buffers[numBuffers];
+  for (GLuint i = 0; i < numBuffers; i++) {
+    buffers[i] = buffersArray->Get(i)->Uint32Value();
+  }
+
+  (inst->glDrawBuffersEXT)(numBuffers, buffers);
+}
+
+GL_METHOD(EXTWEBGL_draw_buffers) {
+  v8::Local<v8::Object> result = Nan::New<v8::Object>();
+  result->Set(Nan::New("COLOR_ATTACHMENT0_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT0_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT1_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT1_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT2_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT2_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT3_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT3_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT4_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT4_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT5_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT5_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT6_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT6_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT7_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT7_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT8_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT8_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT9_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT9_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT10_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT10_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT11_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT11_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT12_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT12_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT13_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT13_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT14_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT14_EXT));
+  result->Set(Nan::New("COLOR_ATTACHMENT15_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_COLOR_ATTACHMENT15_EXT));
+
+  result->Set(Nan::New("DRAW_BUFFER0_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER0_EXT));
+  result->Set(Nan::New("DRAW_BUFFER1_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER1_EXT));
+  result->Set(Nan::New("DRAW_BUFFER2_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER2_EXT));
+  result->Set(Nan::New("DRAW_BUFFER3_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER3_EXT));
+  result->Set(Nan::New("DRAW_BUFFER4_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER4_EXT));
+  result->Set(Nan::New("DRAW_BUFFER5_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER5_EXT));
+  result->Set(Nan::New("DRAW_BUFFER6_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER6_EXT));
+  result->Set(Nan::New("DRAW_BUFFER7_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER7_EXT));
+  result->Set(Nan::New("DRAW_BUFFER8_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER8_EXT));
+  result->Set(Nan::New("DRAW_BUFFER9_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER9_EXT));
+  result->Set(Nan::New("DRAW_BUFFER10_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER10_EXT));
+  result->Set(Nan::New("DRAW_BUFFER11_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER11_EXT));
+  result->Set(Nan::New("DRAW_BUFFER12_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER12_EXT));
+  result->Set(Nan::New("DRAW_BUFFER13_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER13_EXT));
+  result->Set(Nan::New("DRAW_BUFFER14_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER14_EXT));
+  result->Set(Nan::New("DRAW_BUFFER15_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_DRAW_BUFFER15_EXT));
+
+  result->Set(Nan::New("MAX_COLOR_ATTACHMENTS_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_MAX_COLOR_ATTACHMENTS_EXT));
+  result->Set(Nan::New("MAX_DRAW_BUFFERS_WEBGL").ToLocalChecked(), Nan::New<v8::Number>(GL_MAX_DRAW_BUFFERS_EXT));
+
+  info.GetReturnValue().Set(result);
 }
