@@ -26,7 +26,6 @@ Nan::Persistent<v8::FunctionTemplate> WEBGL_TEMPLATE;
 #define JS_GL_CONSTANT(name) JS_CONSTANT(name, GL_ ## name)
 
 NAN_MODULE_INIT(Init) {
-  v8::Local<v8::Context> context = Nan::GetCurrentContext();
   v8::Local<v8::FunctionTemplate> webgl_template =
     Nan::New<v8::FunctionTemplate>(WebGLRenderingContext::New);
 
@@ -480,7 +479,7 @@ NAN_MODULE_INIT(Init) {
   Nan::Set(
       target
     , Nan::New<v8::String>("WebGLRenderingContext").ToLocalChecked()
-    , webgl_template->GetFunction(context).ToLocalChecked());
+    , Nan::GetFunction(webgl_template).ToLocalChecked());
 
   //Export helper methods for clean up and error handling
   Nan::Export(target, "cleanup", WebGLRenderingContext::DisposeAll);
