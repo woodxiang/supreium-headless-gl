@@ -14,5 +14,5 @@ PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
 
 if [[ ${COMMIT_MESSAGE} == ${PACKAGE_JSON_VERSION} ]]; then
   echo "running prebuild"
-  node ./node_modules/prebuild/bin.js --all --strip -u ${GITHUB_TOKEN}
+  node ./node_modules/prebuild/bin.js -t 8.0.0 -t 9.0.0 -t 10.0.0 -t 11.0.0 -t 12.0.0 --strip -u ${GITHUB_TOKEN}
 fi
