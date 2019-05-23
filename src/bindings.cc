@@ -479,7 +479,7 @@ NAN_MODULE_INIT(Init) {
   Nan::Set(
       target
     , Nan::New<v8::String>("WebGLRenderingContext").ToLocalChecked()
-    , webgl_template->GetFunction());
+    , Nan::GetFunction(webgl_template).ToLocalChecked());
 
   //Export helper methods for clean up and error handling
   Nan::Export(target, "cleanup", WebGLRenderingContext::DisposeAll);

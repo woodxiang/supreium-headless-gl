@@ -17,11 +17,11 @@
     "install": "prebuild-install || node-gyp rebuild"
   },
   "dependencies": {
-    "bindings": "^1.2.1",
+    "bindings": "^1.5.0",
     "bit-twiddle": "^1.0.2",
     "glsl-tokenizer": "^2.0.2",
-    "nan": "^2.6.2",
-    "node-gyp": "^3.6.2",
+    "nan": "^2.14.0",
+    "node-gyp": "^4.0.0",
     "prebuild-install": "^5.1.0"
   },
   "devDependencies": {
