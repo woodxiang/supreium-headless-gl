@@ -2306,7 +2306,13 @@ gl.drawArrays = function drawArrays (mode, first, count) {
     maxIndex = (count + first - 1) >>> 0
   }
   if (checkVertexAttribState(this, maxIndex)) {
-    if (this._vertexAttribs[0]._isPointer) {
+    if (
+      this._vertexAttribs[0]._isPointer || (
+        this._extensions.webgl_draw_buffers &&
+        this._extensions.webgl_draw_buffers._buffersState &&
+        this._extensions.webgl_draw_buffers._buffersState.length > 0
+      )
+    ) {
       return _drawArrays.call(this, mode, first, reducedCount)
     } else {
       beginAttrib0Hack(this)
