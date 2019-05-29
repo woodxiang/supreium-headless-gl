@@ -3,7 +3,7 @@ git:
   submodules: true
 env:
   global:
-    - secure: Fk0woj/VTvLZjJ9/iF0Y4IGdN/PJFjUh6UElno11HtdcGpOs8STer1lnn3ynbu7MkboRM/ZTPuCoUgWkD/CiwS5bdNUPZs7dVtSEG5uN54wiX2yozi0O86n3y7zpHx4YgmynFgp+iNh10fQMcxH8UbfyVk/9BW22Rg+k6di7T60=
+    - secure: H9lQEk76gGIi0TM9dGSZYmezr+8x4a4HQuwyJ1Z7wnWuW6diWtftfaim85AvjRpNnhpfz5ia6hmzLruOXbjDxCYp2RN9nhebBlGp9iYQsoyzZlTphWVNj0cGC9AIkxEtobswU3/A79FgnMhZxo5vSu4eotTgxo7nyiUaTuKB2nI=
 matrix:
   include:
   - os: linux
