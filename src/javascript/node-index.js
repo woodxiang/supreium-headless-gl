@@ -1,8 +1,12 @@
-var bits = require('bit-twiddle')
-var webgl = require('./webgl')
-var wrap = require('./wrap')
+const bits = require('bit-twiddle')
+const { WebGLContextAttributes } = require('./webgl-context-attributes')
+const { WebGLRenderingContext } = require('./webgl-rendering-context')
+const { WebGLTextureUnit } = require('./webgl-texture-unit')
+const { WebGLVertexAttribute } = require('./webgl-vertex-attribute')
 
-var CONTEXT_COUNTER = 0
+const wrap = require('./wrap')
+
+let CONTEXT_COUNTER = 0
 
 function flag (options, name, dflt) {
   if (!options || !(typeof options === 'object') || !(name in options)) {
@@ -12,15 +16,13 @@ function flag (options, name, dflt) {
 }
 
 function createContext (width, height, options) {
-  var i
-
   width = width | 0
   height = height | 0
   if (!(width > 0 && height > 0)) {
     return null
   }
 
-  var contextAttributes = new webgl.WebGLContextAttributes(
+  const contextAttributes = new WebGLContextAttributes(
     flag(options, 'alpha', true),
     flag(options, 'depth', true),
     flag(options, 'stencil', false),
@@ -34,9 +36,9 @@ function createContext (width, height, options) {
   contextAttributes.premultipliedAlpha =
     contextAttributes.premultipliedAlpha && contextAttributes.alpha
 
-  var gl
+  let gl
   try {
-    gl = new webgl.WebGLRenderingContext(
+    gl = new WebGLRenderingContext(
       1,
       1,
       contextAttributes.alpha,
@@ -57,7 +59,7 @@ function createContext (width, height, options) {
 
   gl._ = CONTEXT_COUNTER++
 
-  gl._contextattributes = contextAttributes
+  gl._contextAttributes = contextAttributes
 
   gl._extensions = {}
   gl._programs = {}
@@ -74,10 +76,10 @@ function createContext (width, height, options) {
   gl._activeRenderbuffer = null
 
   // Initialize texture units
-  var numTextures = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS)
+  const numTextures = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS)
   gl._textureUnits = new Array(numTextures)
-  for (i = 0; i < numTextures; ++i) {
-    gl._textureUnits[i] = new webgl.WebGLTextureUnit(i)
+  for (let i = 0; i < numTextures; ++i) {
+    gl._textureUnits[i] = new WebGLTextureUnit(i)
   }
   gl._activeTextureUnit = 0
   gl.activeTexture(gl.TEXTURE0)
@@ -87,8 +89,8 @@ function createContext (width, height, options) {
   // Initialize vertex attributes
   var numAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS)
   gl._vertexAttribs = new Array(numAttribs)
-  for (i = 0; i < numAttribs; ++i) {
-    gl._vertexAttribs[i] = new webgl.WebGLVertexAttribute(gl, i)
+  for (let i = 0; i < numAttribs; ++i) {
+    gl._vertexAttribs[i] = new WebGLVertexAttribute(gl, i)
   }
 
   // Store limits
@@ -102,9 +104,9 @@ function createContext (width, height, options) {
   gl._packAlignment = 4
 
   // Allocate framebuffer
-  webgl.allocateDrawingBuffer(gl, width, height)
+  gl._allocateDrawingBuffer(width, height)
 
-  var attrib0Buffer = gl.createBuffer()
+  const attrib0Buffer = gl.createBuffer()
   gl._attrib0Buffer = attrib0Buffer
 
   // Initialize defaults

@@ -3,7 +3,7 @@ var runConformance = require('gl-conformance')
 var createContext = require('../../index')
 
 // Inject WebGL types into global namespaces, required by some conformance tests
-var webgl = require('../../wrap')
+var webgl = require('../../src/javascript/wrap')
 WebGLRenderingContext = webgl.WebGLRenderingContext // eslint-disable-line
 WebGLBuffer = webgl.WebGLBuffer // eslint-disable-line
 WebGLFramebuffer = webgl.WebGLFramebuffer // eslint-disable-line

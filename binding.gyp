@@ -13,9 +13,9 @@
         'VERSION=1.0.0'
       ],
       'sources': [
-          'src/bindings.cc',
-          'src/webgl.cc',
-          'src/procs.cc'
+          'src/native/bindings.cc',
+          'src/native/webgl.cc',
+          'src/native/procs.cc'
       ],
       'include_dirs': [
         "<!(node -e \"require('nan')\")",
