@@ -153,35 +153,6 @@ function formatSize (internalFormat) {
   return 0
 }
 
-function computePixelSize (type, internalFormat) {
-  const pixelSize = formatSize(internalFormat)
-  if (pixelSize === 0) {
-    this.setError(gl.INVALID_ENUM)
-    return 0
-  }
-  switch (type) {
-    case gl.UNSIGNED_BYTE:
-      return pixelSize
-    case gl.UNSIGNED_SHORT_5_6_5:
-      if (internalFormat !== gl.RGB) {
-        this.setError(gl.INVALID_OPERATION)
-        break
-      }
-      return 2
-    case gl.UNSIGNED_SHORT_4_4_4_4:
-    case gl.UNSIGNED_SHORT_5_5_5_1:
-      if (internalFormat !== gl.RGBA) {
-        this.setError(gl.INVALID_OPERATION)
-        break
-      }
-      return 2
-    case gl.FLOAT:
-      return 1
-  }
-  this.setError(gl.INVALID_ENUM)
-  return 0
-}
-
 function convertPixels (pixels) {
   if (typeof pixels === 'object' && pixels !== null) {
     if (pixels instanceof ArrayBuffer) {
@@ -228,7 +199,6 @@ module.exports = {
   formatSize,
   checkFormat,
   checkUniform,
-  computePixelSize,
   convertPixels,
   validCubeTarget
 }

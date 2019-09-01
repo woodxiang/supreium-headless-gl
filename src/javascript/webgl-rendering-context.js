@@ -11,7 +11,7 @@ const { getWebGLDrawBuffers } = require('./extensions/webgl-draw-buffers')
 const {
   checkObject,
   checkUniform,
-  computePixelSize,
+  formatSize,
   isValidString,
   typeSize,
   uniformTypeSize,
@@ -255,6 +255,35 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     return true
   }
 
+  _computePixelSize (type, internalFormat) {
+    const pixelSize = formatSize(internalFormat)
+    if (pixelSize === 0) {
+      this.setError(gl.INVALID_ENUM)
+      return 0
+    }
+    switch (type) {
+      case gl.UNSIGNED_BYTE:
+        return pixelSize
+      case gl.UNSIGNED_SHORT_5_6_5:
+        if (internalFormat !== gl.RGB) {
+          this.setError(gl.INVALID_OPERATION)
+          break
+        }
+        return 2
+      case gl.UNSIGNED_SHORT_4_4_4_4:
+      case gl.UNSIGNED_SHORT_5_5_5_1:
+        if (internalFormat !== gl.RGBA) {
+          this.setError(gl.INVALID_OPERATION)
+          break
+        }
+        return 2
+      case gl.FLOAT:
+        return 1
+    }
+    this.setError(gl.INVALID_ENUM)
+    return 0
+  }
+
   _computeRowStride (width, pixelSize) {
     let rowStride = width * pixelSize
     if (rowStride % this._unpackAlignment) {
@@ -347,11 +376,15 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
   }
 
   _getAttachments () {
-    return this._extensions.webgl_draw_buffers ? this._extensions.webgl_draw_buffers._WEBGL_DRAW_BUFFERS_ATTACHMENTS : DEFAULT_ATTACHMENTS
+    return this._extensions.webgl_draw_buffers ? this._extensions.webgl_draw_buffers._ALL_ATTACHMENTS : DEFAULT_ATTACHMENTS
   }
 
   _getColorAttachments () {
-    return this._extensions.webgl_draw_buffers ? this._extensions.webgl_draw_buffers._WEBGL_DRAW_BUFFERS_COLOR_ATTACHMENTS : DEFAULT_COLOR_ATTACHMENTS
+    return this._extensions.webgl_draw_buffers ? this._extensions.webgl_draw_buffers._ALL_ATTACHMENTS : DEFAULT_COLOR_ATTACHMENTS
+  }
+
+  _getParameterDirect (pname) {
+    return super.getParameter(pname)
   }
 
   _getTexImage (target) {
@@ -3052,7 +3085,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
       return
     }
 
-    const pixelSize = computePixelSize(type, format)
+    const pixelSize = this._computePixelSize(type, format)
     if (pixelSize === 0) {
       return
     }
@@ -3169,7 +3202,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
       return
     }
 
-    const pixelSize = computePixelSize(type, format)
+    const pixelSize = this._computePixelSize(type, format)
     if (pixelSize === 0) {
       return
     }
@@ -3440,9 +3473,9 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     if (!this._checkUniformValueValid(location, value, 'uniform1fv', 1, 'f')) return
     if (location._array) {
       const locs = location._array
-      for (let j = 0; j < locs.length && (j + 1) * 1 <= value.length; ++j) {
-        const loc = locs[j]
-        super.uniform1fv(loc, value[1 * j])
+      for (let i = 0; i < locs.length && i < value.length; ++i) {
+        const loc = locs[i]
+        super.uniform1f(loc, value[i])
       }
       return
     }
@@ -3456,9 +3489,9 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     if (!this._checkUniformValueValid(location, value, 'uniform1iv', 1, 'i')) return
     if (location._array) {
       const locs = location._array
-      for (let j = 0; j < locs.length && (j + 1) * 1 <= value.length; ++j) {
-        const loc = locs[j]
-        super.uniform1iv(loc, value[1 * j])
+      for (let i = 0; i < locs.length && i < value.length; ++i) {
+        const loc = locs[i]
+        super.uniform1i(loc, value[i])
       }
       return
     }
@@ -3473,9 +3506,9 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     if (!this._checkUniformValueValid(location, value, 'uniform2fv', 2, 'f')) return
     if (location._array) {
       const locs = location._array
-      for (let j = 0; j < locs.length && (j + 2) * 1 <= value.length; ++j) {
-        const loc = locs[j]
-        super.uniform2fv(loc, value[2 * j])
+      for (let i = 0; i < locs.length && 2 * i < value.length; ++i) {
+        const loc = locs[i]
+        super.uniform2f(loc, value[2 * i], value[(2 * i) + 1])
       }
       return
     }
@@ -3489,9 +3522,9 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     if (!this._checkUniformValueValid(location, value, 'uniform2iv', 2, 'i')) return
     if (location._array) {
       const locs = location._array
-      for (let j = 0; j < locs.length && (j + 2) * 1 <= value.length; ++j) {
-        const loc = locs[j]
-        super.uniform2iv(loc, value[2 * j])
+      for (let i = 0; i < locs.length && 2 * i < value.length; ++i) {
+        const loc = locs[i]
+        super.uniform2i(loc, value[2 * i], value[2 * i + 1])
       }
       return
     }
@@ -3506,9 +3539,9 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     if (!this._checkUniformValueValid(location, value, 'uniform3fv', 3, 'f')) return
     if (location._array) {
       const locs = location._array
-      for (let j = 0; j < locs.length && (j + 3) * 1 <= value.length; ++j) {
-        const loc = locs[j]
-        super.uniform3fv(loc, value[3 * j])
+      for (let i = 0; i < locs.length && 3 * i < value.length; ++i) {
+        const loc = locs[i]
+        super.uniform3f(loc, value[3 * i], value[3 * i + 1], value[3 * i + 2])
       }
       return
     }
@@ -3522,9 +3555,9 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     if (!this._checkUniformValueValid(location, value, 'uniform3iv', 3, 'i')) return
     if (location._array) {
       const locs = location._array
-      for (let j = 0; j < locs.length && (j + 3) * 1 <= value.length; ++j) {
-        const loc = locs[j]
-        super.uniform3iv(loc, value[3 * j])
+      for (let i = 0; i < locs.length && 3 * i < value.length; ++i) {
+        const loc = locs[i]
+        super.uniform3i(loc, value[3 * i], value[3 * i + 1], value[3 * i + 2])
       }
       return
     }
@@ -3539,9 +3572,9 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     if (!this._checkUniformValueValid(location, value, 'uniform4fv', 4, 'f')) return
     if (location._array) {
       const locs = location._array
-      for (let j = 0; j < locs.length && (j + 4) * 1 <= value.length; ++j) {
-        const loc = locs[j]
-        super.uniform4fv(loc, value[4 * j])
+      for (let i = 0; i < locs.length && 4 * i < value.length; ++i) {
+        const loc = locs[i]
+        super.uniform4f(loc, value[4 * i], value[4 * i + 1], value[4 * i + 2], value[4 * i + 3])
       }
       return
     }
@@ -3549,15 +3582,15 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
   }
   uniform4i (location, v0, v1, v2, v3) {
     if (!this._checkUniformValid(location, v0, 'uniform4i', 4, 'i')) return
-    super.uniform3i(location._ | 0, v0, v1, v2, v3)
+    super.uniform4i(location._ | 0, v0, v1, v2, v3)
   }
   uniform4iv (location, value) {
     if (!this._checkUniformValueValid(location, value, 'uniform4iv', 4, 'i')) return
     if (location._array) {
       const locs = location._array
-      for (let j = 0; j < locs.length && (j + 4) * 1 <= value.length; ++j) {
-        const loc = locs[j]
-        super.uniform4iv(loc, value[4 * j])
+      for (let i = 0; i < locs.length && 4 * i < value.length; ++i) {
+        const loc = locs[i]
+        super.uniform4i(loc, value[4 * i], value[4 * i + 1], value[4 * i + 2], value[4 * i + 3])
       }
       return
     }
@@ -3657,7 +3690,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
   }
 
   vertexAttrib1fv (index, value) {
-    if (typeof value !== 'object' || value === null || value.length !== 1) {
+    if (typeof value !== 'object' || value === null || value.length < 1) {
       this.setError(gl.INVALID_OPERATION)
       return
     }
@@ -3669,7 +3702,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     return super.vertexAttrib1f(index | 0, +value[0])
   }
   vertexAttrib2fv (index, value) {
-    if (typeof value !== 'object' || value === null || value.length !== 2) {
+    if (typeof value !== 'object' || value === null || value.length < 2) {
       this.setError(gl.INVALID_OPERATION)
       return
     }
@@ -3681,7 +3714,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     return super.vertexAttrib2f(index | 0, +value[0], +value[1])
   }
   vertexAttrib3fv (index, value) {
-    if (typeof value !== 'object' || value === null || value.length !== 3) {
+    if (typeof value !== 'object' || value === null || value.length < 3) {
       this.setError(gl.INVALID_OPERATION)
       return
     }
@@ -3693,7 +3726,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     return super.vertexAttrib3f(index | 0, +value[0], +value[1], +value[2])
   }
   vertexAttrib4fv (index, value) {
-    if (typeof value !== 'object' || value === null || value.length !== 4) {
+    if (typeof value !== 'object' || value === null || value.length < 4) {
       this.setError(gl.INVALID_OPERATION)
       return
     }
