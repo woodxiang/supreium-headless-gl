@@ -9,6 +9,7 @@ const { getSTACKGLDestroyContext } = require('./extensions/stackgl-destroy-conte
 const { getSTACKGLResizeDrawingBuffer } = require('./extensions/stackgl-resize-drawing-buffer')
 const { getWebGLDrawBuffers } = require('./extensions/webgl-draw-buffers')
 const {
+  bindPublics,
   checkObject,
   checkUniform,
   formatSize,
@@ -54,6 +55,32 @@ const availableExtensions = {
   stackgl_destroy_context: getSTACKGLDestroyContext,
   stackgl_resize_drawingbuffer: getSTACKGLResizeDrawingBuffer,
   webgl_draw_buffers: getWebGLDrawBuffers
+}
+
+const privateMethods = [
+  'resize',
+  'destroy'
+]
+
+function wrapContext (ctx) {
+  const wrapper = new WebGLRenderingContext()
+  bindPublics(Object.keys(ctx), wrapper, ctx, privateMethods)
+  bindPublics(Object.keys(ctx.constructor.prototype), wrapper, ctx, privateMethods)
+  bindPublics(Object.getOwnPropertyNames(ctx), wrapper, ctx, privateMethods)
+  bindPublics(Object.getOwnPropertyNames(ctx.constructor.prototype), wrapper, ctx, privateMethods)
+
+  Object.defineProperties(wrapper, {
+    drawingBufferWidth: {
+      get () { return ctx.drawingBufferWidth },
+      set (value) { ctx.drawingBufferWidth = value }
+    },
+    drawingBufferHeight: {
+      get () { return ctx.drawingBufferHeight },
+      set (value) { ctx.drawingBufferHeight = value }
+    }
+  })
+
+  return wrapper
 }
 
 // We need to wrap some of the native WebGL functions to handle certain error codes and check input values
@@ -380,7 +407,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
   }
 
   _getColorAttachments () {
-    return this._extensions.webgl_draw_buffers ? this._extensions.webgl_draw_buffers._ALL_ATTACHMENTS : DEFAULT_COLOR_ATTACHMENTS
+    return this._extensions.webgl_draw_buffers ? this._extensions.webgl_draw_buffers._ALL_COLOR_ATTACHMENTS : DEFAULT_COLOR_ATTACHMENTS
   }
 
   _getParameterDirect (pname) {
@@ -399,9 +426,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
   }
 
   _preCheckFramebufferStatus (framebuffer) {
-    const { webgl_draw_buffers } = this._extensions // eslint-disable-line
     const attachments = framebuffer._attachments
-    const attachmentsArray = framebuffer._attachmentsArray
     const width = []
     const height = []
     const depthAttachment = attachments[gl.DEPTH_ATTACHMENT]
@@ -413,12 +438,15 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
       return gl.FRAMEBUFFER_UNSUPPORTED
     }
 
-    if (webgl_draw_buffers) {  // eslint-disable-line
-      for (let i = 0; i < attachmentsArray.length; i++) {
-        if (!attachmentsArray[i]) {
-          return gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
-        }
+    const colorAttachments = this._getColorAttachments()
+    let colorAttachmentCount = 0
+    for (const attachmentEnum in attachments) {
+      if (attachments[attachmentEnum] && colorAttachments.indexOf(attachmentEnum * 1) !== -1) {
+        colorAttachmentCount++
       }
+    }
+    if (colorAttachmentCount === 0) {
+      return gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
     }
 
     if (depthStencilAttachment instanceof WebGLTexture) {
@@ -452,7 +480,6 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     }
 
     let colorAttached = false
-    const colorAttachments = this._getColorAttachments()
     for (let i = 0; i < colorAttachments.length; ++i) {
       const colorAttachment = attachments[colorAttachments[i]]
       if (colorAttachment instanceof WebGLTexture) {
@@ -3495,7 +3522,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
       }
       return
     }
-    super.uniform1i(location._ | 0, value[0])
+    this.uniform1i(location, value[0])
   }
 
   uniform2f (location, v0, v1) {
@@ -3528,7 +3555,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
       }
       return
     }
-    super.uniform2i(location._ | 0, value[0], value[1])
+    this.uniform2i(location, value[0], value[1])
   }
 
   uniform3f (location, v0, v1, v2) {
@@ -3561,7 +3588,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
       }
       return
     }
-    super.uniform3i(location._ | 0, value[0], value[1], value[2])
+    this.uniform3i(location, value[0], value[1], value[2])
   }
 
   uniform4f (location, v0, v1, v2, v3) {
@@ -3594,7 +3621,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
       }
       return
     }
-    super.uniform4i(location._ | 0, value[0], value[1], value[2], value[3])
+    this.uniform4i(location, value[0], value[1], value[2], value[3])
   }
 
   _checkUniformMatrix (location, transpose, value, name, count) {
@@ -3739,4 +3766,4 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
   }
 }
 
-module.exports = { WebGLRenderingContext }
+module.exports = { WebGLRenderingContext, wrapContext }

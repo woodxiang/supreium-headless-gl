@@ -11,7 +11,6 @@ class WebGLFramebuffer extends Linkable {
     this._height = 0
     this._status = null
 
-    this._attachmentsArray = []
     this._attachments = {}
     this._attachments[gl.COLOR_ATTACHMENT0] = null
     this._attachments[gl.DEPTH_ATTACHMENT] = null
@@ -94,7 +93,6 @@ class WebGLFramebuffer extends Linkable {
       return
     }
     this._attachments[attachment] = null
-    this._attachmentsArray.splice(this._attachmentsArray.indexOf(attachment), 1)
     this._unlink(object)
   }
 
@@ -110,7 +108,6 @@ class WebGLFramebuffer extends Linkable {
     }
 
     this._attachments[attachment] = object
-    this._attachmentsArray.push(object)
 
     this._link(object)
   }

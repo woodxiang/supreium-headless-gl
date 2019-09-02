@@ -1,10 +1,8 @@
 const bits = require('bit-twiddle')
 const { WebGLContextAttributes } = require('./webgl-context-attributes')
-const { WebGLRenderingContext } = require('./webgl-rendering-context')
+const { WebGLRenderingContext, wrapContext } = require('./webgl-rendering-context')
 const { WebGLTextureUnit } = require('./webgl-texture-unit')
 const { WebGLVertexAttribute } = require('./webgl-vertex-attribute')
-
-const wrap = require('./wrap')
 
 let CONTEXT_COUNTER = 0
 
@@ -36,9 +34,9 @@ function createContext (width, height, options) {
   contextAttributes.premultipliedAlpha =
     contextAttributes.premultipliedAlpha && contextAttributes.alpha
 
-  let gl
+  let ctx
   try {
-    gl = new WebGLRenderingContext(
+    ctx = new WebGLRenderingContext(
       1,
       1,
       contextAttributes.alpha,
@@ -50,82 +48,82 @@ function createContext (width, height, options) {
       contextAttributes.preferLowPowerToHighPerformance,
       contextAttributes.failIfMajorPerformanceCaveat)
   } catch (e) {}
-  if (!gl) {
+  if (!ctx) {
     return null
   }
 
-  gl.drawingBufferWidth = width
-  gl.drawingBufferHeight = height
+  ctx.drawingBufferWidth = width
+  ctx.drawingBufferHeight = height
 
-  gl._ = CONTEXT_COUNTER++
+  ctx._ = CONTEXT_COUNTER++
 
-  gl._contextAttributes = contextAttributes
+  ctx._contextAttributes = contextAttributes
 
-  gl._extensions = {}
-  gl._programs = {}
-  gl._shaders = {}
-  gl._buffers = {}
-  gl._textures = {}
-  gl._framebuffers = {}
-  gl._renderbuffers = {}
+  ctx._extensions = {}
+  ctx._programs = {}
+  ctx._shaders = {}
+  ctx._buffers = {}
+  ctx._textures = {}
+  ctx._framebuffers = {}
+  ctx._renderbuffers = {}
 
-  gl._activeProgram = null
-  gl._activeFramebuffer = null
-  gl._activeArrayBuffer = null
-  gl._activeElementArrayBuffer = null
-  gl._activeRenderbuffer = null
+  ctx._activeProgram = null
+  ctx._activeFramebuffer = null
+  ctx._activeArrayBuffer = null
+  ctx._activeElementArrayBuffer = null
+  ctx._activeRenderbuffer = null
 
   // Initialize texture units
-  const numTextures = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS)
-  gl._textureUnits = new Array(numTextures)
+  const numTextures = ctx.getParameter(ctx.MAX_COMBINED_TEXTURE_IMAGE_UNITS)
+  ctx._textureUnits = new Array(numTextures)
   for (let i = 0; i < numTextures; ++i) {
-    gl._textureUnits[i] = new WebGLTextureUnit(i)
+    ctx._textureUnits[i] = new WebGLTextureUnit(i)
   }
-  gl._activeTextureUnit = 0
-  gl.activeTexture(gl.TEXTURE0)
+  ctx._activeTextureUnit = 0
+  ctx.activeTexture(ctx.TEXTURE0)
 
-  gl._errorStack = []
+  ctx._errorStack = []
 
   // Initialize vertex attributes
-  var numAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS)
-  gl._vertexAttribs = new Array(numAttribs)
+  const numAttribs = ctx.getParameter(ctx.MAX_VERTEX_ATTRIBS)
+  ctx._vertexAttribs = new Array(numAttribs)
   for (let i = 0; i < numAttribs; ++i) {
-    gl._vertexAttribs[i] = new WebGLVertexAttribute(gl, i)
+    ctx._vertexAttribs[i] = new WebGLVertexAttribute(ctx, i)
   }
 
   // Store limits
-  gl._maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE)
-  gl._maxTextureLevel = bits.log2(bits.nextPow2(gl._maxTextureSize))
-  gl._maxCubeMapSize = gl.getParameter(gl.MAX_CUBE_MAP_TEXTURE_SIZE)
-  gl._maxCubeMapLevel = bits.log2(bits.nextPow2(gl._maxCubeMapSize))
+  ctx._maxTextureSize = ctx.getParameter(ctx.MAX_TEXTURE_SIZE)
+  ctx._maxTextureLevel = bits.log2(bits.nextPow2(ctx._maxTextureSize))
+  ctx._maxCubeMapSize = ctx.getParameter(ctx.MAX_CUBE_MAP_TEXTURE_SIZE)
+  ctx._maxCubeMapLevel = bits.log2(bits.nextPow2(ctx._maxCubeMapSize))
 
   // Unpack alignment
-  gl._unpackAlignment = 4
-  gl._packAlignment = 4
+  ctx._unpackAlignment = 4
+  ctx._packAlignment = 4
 
   // Allocate framebuffer
-  gl._allocateDrawingBuffer(width, height)
+  ctx._allocateDrawingBuffer(width, height)
 
-  const attrib0Buffer = gl.createBuffer()
-  gl._attrib0Buffer = attrib0Buffer
+  const attrib0Buffer = ctx.createBuffer()
+  ctx._attrib0Buffer = attrib0Buffer
 
   // Initialize defaults
-  gl.bindBuffer(gl.ARRAY_BUFFER, null)
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-  gl.bindRenderbuffer(gl.RENDERBUFFER, null)
+  ctx.bindBuffer(ctx.ARRAY_BUFFER, null)
+  ctx.bindBuffer(ctx.ELEMENT_ARRAY_BUFFER, null)
+  ctx.bindFramebuffer(ctx.FRAMEBUFFER, null)
+  ctx.bindRenderbuffer(ctx.RENDERBUFFER, null)
 
   // Set viewport and scissor
-  gl.viewport(0, 0, width, height)
-  gl.scissor(0, 0, width, height)
+  ctx.viewport(0, 0, width, height)
+  ctx.scissor(0, 0, width, height)
 
   // Clear buffers
-  gl.clearDepth(1)
-  gl.clearColor(0, 0, 0, 0)
-  gl.clearStencil(0)
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT)
+  ctx.clearDepth(1)
+  ctx.clearColor(0, 0, 0, 0)
+  ctx.clearStencil(0)
+  ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT | ctx.STENCIL_BUFFER_BIT)
 
-  return wrap(gl)
+  return wrapContext(ctx)
 }
 
 module.exports = createContext
