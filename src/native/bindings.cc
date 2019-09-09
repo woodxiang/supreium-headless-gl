@@ -34,9 +34,9 @@ NAN_MODULE_INIT(Init) {
     Nan::New<v8::String>("WebGLRenderingContext").ToLocalChecked());
 
   /* WebGL methods */
-  JS_GL_METHOD("drawArraysInstanced", DrawArraysInstanced);
-  JS_GL_METHOD("drawElementsInstanced", DrawElementsInstanced);
-  JS_GL_METHOD("vertexAttribDivisor", VertexAttribDivisor);
+  JS_GL_METHOD("_drawArraysInstanced", DrawArraysInstanced);
+  JS_GL_METHOD("_drawElementsInstanced", DrawElementsInstanced);
+  JS_GL_METHOD("_vertexAttribDivisor", VertexAttribDivisor);
 
   JS_GL_METHOD("getUniform", GetUniform);
   JS_GL_METHOD("uniform1f", Uniform1f);
@@ -349,7 +349,6 @@ NAN_MODULE_INIT(Init) {
   JS_GL_CONSTANT(DECR_WRAP);
   JS_GL_CONSTANT(VENDOR);
   JS_GL_CONSTANT(RENDERER);
-  JS_GL_CONSTANT(VERSION);
   JS_GL_CONSTANT(NEAREST);
   JS_GL_CONSTANT(LINEAR);
   JS_GL_CONSTANT(NEAREST_MIPMAP_NEAREST);
@@ -473,6 +472,9 @@ NAN_MODULE_INIT(Init) {
   JS_CONSTANT(CONTEXT_LOST_WEBGL, 0x9242);
   JS_CONSTANT(UNPACK_COLORSPACE_CONVERSION_WEBGL, 0x9243);
   JS_CONSTANT(BROWSER_DEFAULT_WEBGL, 0x9244);
+  JS_CONSTANT(VERSION, 0x1F02);
+  JS_CONSTANT(IMPLEMENTATION_COLOR_READ_TYPE, 0x8B9A);
+  JS_CONSTANT(IMPLEMENTATION_COLOR_READ_FORMAT, 0x8B9B);
 
   //Export template
   WEBGL_TEMPLATE.Reset(webgl_template);

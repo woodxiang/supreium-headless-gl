@@ -3,18 +3,17 @@ var runConformance = require('gl-conformance')
 var createContext = require('../../index')
 
 // Inject WebGL types into global namespaces, required by some conformance tests
-var webgl = require('../../wrap')
-WebGLRenderingContext = webgl.WebGLRenderingContext // eslint-disable-line
-WebGLBuffer = webgl.WebGLBuffer // eslint-disable-line
-WebGLFramebuffer = webgl.WebGLFramebuffer // eslint-disable-line
-WebGLProgram = webgl.WebGLProgram // eslint-disable-line
-WebGLRenderbuffer = webgl.WebGLRenderbuffer // eslint-disable-line
-WebGLShader = webgl.WebGLShader // eslint-disable-line
-WebGLTexture = webgl.WebGLTexture // eslint-disable-line
-WebGLUniformLocation = webgl.WebGLUniformLocation // eslint-disable-line
-WebGLActiveInfo = webgl.WebGLActiveInfo // eslint-disable-line
-WebGLShaderPrecisionFormat = webgl.WebGLShaderPrecisionFormat // eslint-disable-line
-WebGLContextAttributes = webgl.WebGLContextAttributes // eslint-disable-line
+WebGLRenderingContext = require('../../src/javascript/webgl-rendering-context').WebGLRenderingContext // eslint-disable-line
+WebGLBuffer = require('../../src/javascript/webgl-buffer').WebGLBuffer // eslint-disable-line
+WebGLFramebuffer = require('../../src/javascript/webgl-framebuffer').WebGLFramebuffer // eslint-disable-line
+WebGLProgram = require('../../src/javascript/webgl-program').WebGLProgram // eslint-disable-line
+WebGLRenderbuffer = require('../../src/javascript/webgl-renderbuffer').WebGLRenderbuffer // eslint-disable-line
+WebGLShader = require('../../src/javascript/webgl-shader').WebGLShader // eslint-disable-line
+WebGLTexture = require('../../src/javascript/webgl-texture').WebGLTexture // eslint-disable-line
+WebGLUniformLocation = require('../../src/javascript/webgl-uniform-location').WebGLUniformLocation // eslint-disable-line
+WebGLActiveInfo = require('../../src/javascript/webgl-active-info').WebGLActiveInfo // eslint-disable-line
+WebGLShaderPrecisionFormat = require('../../src/javascript/webgl-shader-precision-format').WebGLShaderPrecisionFormat // eslint-disable-line
+WebGLContextAttributes = require('../../src/javascript/webgl-context-attributes').WebGLContextAttributes // eslint-disable-line
 
 module.exports = function (filter) {
   return runConformance({
