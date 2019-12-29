@@ -9,6 +9,9 @@ else
   source ~/.bashrc
 fi
 
+node --version
+npm --version
+
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
   xvfb-run --auto-servernum --server-num=1 -s "-ac -screen 0 1280x1024x24" `which glxinfo`
   xvfb-run --auto-servernum --server-num=1 -s "-ac -screen 0 1280x1024x24" `which npm` test
