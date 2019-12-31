@@ -31,8 +31,6 @@ addons:
     - libgl1-mesa-dri
     - libglapi-mesa
     - libosmesa6
-cache:
-  npm: false
 before_install:
 - ./scripts/before_install.sh
 install:
