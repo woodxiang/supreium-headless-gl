@@ -11,12 +11,12 @@ matrix:
     dist: trusty
     compiler: g++
     env:
-      - NODE_VERSION=12
+      - NODE_VERSION=12.13.0
   - os: osx
     osx_image: xcode7
     compiler: clang
     env:
-      - NODE_VERSION=12
+      - NODE_VERSION=12.13.0
 addons:
   apt:
     sources:
@@ -31,8 +31,6 @@ addons:
     - libgl1-mesa-dri
     - libglapi-mesa
     - libosmesa6
-cache:
-  npm: false
 before_install:
 - ./scripts/before_install.sh
 install:
