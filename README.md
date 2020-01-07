@@ -4,18 +4,18 @@
 [![Appveyor](https://ci.appveyor.com/api/projects/status/g5ypwyffmtg1iu83/branch/master?svg=true)](https://ci.appveyor.com/project/dhritzkiv/headless-gl)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com/)
 
-`gl` lets you create a WebGL context in [node.js](https://nodejs.org/en/) without making a window or loading a full browser environment.
+`gl` lets you create a WebGL context in [Node.js](https://nodejs.org/en/) without making a window or loading a full browser environment.
 
 It aspires to fully conform to the [WebGL 1.0.3 specification](https://www.khronos.org/registry/webgl/specs/1.0.3/).
 
 ## Warning!
 
-This module is not actively developed. It's maintained enough to be working on all recent Node versions, but is unlikely to get new features or substantial bug fixes. If you want to take over the maintenance, please let us know in your pull requests!
+This module is not actively developed. It's maintained enough to be working on [all current active and LTS Node.js releases,](https://nodejs.org/en/about/releases/) but is unlikely to get new features or substantial bug fixes. If you want to take over or assist with maintenance, please let us know in a pull request!
 
 ## Example
 
 ```javascript
-//Create context
+// Create context
 var width   = 64
 var height  = 64
 var gl = require('gl')(width, height, { preserveDrawingBuffer: true })
@@ -28,15 +28,16 @@ gl.clear(gl.COLOR_BUFFER_BIT)
 var pixels = new Uint8Array(width * height * 4)
 gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
 process.stdout.write(['P3\n# gl.ppm\n', width, " ", height, '\n255\n'].join(''))
-for(var i=0; i<pixels.length; i+=4) {
-  for(var j=0; j<3; ++j) {
-    process.stdout.write(pixels[i+j] + ' ')
+
+for(var i = 0; i < pixels.length; i += 4) {
+  for(var j = 0; j < 3; ++j) {
+    process.stdout.write(pixels[i + j] + ' ')
   }
 }
 ```
 
 ## Install
-Installing `headless-gl` on a supported platform is a snap using one of the prebuilt binaries.  Using [npm](https://www.npmjs.com/) run the command,
+Installing `headless-gl` on a supported platform is a snap using one of the prebuilt binaries. Using [npm](https://www.npmjs.com/) run the command,
 
 ```
 npm install gl
@@ -44,16 +45,24 @@ npm install gl
 
 And you are good to go!  If your system is not supported, then please see the [development](#system-dependencies) section on how to configure your build environment.  Patches to improve support are always welcome!
 
+## Supported platforms and Node.js versions
+
+gl runs on Linux, macOS, and Windows.
+
+Node.js versions 8 and up are supported. **Note: due to an inadvertant low-level breaking change in libuv's process handling code, this package doesn't return a gl context when running nodejs version 12.13.1 and higher on macOS. A fix will be released in a future version of Node.js. Other platforms are unaffected.**
+
+To support Node.js versions less than 8, use version 4.2.2 of this package.
+
 ## API
 
 `headless-gl` exports exactly one function which you can use to create a WebGL context,
 
-#### `var gl = require('gl')(width, height[, options])`
-Creates a new `WebGLRenderingContext` with the given parameters.
+#### `var gl = require('gl')(width, height[, contextAttributes])`
+Creates a new `WebGLRenderingContext` with the given context attributes.
 
 * `width` is the width of the drawing buffer
 * `height` is the height of the drawing buffer
-* `options` is an optional object whose properties are the context attributes for the WebGLRendering context
+* `contextAttributes` is an optional object whose properties are the [context attributes for the WebGLRendering context](https://www.khronos.org/registry/webgl/specs/latest/1.0/#5.2)
 
 **Returns** A new `WebGLRenderingContext` object
 
@@ -147,7 +156,6 @@ $ sudo apt-get install -y build-essential libxi-dev libglu1-mesa-dev libglew-dev
 * [Python 2.7](https://www.python.org/)
 * [Microsoft Visual Studio](https://www.microsoft.com/en-us/download/details.aspx?id=5555)
 * d3dcompiler_47.dll should be in c:\windows\system32, but if isn't then you can find another copy in the deps/ folder
-* (optional) A modern nodejs supporting es6 to run some examples https://iojs.org/en/es6.html
 
 ## FAQ
 
@@ -173,7 +181,7 @@ addons:
     - libglapi-mesa
     - libosmesa6
 node_js:
-  - '6'
+  - '8'
 before_script:
   - export DISPLAY=:99.0; sh -e /etc/init.d/xvfb start
 ```
@@ -187,7 +195,7 @@ If you are running your own minimal Linux server, such as the one one would want
 1. [Xvfb](https://en.wikipedia.org/wiki/Xvfb) is a lightweight X11 server which provides a back buffer for displaying X11 application offscreen and reading back the pixels which were drawn offscreen. It is typically used in Continuous Integration systems. It can be installed on CentOS with `yum install -y Xvfb`, and comes preinstalled on Ubuntu.
 2. [Mesa](http://www.mesa3d.org/intro.html) is the reference open source software implementation of OpenGL. It can be installed on CentOS with `yum install -y mesa-dri-drivers`, or `apt-get install libgl1-mesa-dev`. Since a cloud Linux instance will typically run on a machine that does not have a GPU, a software implementation of OpenGL will be required.
 
-Interacting with `Xvfb` requires you to start it on the background and to execute your `node` program with the DISPLAY environment variable set to whatever was configured when running Xvfb (the default being :99). If you want to do that reliably you'll have to start Xvfb from an init.d script at boot time, which is extra configuration burden. Fortunately there is a wrapper script shipped with Xvfb known as `xvfb-run` which can start Xvfb on the fly, execute your node program and finally shut Xvfb down. Here's how to run it:
+Interacting with `Xvfb` requires you to start it on the background and to execute your `node` program with the DISPLAY environment variable set to whatever was configured when running Xvfb (the default being :99). If you want to do that reliably you'll have to start Xvfb from an init.d script at boot time, which is extra configuration burden. Fortunately there is a wrapper script shipped with Xvfb known as `xvfb-run` which can start Xvfb on the fly, execute your Node.js program and finally shut Xvfb down. Here's how to run it:
 
     xvfb-run -s "-ac -screen 0 1280x1024x24" <node program>
 
@@ -197,7 +205,7 @@ Yes, with [browserify](http://browserify.org/).  The `STACKGL_destroy_context` a
 
 ### How are `<image>` and `<video>` elements implemented?
 
-They aren't for now.  If you want to upload data to a texture, you will need to unpack the pixels into a `Uint8Array` and feed it into `texImage2D`.  To help reading and saving images, you should check out the following modules:
+They aren't for now. If you want to upload data to a texture, you will need to unpack the pixels into a `Uint8Array` and feed it into `texImage2D`. To help reading and saving images, you should check out the following modules:
 
 * [`get-pixels`](https://www.npmjs.com/package/get-pixels)
 * [`save-pixels`](https://www.npmjs.com/package/save-pixels)
@@ -240,7 +248,7 @@ After you have your [system dependencies installed](#system-dependencies), do th
 
 Once this is done, you should be good to go!  A few more things
 
-* To run the test cases, use the command `npm test`, or execute specific by just running it using node.
+* To run the test cases, use the command `npm test`, or execute specific tests by just running them using `node`.
 * On a Unix-like platform, you can do incremental rebuilds by going into the `build/` directory and running `make`.  This is **way faster** running `npm build` each time you make a change.
 
 ## License
