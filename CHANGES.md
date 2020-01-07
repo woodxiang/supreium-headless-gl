@@ -1,5 +1,10 @@
 # headless-gl change log
 
+## 4.3.0
+
+* Node.js 12 support
+* Drop support for Node.js versions less than 8
+
 ## 4.2.2
 
  * WEBGL_draw_buffers extension support
