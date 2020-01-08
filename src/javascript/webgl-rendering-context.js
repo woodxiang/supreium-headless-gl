@@ -817,9 +817,6 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
   }
 
   _wrapShader (type, source) { // eslint-disable-line
-    if (this._extensions.webgl_draw_buffers) { // eslint-disable-line
-      return source
-    }
     return this._extensions.webgl_draw_buffers ? source : '#define gl_MaxDrawBuffers 1\n' + source // eslint-disable-line
   }
 
