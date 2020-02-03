@@ -45,7 +45,7 @@ And you are good to go!  If your system is not supported, then please see the [d
 
 gl runs on Linux, macOS, and Windows.
 
-Node.js versions 8 and up are supported. **Note: due to an inadvertant low-level breaking change in libuv's process handling code, this package doesn't return a gl context when running nodejs version 12.13.1 and higher on macOS. A fix will be released in a future version of Node.js. Other platforms are unaffected.**
+Node.js versions 8 and up are supported. **Note [macOS only]: due to an inadvertant low-level breaking change in libuv's process handling code, this package doesn't return a gl context when running nodejs version 12.13.1 through to 13.6.0 on macOS. A fix has been released in Node.js version 13.7.0. A fix for 12.x is pending. Other platforms are unaffected.**
 
 To support Node.js versions less than 8, use version 4.2.2 of this package.
 
