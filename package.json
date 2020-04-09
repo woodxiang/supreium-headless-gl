@@ -21,7 +21,7 @@
     "bit-twiddle": "^1.0.2",
     "glsl-tokenizer": "^2.0.2",
     "nan": "^2.14.0",
-    "node-gyp": "^4.0.0",
+    "node-gyp": "^6.1.0",
     "prebuild-install": "^5.1.0"
   },
   "devDependencies": {
@@ -29,7 +29,7 @@
     "bunny": "^1.0.1",
     "faucet": "0.0.1",
     "gl-conformance": "^2.0.9",
-    "prebuild": "^8.0.1",
+    "prebuild": "^10.0.0",
     "snazzy": "^8.0.0",
     "standard": "^14.3.3",
     "tape": "^4.7.0"
