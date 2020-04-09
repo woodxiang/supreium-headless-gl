@@ -23,7 +23,8 @@ const {
   unpackTypedArray,
   convertPixels,
   checkFormat,
-  validCubeTarget } = require('./utils')
+  validCubeTarget
+} = require('./utils')
 
 const { WebGLActiveInfo } = require('./webgl-active-info')
 const { WebGLFramebuffer } = require('./webgl-framebuffer')
@@ -165,11 +166,11 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
               ' invalid identifier - ' + tok.data)
           }
           break
-        case 'preprocessor':
+        case 'preprocessor': {
           const bodyToks = tokenize(tok.data.match(/^\s*#\s*(.*)$/)[1])
           for (let j = 0; j < bodyToks.length; ++j) {
             const btok = bodyToks[j]
-            if (btok.type === 'ident' || btok.type === void 0) {
+            if (btok.type === 'ident' || btok.type === undefined) {
               if (!this._validGLSLIdentifier(btok.data)) {
                 errorStatus = true
                 errorLog.push(tok.line + ':' + btok.column +
@@ -178,6 +179,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
             }
           }
           break
+        }
         case 'keyword':
           switch (tok.data) {
             case 'do':
@@ -559,7 +561,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
   }
 
   _isObject (object, method, Wrapper) {
-    if (!(object === null || object === void 0) &&
+    if (!(object === null || object === undefined) &&
       !(object instanceof Wrapper)) {
       throw new TypeError(method + '(' + Wrapper.name + ')')
     }
@@ -1177,7 +1179,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     if (str in this._extensions) {
       return this._extensions[str]
     }
-    let ext = availableExtensions[str] ? availableExtensions[str](this) : null
+    const ext = availableExtensions[str] ? availableExtensions[str](this) : null
     if (ext) {
       this._extensions[str] = ext
     }
@@ -2395,12 +2397,13 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
           return gl.TEXTURE
         case gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL:
           return framebuffer._attachmentLevel[attachment]
-        case gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE:
+        case gl.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: {
           const face = framebuffer._attachmentFace[attachment]
           if (face === gl.TEXTURE_2D) {
             return 0
           }
           return face
+        }
       }
     } else if (object instanceof WebGLRenderbuffer) {
       switch (pname) {
@@ -3135,7 +3138,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     format |= 0
     type |= 0
 
-    if (typeof pixels !== 'object' && pixels !== void 0) {
+    if (typeof pixels !== 'object' && pixels !== undefined) {
       throw new TypeError('texImage2D(GLenum, GLint, GLenum, GLint, GLint, GLint, GLenum, GLenum, Uint8Array)')
     }
 
@@ -3539,6 +3542,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     if (!this._checkUniformValid(location, v0, 'uniform1f', 1, 'f')) return
     super.uniform1f(location._ | 0, v0)
   }
+
   uniform1fv (location, value) {
     if (!this._checkUniformValueValid(location, value, 'uniform1fv', 1, 'f')) return
     if (location._array) {
@@ -3551,10 +3555,12 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     }
     super.uniform1f(location._ | 0, value[0])
   }
+
   uniform1i (location, v0) {
     if (!this._checkUniformValid(location, v0, 'uniform1i', 1, 'i')) return
     super.uniform1i(location._ | 0, v0)
   }
+
   uniform1iv (location, value) {
     if (!this._checkUniformValueValid(location, value, 'uniform1iv', 1, 'i')) return
     if (location._array) {
@@ -3572,6 +3578,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     if (!this._checkUniformValid(location, v0, 'uniform2f', 2, 'f')) return
     super.uniform2f(location._ | 0, v0, v1)
   }
+
   uniform2fv (location, value) {
     if (!this._checkUniformValueValid(location, value, 'uniform2fv', 2, 'f')) return
     if (location._array) {
@@ -3584,10 +3591,12 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     }
     super.uniform2f(location._ | 0, value[0], value[1])
   }
+
   uniform2i (location, v0, v1) {
     if (!this._checkUniformValid(location, v0, 'uniform2i', 2, 'i')) return
     super.uniform2i(location._ | 0, v0, v1)
   }
+
   uniform2iv (location, value) {
     if (!this._checkUniformValueValid(location, value, 'uniform2iv', 2, 'i')) return
     if (location._array) {
@@ -3605,6 +3614,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     if (!this._checkUniformValid(location, v0, 'uniform3f', 3, 'f')) return
     super.uniform3f(location._ | 0, v0, v1, v2)
   }
+
   uniform3fv (location, value) {
     if (!this._checkUniformValueValid(location, value, 'uniform3fv', 3, 'f')) return
     if (location._array) {
@@ -3617,10 +3627,12 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     }
     super.uniform3f(location._ | 0, value[0], value[1], value[2])
   }
+
   uniform3i (location, v0, v1, v2) {
     if (!this._checkUniformValid(location, v0, 'uniform3i', 3, 'i')) return
     super.uniform3i(location._ | 0, v0, v1, v2)
   }
+
   uniform3iv (location, value) {
     if (!this._checkUniformValueValid(location, value, 'uniform3iv', 3, 'i')) return
     if (location._array) {
@@ -3638,6 +3650,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     if (!this._checkUniformValid(location, v0, 'uniform4f', 4, 'f')) return
     super.uniform4f(location._ | 0, v0, v1, v2, v3)
   }
+
   uniform4fv (location, value) {
     if (!this._checkUniformValueValid(location, value, 'uniform4fv', 4, 'f')) return
     if (location._array) {
@@ -3650,10 +3663,12 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     }
     super.uniform4f(location._ | 0, value[0], value[1], value[2], value[3])
   }
+
   uniform4i (location, v0, v1, v2, v3) {
     if (!this._checkUniformValid(location, v0, 'uniform4i', 4, 'i')) return
     super.uniform4i(location._ | 0, v0, v1, v2, v3)
   }
+
   uniform4iv (location, value) {
     if (!this._checkUniformValueValid(location, value, 'uniform4iv', 4, 'i')) return
     if (location._array) {
@@ -3694,6 +3709,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     this.setError(gl.INVALID_VALUE)
     return false
   }
+
   uniformMatrix2fv (location, transpose, value) {
     if (!this._checkUniformMatrix(location, transpose, value, 'uniformMatrix2fv', 2)) return
     const data = new Float32Array(value)
@@ -3702,6 +3718,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
       !!transpose,
       data)
   }
+
   uniformMatrix3fv (location, transpose, value) {
     if (!this._checkUniformMatrix(location, transpose, value, 'uniformMatrix3fv', 3)) return
     const data = new Float32Array(value)
@@ -3710,6 +3727,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
       !!transpose,
       data)
   }
+
   uniformMatrix4fv (location, transpose, value) {
     if (!this._checkUniformMatrix(location, transpose, value, 'uniformMatrix4fv', 4)) return
     const data = new Float32Array(value)
@@ -3728,6 +3746,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     data[0] = v0
     return super.vertexAttrib1f(index | 0, +v0)
   }
+
   vertexAttrib2f (index, v0, v1) {
     index |= 0
     if (!this._checkVertexIndex(index)) return
@@ -3738,6 +3757,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     data[0] = v0
     return super.vertexAttrib2f(index | 0, +v0, +v1)
   }
+
   vertexAttrib3f (index, v0, v1, v2) {
     index |= 0
     if (!this._checkVertexIndex(index)) return
@@ -3748,6 +3768,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     data[0] = v0
     return super.vertexAttrib3f(index | 0, +v0, +v1, +v2)
   }
+
   vertexAttrib4f (index, v0, v1, v2, v3) {
     index |= 0
     if (!this._checkVertexIndex(index)) return
@@ -3771,6 +3792,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     data[0] = value[0]
     return super.vertexAttrib1f(index | 0, +value[0])
   }
+
   vertexAttrib2fv (index, value) {
     if (typeof value !== 'object' || value === null || value.length < 2) {
       this.setError(gl.INVALID_OPERATION)
@@ -3783,6 +3805,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     data[0] = value[0]
     return super.vertexAttrib2f(index | 0, +value[0], +value[1])
   }
+
   vertexAttrib3fv (index, value) {
     if (typeof value !== 'object' || value === null || value.length < 3) {
       this.setError(gl.INVALID_OPERATION)
@@ -3795,6 +3818,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     data[0] = value[0]
     return super.vertexAttrib3f(index | 0, +value[0], +value[1], +value[2])
   }
+
   vertexAttrib4fv (index, value) {
     if (typeof value !== 'object' || value === null || value.length < 4) {
       this.setError(gl.INVALID_OPERATION)

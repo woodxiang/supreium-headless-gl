@@ -23,7 +23,7 @@ function bindPublics (props, wrapper, privateInstance, privateMethods) {
 
 function checkObject (object) {
   return typeof object === 'object' ||
-    (object === void 0)
+    (object === undefined)
 }
 
 function checkUniform (program, location) {
