@@ -8,19 +8,19 @@ matrix:
   include:
   - os: linux
     sudo: required
-    dist: xenial
+    dist: bionic
     compiler: g++
     env:
       - NODE_VERSION=12
   - os: linux
     sudo: required
-    dist: xenial
+    dist: bionic
     compiler: g++
     env:
       - NODE_VERSION=14
   - os: linux
     sudo: required
-    dist: xenial
+    dist: bionic
     compiler: g++
     env:
       - NODE_VERSION=16
