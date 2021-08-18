@@ -54,6 +54,7 @@ addons:
     - libglapi-mesa
     - libosmesa6
     - musl-dev
+    - linux-musl-dev
 before_install:
 - ./scripts/before_install.sh
 install:
