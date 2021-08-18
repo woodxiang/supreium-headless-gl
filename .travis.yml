@@ -18,6 +18,12 @@ matrix:
     compiler: g++
     env:
       - NODE_VERSION=14
+  - os: linux
+    sudo: required
+    dist: trusty
+    compiler: g++
+    env:
+      - NODE_VERSION=16
   - os: osx
     osx_image: xcode9.4
     compiler: clang
@@ -28,6 +34,11 @@ matrix:
     compiler: clang
     env:
       - NODE_VERSION=14
+  - os: osx
+    osx_image: xcode9.4
+    compiler: clang
+    env:
+      - NODE_VERSION=16
 addons:
   apt:
     sources:
