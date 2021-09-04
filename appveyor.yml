@@ -5,8 +5,8 @@ environment:
   GITHUB_TOKEN:
     secure: 8dsj2oODP6p82OsCyVjldh0v/KktBJYWWPFWmrg+bh7y0CNpQPwtww+IjX14LMrx
   matrix:
-  - nodejs_version: "12"
-  - nodejs_version: "14"
+  # - nodejs_version: "12"
+  # - nodejs_version: "14"
   - nodejs_version: "16"
 
 install:
