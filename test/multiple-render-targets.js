@@ -3,7 +3,7 @@
 var createContext = require('../index')
 var tape = require('tape')
 
-tape('multiple-render-targets', function (t) {
+tape.skip('multiple-render-targets', function (t) {
   var bufferWidth = 1
   var bufferHeight = 1
   var outputWidth = 4
