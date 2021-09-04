@@ -29,11 +29,11 @@ matrix:
   #   compiler: clang
   #   env:
   #     - NODE_VERSION=12
-  - os: osx
-    osx_image: xcode12.5
-    compiler: clang
-    env:
-      - NODE_VERSION=14
+  # - os: osx
+  #   osx_image: xcode12.5
+  #   compiler: clang
+  #   env:
+  #     - NODE_VERSION=14
   # - os: osx
   #   osx_image: xcode12.5
   #   compiler: clang
