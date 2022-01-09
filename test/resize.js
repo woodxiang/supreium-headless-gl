@@ -36,9 +36,6 @@ tape('resize', function (t) {
         }
       }
     }
-
-    for (var i = 0; i < width * height * 4; i += 4) {
-    }
   }
 
   testColor(2, 2, 255, 255, 255, 255)
