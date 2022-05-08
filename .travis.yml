@@ -6,45 +6,12 @@ env:
     - secure: "MHkBPTRLhQ04GgdBNOJvvvHf7gJyrc9aWCznWipB2RUQG+vobxPuOCV+rFFUB4Z/q3Dh54d/61dHs9nwHW/uP1jStwPqW1x19Uhcny+c0WEY6A87wjnUVR4g7pQ7+vzkwg8o2jdBC+8BQ/4M4IQ2nRic5qcB8Z6FCOdL4ENhvA8="
 matrix:
   include:
-  # - os: linux
-  #   sudo: required
-  #   dist: bionic
-  #   compiler: g++
-  #   env:
-  #     - NODE_VERSION=12
-  # - os: linux
-  #   sudo: required
-  #   dist: bionic
-  #   compiler: g++
-  #   env:
-  #     - NODE_VERSION=14
-  # - os: linux
-  #   sudo: required
-  #   dist: bionic
-  #   compiler: g++
-  #   env:
-  #     - NODE_VERSION=16
   - os: linux
     sudo: required
-    dist: bionic
+    dist: focal
     compiler: g++
     env:
       - NODE_VERSION=18
-  # - os: osx
-  #   osx_image: xcode12.5
-  #   compiler: clang
-  #   env:
-  #     - NODE_VERSION=12
-  # - os: osx
-  #   osx_image: xcode12.5
-  #   compiler: clang
-  #   env:
-  #     - NODE_VERSION=14
-  # - os: osx
-  #   osx_image: xcode12.5
-  #   compiler: clang
-  #   env:
-  #     - NODE_VERSION=16
   # - os: osx
   #   osx_image: xcode12.5
   #   compiler: clang
