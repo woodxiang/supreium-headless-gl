@@ -18,12 +18,18 @@ matrix:
   #   compiler: g++
   #   env:
   #     - NODE_VERSION=14
+  # - os: linux
+  #   sudo: required
+  #   dist: bionic
+  #   compiler: g++
+  #   env:
+  #     - NODE_VERSION=16
   - os: linux
     sudo: required
     dist: bionic
     compiler: g++
     env:
-      - NODE_VERSION=16
+      - NODE_VERSION=18
   # - os: osx
   #   osx_image: xcode12.5
   #   compiler: clang
@@ -39,6 +45,11 @@ matrix:
   #   compiler: clang
   #   env:
   #     - NODE_VERSION=16
+  # - os: osx
+  #   osx_image: xcode12.5
+  #   compiler: clang
+  #   env:
+  #     - NODE_VERSION=18
 addons:
   apt:
     sources:
