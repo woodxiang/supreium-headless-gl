@@ -1,6 +1,7 @@
 {
   'variables': {
     'platform': '<(OS)',
+    'openssl_fips' : '0',
   },
   'conditions': [
     ['platform == "mac"', {'variables': {'platform': 'darwin'}}],
