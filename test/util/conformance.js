@@ -17,13 +17,13 @@ WebGLContextAttributes = require('../../src/javascript/webgl-context-attributes'
 
 module.exports = function (filter) {
   return runConformance({
-    tape: tape,
+    tape,
     createContext: function (width, height, options) {
       const context = createContext(width, height, options)
       context.destroy = context.getExtension('STACKGL_destroy_context').destroy
       context.resize = context.getExtension('STACKGL_resize_drawingbuffer').resize
       return context
     },
-    filter: filter
+    filter
   })
 }
