@@ -11,12 +11,12 @@ matrix:
     dist: focal
     compiler: g++
     env:
-      - NODE_VERSION=18
+      - NODE_VERSION=16
   # - os: osx
   #   osx_image: xcode12.5
   #   compiler: clang
   #   env:
-  #     - NODE_VERSION=18
+  #     - NODE_VERSION=16
 addons:
   apt:
     sources:

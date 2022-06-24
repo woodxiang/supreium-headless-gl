@@ -5,8 +5,7 @@ environment:
   matrix:
   # - nodejs_version: "12"
   # - nodejs_version: "14"
-  # - nodejs_version: "16"
-  - nodejs_version: "18"
+  - nodejs_version: "16"
 
 install:
   - cmd: git submodule update --init

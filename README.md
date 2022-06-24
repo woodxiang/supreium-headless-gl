@@ -41,7 +41,7 @@ npm install gl
 
 And you are good to go!
 
-Prebuilt binaries are generally available for LTS node versions (e.g. 12, 14, 16), or future LTS versions (e.g. 18). If your system is not supported, then please see the [development](#system-dependencies) section on how to configure your build environment.  Patches to improve support are always welcome!
+Prebuilt binaries are generally available for LTS node versions (e.g. 12, 14, 16). If your system is not supported, then please see the [development](#system-dependencies) section on how to configure your build environment.  Patches to improve support are always welcome!
 
 ## Supported platforms and Node.js versions
 
