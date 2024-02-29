@@ -131,12 +131,12 @@ In most cases installing `headless-gl` from npm should just work.  However, if y
 
 #### Mac OS X
 
-* [Python 2.7](https://www.python.org/)
+* [Python 3](https://www.python.org/)
 * [XCode](https://developer.apple.com/xcode/)
 
 #### Ubuntu/Debian
 
-* [Python 2.7](https://www.python.org/)
+* [Python 3](https://www.python.org/)
 * A GNU C++ environment (available via the `build-essential` package on `apt`)
 * [libxi-dev](http://www.x.org/wiki/)
 * Working and up to date OpenGL drivers
@@ -149,7 +149,7 @@ $ sudo apt-get install -y build-essential libxi-dev libglu1-mesa-dev libglew-dev
 
 #### Windows
 
-* [Python 2.7](https://www.python.org/)
+* [Python 3](https://www.python.org/)
 * [Microsoft Visual Studio](https://www.microsoft.com/en-us/download/details.aspx?id=5555)
 * d3dcompiler_47.dll should be in c:\windows\system32, but if isn't then you can find another copy in the deps/ folder
 
