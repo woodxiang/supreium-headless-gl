@@ -7,6 +7,7 @@ environment:
 
 install:
   - cmd: git submodule update --init
+  - ps: Install-Module VSSetup -Scope CurrentUser
   - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version) $env:PLATFORM
   - npm install -g node-gyp
 
