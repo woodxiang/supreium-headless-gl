@@ -41,7 +41,7 @@ npm install gl
 
 And you are good to go!
 
-Prebuilt binaries are generally available for LTS node versions (e.g. 16, 18, 20). If your system is not supported, then please see the [development](#system-dependencies) section on how to configure your build environment.  Patches to improve support are always welcome!
+Prebuilt binaries are generally available for LTS node versions (e.g. 18, 20). If your system is not supported, then please see the [development](#system-dependencies) section on how to configure your build environment.  Patches to improve support are always welcome!
 
 ## Supported platforms and Node.js versions
 
@@ -177,7 +177,7 @@ addons:
     - libglapi-mesa
     - libosmesa6
 node_js:
-  - '8'
+  - '20'
 before_script:
   - export DISPLAY=:99.0; sh -e /etc/init.d/xvfb start
 ```
