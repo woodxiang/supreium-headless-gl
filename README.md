@@ -1,7 +1,6 @@
 # gl
 
-[![Travis CI](https://travis-ci.com/stackgl/headless-gl.svg?branch=master)](https://travis-ci.com/stackgl/headless-gl)
-[![Appveyor](https://ci.appveyor.com/api/projects/status/g5ypwyffmtg1iu83/branch/master?svg=true)](https://ci.appveyor.com/project/dhritzkiv/headless-gl)
+[![ci](https://github.com/stackgl/headless-gl/actions/workflows/ci.yml/badge.svg)](https://github.com/stackgl/headless-gl/actions/workflows/ci.yml)
 [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com/)
 
 `gl` lets you create a WebGL context in [Node.js](https://nodejs.org/en/) without making a window or loading a full browser environment.
