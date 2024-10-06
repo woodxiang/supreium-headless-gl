@@ -23,14 +23,14 @@
     "nan": "^2.18.0",
     "node-abi": "^3.56.0",
     "node-gyp": "^10.2.0",
-    "prebuild-install": "^7.1.1"
+    "prebuild-install": "^7.1.2"
   },
   "devDependencies": {
     "angle-normals": "^1.0.0",
     "bunny": "^1.0.1",
     "faucet": "^0.0.4",
     "gl-conformance": "^2.0.9",
-    "prebuild": "^13.0.0",
+    "prebuild": "^13.0.1",
     "snazzy": "^9.0.0",
     "standard": "^17.1.0",
     "tape": "^5.7.5"
