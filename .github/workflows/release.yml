@@ -1,4 +1,4 @@
-name: Prebuild and Create Release
+name: Prebuild, Create Release, Publish
 
 on:
   push:
@@ -33,3 +33,25 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: node ./node_modules/prebuild/bin.js --libc=musl -t ${{ matrix.target }} --strip -u ${{ secrets.GITHUB_TOKEN }} --verbose
+
+  publish:
+    name: Publish to NPM
+    needs:
+      - prebuild
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
