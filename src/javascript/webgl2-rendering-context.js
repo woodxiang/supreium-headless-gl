@@ -275,35 +275,35 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
             format === gl.RGB ||
             format === gl.LUMINANCE_ALPHA ||
             format === gl.LUMINANCE ||
-            format === ALPHA ||
-            format === R8 ||
-            format === RG8 ||
-            format === RGB8 ||
-            format === RGB565 ||
-            format === RGBA4 ||
-            format === RGB5_A1 ||
-            format === RGBA8 ||
-            format === RGB10_A2 ||
-            format === RGB10_A2UI ||
-            format === SRGB8_ALPHA8 ||
-            format === R8I ||
-            format === R8UI ||
-            format === R16I ||
-            format === R16UI ||
-            format === R32I ||
-            format === R32UI ||
-            format === RG8I ||
-            format === RG8UI ||
-            format === RG16I ||
-            format === RG16UI ||
-            format === RG32I ||
-            format === RG32UI ||
-            format === RGBA8I ||
-            format === RGBA8UI ||
-            format === RGBA16I ||
-            format === RGBA16UI ||
-            format === RGBA32I ||
-            format === RGBA32UI ||
+            format === gl.ALPHA ||
+            format === gl.R8 ||
+            format === gl.RG8 ||
+            format === gl.RGB8 ||
+            format === gl.RGB565 ||
+            format === gl.RGBA4 ||
+            format === gl.RGB5_A1 ||
+            format === gl.RGBA8 ||
+            format === gl.RGB10_A2 ||
+            format === gl.RGB10_A2UI ||
+            format === gl.SRGB8_ALPHA8 ||
+            format === gl.R8I ||
+            format === gl.R8UI ||
+            format === gl.R16I ||
+            format === gl.R16UI ||
+            format === gl.R32I ||
+            format === gl.R32UI ||
+            format === gl.RG8I ||
+            format === gl.RG8UI ||
+            format === gl.RG16I ||
+            format === gl.RG16UI ||
+            format === gl.RG32I ||
+            format === gl.RG32UI ||
+            format === gl.RGBA8I ||
+            format === gl.RGBA8UI ||
+            format === gl.RGBA16I ||
+            format === gl.RGBA16UI ||
+            format === gl.RGBA32I ||
+            format === gl.RGBA32UI ||
             (
               this._extensions.ext_color_buffer_float && (
                 format === gl.R16F ||
