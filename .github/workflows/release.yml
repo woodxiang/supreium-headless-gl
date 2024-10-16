@@ -6,7 +6,7 @@ on:
       - 'v*'
 
 jobs:
-  prebuild:
+  build:
     strategy:
       matrix:
         node-version: [22.x]
@@ -45,7 +45,7 @@ jobs:
   publish:
     name: Publish to NPM
     needs:
-      - prebuild
+      - build
     runs-on: ubuntu-latest
     permissions:
       contents: read
