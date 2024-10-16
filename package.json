@@ -20,8 +20,8 @@
     "bindings": "^1.5.0",
     "bit-twiddle": "^1.0.2",
     "glsl-tokenizer": "^2.1.5",
-    "nan": "^2.20.0",
-    "node-abi": "^3.68.0",
+    "nan": "^2.22.0",
+    "node-abi": "^3.71.0",
     "node-gyp": "^10.2.0",
     "prebuild-install": "^7.1.2"
   },
