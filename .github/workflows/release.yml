@@ -13,6 +13,10 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         target: ["18.0.0", "20.0.0", "22.0.0"]
     runs-on: ${{ matrix.os }}
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,6 +37,10 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: node ./node_modules/prebuild/bin.js --libc=musl -t ${{ matrix.target }} --strip -u ${{ secrets.GITHUB_TOKEN }} --verbose
+      - name: Attest
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: 'prebuilds/*.tar.gz'
 
   publish:
     name: Publish to NPM
