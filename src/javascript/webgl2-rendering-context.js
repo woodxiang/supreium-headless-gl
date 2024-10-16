@@ -269,50 +269,50 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
     for (let i = 0; i < colorAttachments.length; ++i) {
       const colorAttachment = attachments[colorAttachments[i]];
       if (colorAttachment instanceof WebGLTexture) {
-        const format = colorAttachment._format;
+        const internalFormat = colorAttachment._internalFormat;
         if (
-          !(format === gl.RGBA ||
-            format === gl.RGB ||
-            format === gl.LUMINANCE_ALPHA ||
-            format === gl.LUMINANCE ||
-            format === gl.ALPHA ||
-            format === gl.R8 ||
-            format === gl.RG8 ||
-            format === gl.RGB8 ||
-            format === gl.RGB565 ||
-            format === gl.RGBA4 ||
-            format === gl.RGB5_A1 ||
-            format === gl.RGBA8 ||
-            format === gl.RGB10_A2 ||
-            format === gl.RGB10_A2UI ||
-            format === gl.SRGB8_ALPHA8 ||
-            format === gl.R8I ||
-            format === gl.R8UI ||
-            format === gl.R16I ||
-            format === gl.R16UI ||
-            format === gl.R32I ||
-            format === gl.R32UI ||
-            format === gl.RG8I ||
-            format === gl.RG8UI ||
-            format === gl.RG16I ||
-            format === gl.RG16UI ||
-            format === gl.RG32I ||
-            format === gl.RG32UI ||
-            format === gl.RGBA8I ||
-            format === gl.RGBA8UI ||
-            format === gl.RGBA16I ||
-            format === gl.RGBA16UI ||
-            format === gl.RGBA32I ||
-            format === gl.RGBA32UI ||
+          !(internalFormat === gl.RGBA ||
+            internalFormat === gl.RGB ||
+            internalFormat === gl.LUMINANCE_ALPHA ||
+            internalFormat === gl.LUMINANCE ||
+            internalFormat === gl.ALPHA ||
+            internalFormat === gl.R8 ||
+            internalFormat === gl.RG8 ||
+            internalFormat === gl.RGB8 ||
+            internalFormat === gl.RGB565 ||
+            internalFormat === gl.RGBA4 ||
+            internalFormat === gl.RGB5_A1 ||
+            internalFormat === gl.RGBA8 ||
+            internalFormat === gl.RGB10_A2 ||
+            internalFormat === gl.RGB10_A2UI ||
+            internalFormat === gl.SRGB8_ALPHA8 ||
+            internalFormat === gl.R8I ||
+            internalFormat === gl.R8UI ||
+            internalFormat === gl.R16I ||
+            internalFormat === gl.R16UI ||
+            internalFormat === gl.R32I ||
+            internalFormat === gl.R32UI ||
+            internalFormat === gl.RG8I ||
+            internalFormat === gl.RG8UI ||
+            internalFormat === gl.RG16I ||
+            internalFormat === gl.RG16UI ||
+            internalFormat === gl.RG32I ||
+            internalFormat === gl.RG32UI ||
+            internalFormat === gl.RGBA8I ||
+            internalFormat === gl.RGBA8UI ||
+            internalFormat === gl.RGBA16I ||
+            internalFormat === gl.RGBA16UI ||
+            internalFormat === gl.RGBA32I ||
+            internalFormat === gl.RGBA32UI ||
             (
               this._extensions.ext_color_buffer_float && (
-                format === gl.R16F ||
-                format === gl.RG16F ||
-                format === gl.RGBA16F ||
-                format === gl.R32F ||
-                format === gl.RG32F ||
-                format === gl.RGBA32F ||
-                format === gl.R11F_G11F_B10F
+                internalFormat === gl.R16F ||
+                internalFormat === gl.RG16F ||
+                internalFormat === gl.RGBA16F ||
+                internalFormat === gl.R32F ||
+                internalFormat === gl.RG32F ||
+                internalFormat === gl.RGBA32F ||
+                internalFormat === gl.R11F_G11F_B10F
               )
             ))
         ) {
@@ -439,18 +439,18 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
   }
 
   // 615
-  _updateFramebufferAttachments(framebuffer) {
+  _updateFramebufferAttachments(framebuffer, target = gl.FRAME_BUFFER) {
     const prevStatus = framebuffer._status;
     const attachments = this._getAttachments();
     framebuffer._status = this._preCheckFramebufferStatus(framebuffer);
     if (framebuffer._status !== gl.FRAMEBUFFER_COMPLETE) {
       if (prevStatus === gl.FRAMEBUFFER_COMPLETE) {
-        this._resetAttachments(attachments, framebuffer);
+        this._resetAttachments(target, attachments, framebuffer);
       }
       return;
     }
 
-    this._resetAttachments(attachments, framebuffer);
+    this._resetAttachments(target, attachments, framebuffer);
 
     for (let i = 0; i < attachments.length; ++i) {
       const attachmentEnum = attachments[i];
@@ -458,7 +458,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       if (attachment instanceof WebGLTexture) {
         NativeWebGLRenderingContext.prototype.framebufferTexture2D.call(
           this,
-          gl.FRAMEBUFFER,
+          target,
           attachmentEnum,
           framebuffer._attachmentFace[attachmentEnum],
           attachment._ | 0,
@@ -467,7 +467,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       } else if (attachment instanceof WebGLRenderbuffer) {
         NativeWebGLRenderingContext.prototype.framebufferRenderbuffer.call(
           this,
-          gl.FRAMEBUFFER,
+          target,
           attachmentEnum,
           gl.RENDERBUFFER,
           attachment._ | 0
@@ -476,13 +476,13 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
     }
   }
 
-  _resetAttachments(attachments, framebuffer) {
+  _resetAttachments(target, attachments, framebuffer) {
     for (let i = 0; i < attachments.length; ++i) {
       const attachmentEnum = attachments[i];
       if (framebuffer._attachmentFace[attachmentEnum] === gl.RENDERBUFFER) {
         NativeWebGLRenderingContext.prototype.framebufferRenderbuffer.call(
           this,
-          gl.FRAMEBUFFER,
+          target,
           attachmentEnum,
           framebuffer._attachmentFace[attachmentEnum],
           0
@@ -498,7 +498,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       ) {
         NativeWebGLRenderingContext.prototype.framebufferTexture2D.call(
           this,
-          gl.FRAMEBUFFER,
+          target,
           attachmentEnum,
           framebuffer._attachmentFace[attachmentEnum],
           0,
@@ -621,7 +621,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       this._activeReadFramebuffer = framebuffer;
     }
     if (framebuffer) {
-      this._updateFramebufferAttachments(framebuffer);
+      this._updateFramebufferAttachments(framebuffer, target);
     }
   }
 
@@ -987,7 +987,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
 
       framebuffer._attachmentFace[attachment] = renderbufferTarget;
       framebuffer._setAttachment(renderbuffer, attachment);
-      this._updateFramebufferAttachments(framebuffer);
+      this._updateFramebufferAttachments(framebuffer, target);
     }
     if (
       (target === gl.FRAMEBUFFER || target === gl.READ_FRAMEBUFFER) &&
@@ -1005,7 +1005,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
 
       framebuffer._attachmentFace[attachment] = renderbufferTarget;
       framebuffer._setAttachment(renderbuffer, attachment);
-      this._updateFramebufferAttachments(framebuffer);
+      this._updateFramebufferAttachments(framebuffer, target);
     }
   }
 
@@ -1065,7 +1065,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       framebuffer._attachmentLevel[attachment] = level;
       framebuffer._attachmentFace[attachment] = textarget;
       framebuffer._setAttachment(texture, attachment);
-      this._updateFramebufferAttachments(framebuffer);
+      this._updateFramebufferAttachments(framebuffer, target);
     }
 
     if (
@@ -1081,7 +1081,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       framebuffer._attachmentLevel[attachment] = level;
       framebuffer._attachmentFace[attachment] = textarget;
       framebuffer._setAttachment(texture, attachment);
-      this._updateFramebufferAttachments(framebuffer);
+      this._updateFramebufferAttachments(framebuffer, target);
     }
   }
 
@@ -1368,7 +1368,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
         }
       }
       if (needsUpdate) {
-        this._updateFramebufferAttachments(activeFramebuffer);
+        this._updateFramebufferAttachments(activeFramebuffer, target);
       }
     }
   }
@@ -1385,7 +1385,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
         }
       }
       if (needsUpdate) {
-        this._updateFramebufferAttachments(this._activeDrawFramebuffer);
+        this._updateFramebufferAttachments(this._activeDrawFramebuffer, gl.DRAW_FRAMEBUFFER);
       }
     }
 
@@ -1401,7 +1401,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
           }
         }
         if (needsUpdate) {
-          this._updateFramebufferAttachments(this._activeReadFramebuffer);
+          this._updateFramebufferAttachments(this._activeReadFramebuffer, gl.DRAW_FRAMEBUFFER);
         }
       }
     }
