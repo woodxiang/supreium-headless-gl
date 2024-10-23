@@ -217,3 +217,12 @@ GL_METHOD(VertexAttribIPointer)
         stride,
         reinterpret_cast<GLvoid *>(offset));
 }
+
+GL_METHOD(ReadBuffer)
+{
+    GL_BOILERPLATE;
+
+    GLenum source = Nan::To<int32_t>(info[0]).ToChecked();
+
+    (inst->glReadBuffer)(source);
+}

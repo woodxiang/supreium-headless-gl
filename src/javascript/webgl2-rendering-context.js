@@ -1096,6 +1096,9 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
         return this._activeDrawFramebuffer;
       case gl.READ_FRAMEBUFFER_BINDING:
         return this._activeReadFramebuffer;
+      case gl.MAX_SAMPLES:
+      case gl.MAX_UNIFORM_BUFFER_BINDINGS:
+        return NativeWebGLRenderingContext.prototype.getParameter.call(this, pname);
       default:
         return super.getParameter(pname);
     }
@@ -1936,10 +1939,6 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
     if (count === 0 || primCount === 0) {
       return;
     }
-    let maxIndex = first;
-    if (count > 0) {
-      maxIndex = (count + first - 1) >>> 0;
-    }
 
     return super._drawArraysInstanced(mode, first, reducedCount, primCount);
   }
@@ -2079,6 +2078,10 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       /* inputStride */ stride,
       /* inputSize */ size
     );
+  }
+
+  readBuffer(source) {
+    super.readBuffer(source);
   }
 }
 

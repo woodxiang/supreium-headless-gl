@@ -177,6 +177,7 @@ NAN_MODULE_INIT(Init)
     JS_GL_METHOD("bindVertexArray", BindVertexArray);
     JS_GL_METHOD("blitFramebuffer", BlitFramebuffer);
     JS_GL_METHOD("vertexAttribIPointer", VertexAttribIPointer);
+    JS_GL_METHOD("readBuffer", ReadBuffer);
 
     // Windows defines a macro called NO_ERROR which messes this up
     Nan::SetPrototypeTemplate(
