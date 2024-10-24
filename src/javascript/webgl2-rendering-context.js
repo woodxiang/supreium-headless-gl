@@ -1089,8 +1089,6 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
   getParameter(pname) {
     pname |= 0;
     switch (pname) {
-      // case gl.MAX_SAMPLES:
-      // case gl.MAX_UNIFORM_BUFFER_BINDINGS:
       case gl.FRAMEBUFFER_BINDING:
       case gl.DRAW_FRAMEBUFFER_BINDING:
         return this._activeDrawFramebuffer;
