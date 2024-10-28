@@ -32,7 +32,7 @@ jobs:
       - run: npm ci
       - name: Prebuild and Publish
         shell: bash
-        run: node ./node_modules/prebuild/bin.js -t ${{ matrix.target }} --strip -u --include-regex "\.(node|dll)$" ${{ secrets.GITHUB_TOKEN }} --verbose
+        run: node ./node_modules/prebuild/bin.js -t ${{ matrix.target }} --strip --include-regex "\.(node|dll)$" -u ${{ secrets.GITHUB_TOKEN }} --verbose
       - name: Prebuild and Publish (musl)
         if: runner.os == 'Linux'
         shell: bash
