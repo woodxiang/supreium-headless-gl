@@ -3,10 +3,10 @@
   "version": "8.1.5",
   "description": "Creates a WebGL context without a window",
   "main": "index.js",
+  "browser": "src/javascript/browser-index.js",
   "directories": {
     "test": "test"
   },
-  "browser": "src/javascript/browser-index.js",
   "engines": {
     "node": ">=18.0.0"
   },
