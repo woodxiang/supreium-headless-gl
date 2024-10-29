@@ -6,7 +6,7 @@
   "directories": {
     "test": "test"
   },
-  "browser": "browser_index.js",
+  "browser": "src/javascript/browser-index.js",
   "engines": {
     "node": ">=18.0.0"
   },
