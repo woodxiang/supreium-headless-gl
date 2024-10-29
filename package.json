@@ -1,6 +1,6 @@
 {
   "name": "gl",
-  "version": "8.1.5",
+  "version": "8.1.6",
   "description": "Creates a WebGL context without a window",
   "main": "index.js",
   "browser": "src/javascript/browser-index.js",
