@@ -1,14 +1,19 @@
-const { Linkable } = require("./linkable");
-const { gl } = require("./native-gl");
+const { Linkable } = require('./linkable');
+const { gl } = require('./native-gl');
+const { WebGLVertexArrayObjectState } = require('./webgl-vertex-attribute');
 
 class WebGLVertexArrayObject extends Linkable {
   constructor(_, ctx) {
     super(_);
     this._ctx = ctx;
+    this._vertexState = new WebGLVertexArrayObjectState(ctx);
   }
 
   _performDelete() {
-    const ctx = this._ctx;
+    this._vertexState.cleanUp();
+    delete this._vertexState;
+    delete this._ctx._vaos[this._];
+    gl.deleteVertexArray.call(this._ctx, this._ | 0);
   }
 }
 

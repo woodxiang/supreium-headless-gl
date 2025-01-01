@@ -28,6 +28,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
     this.isWebGL2 = true;
 
     this._drawBuffers = new WebGL2DrawBuffers(this);
+    this._vaos = {};
   }
 
   // 72
@@ -271,7 +272,8 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       if (colorAttachment instanceof WebGLTexture) {
         const internalFormat = colorAttachment._internalFormat;
         if (
-          !(internalFormat === gl.RGBA ||
+          !(
+            internalFormat === gl.RGBA ||
             internalFormat === gl.RGB ||
             internalFormat === gl.LUMINANCE_ALPHA ||
             internalFormat === gl.LUMINANCE ||
@@ -304,17 +306,15 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
             internalFormat === gl.RGBA16UI ||
             internalFormat === gl.RGBA32I ||
             internalFormat === gl.RGBA32UI ||
-            (
-              this._extensions.ext_color_buffer_float && (
-                internalFormat === gl.R16F ||
+            (this._extensions.ext_color_buffer_float &&
+              (internalFormat === gl.R16F ||
                 internalFormat === gl.RG16F ||
                 internalFormat === gl.RGBA16F ||
                 internalFormat === gl.R32F ||
                 internalFormat === gl.RG32F ||
                 internalFormat === gl.RGBA32F ||
-                internalFormat === gl.R11F_G11F_B10F
-              )
-            ))
+                internalFormat === gl.R11F_G11F_B10F))
+          )
         ) {
           return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT;
         }
@@ -1293,17 +1293,14 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       format === gl.RGBA16I ||
       format === gl.RGBA32I ||
       format === gl.RGBA32UI ||
-      (
-        this._extensions.ext_color_buffer_float && (
-          format === gl.R16F ||
+      (this._extensions.ext_color_buffer_float &&
+        (format === gl.R16F ||
           format === gl.RG16F ||
           format === gl.RGBA16F ||
           format === gl.R32F ||
           format === gl.RG32F ||
           format === gl.RGBA32F ||
-          format === gl.R11F_G11F_B10F
-        )
-      )
+          format === gl.R11F_G11F_B10F))
     );
   }
 
@@ -1617,6 +1614,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
     const id = NativeWebGLRenderingContext.prototype.createVertexArray.call(this);
     if (id <= 0) return null;
     const webGLVertexArrayObject = new WebGLVertexArrayObject(id, this);
+    this._vaos[id] = webGLVertexArrayObject;
     return webGLVertexArrayObject;
   }
 
@@ -1627,7 +1625,8 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
 
     if (!object) {
       NativeWebGLRenderingContext.prototype.bindVertexArray.call(this, 0);
-    } else if (object._pendingDelete) {
+    } else if (object instanceof WebGLVertexArrayObject && object._pendingDelete) {
+      this.setError(gl.INVALID_OPERATION);
       return;
     } else if (this._checkWrapper(object, WebGLVertexArrayObject)) {
       NativeWebGLRenderingContext.prototype.bindVertexArray.call(this, object._ | 0);
@@ -1646,6 +1645,11 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       }
     }
 
+    if (object === null) {
+      this._vertexObjectState = this._defaultVertexObjectState;
+    } else {
+      this._vertexObjectState = object._vertexState;
+    }
     this._activeVertexArray = object;
   }
 
@@ -1658,6 +1662,17 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       this.setError(gl.INVALID_OPERATION);
       return;
     }
+
+    if (object._pendingDelete) {
+      return;
+    }
+
+    if (this._activeVertexArray === object) {
+      this.bindVertexArray(null);
+    }
+
+    object._pendingDelete = true;
+    object._checkDelete();
   }
 
   isVertexArray(object) {
@@ -1784,53 +1799,52 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       return;
     }
 
-    if (!(
-      internalFormat === gl.R8UI ||
-      internalFormat === gl.R8I ||
-      internalFormat === gl.R16UI ||
-      internalFormat === gl.R16I ||
-      internalFormat === gl.R32UI ||
-      internalFormat === gl.R32I ||
-      internalFormat === gl.RG8 ||
-      internalFormat === gl.RG8UI ||
-      internalFormat === gl.RG8I ||
-      internalFormat === gl.RG16UI ||
-      internalFormat === gl.RG16I ||
-      internalFormat === gl.RG32UI ||
-      internalFormat === gl.RG32I ||
-      internalFormat === gl.RGB8 ||
-      internalFormat === gl.RGBA8 ||
-      internalFormat === gl.SRGB8_ALPHA8 ||
-      internalFormat === gl.RGBA4 ||
-      internalFormat === gl.RGB565 ||
-      internalFormat === gl.RGB5_A1 ||
-      internalFormat === gl.RGB10_A2 ||
-      internalFormat === gl.RGBA8UI ||
-      internalFormat === gl.RGBA8I ||
-      internalFormat === gl.RGB10_A2UI ||
-      internalFormat === gl.RGBA16UI ||
-      internalFormat === gl.RGBA16I ||
-      internalFormat === gl.RGBA32I ||
-      internalFormat === gl.RGBA32UI ||
-      internalFormat === gl.DEPTH_COMPONENT16 ||
-      internalFormat === gl.DEPTH_COMPONENT24 ||
-      internalFormat === gl.DEPTH_COMPONENT32F ||
-      internalFormat === gl.DEPTH_STENCIL ||
-      internalFormat === gl.DEPTH24_STENCIL8 ||
-      internalFormat === gl.DEPTH32F_STENCIL8 ||
-      internalFormat === gl.STENCIL_INDEX8 ||
-      (
-        this._extensions.ext_color_buffer_float && (
-          internalFormat === gl.R16F ||
-          internalFormat === gl.RG16F ||
-          internalFormat === gl.RGBA16F ||
-          internalFormat === gl.R32F ||
-          internalFormat === gl.RG32F ||
-          internalFormat === gl.RGBA32F ||
-          internalFormat === gl.R11F_G11F_B10F
-        )
+    if (
+      !(
+        internalFormat === gl.R8UI ||
+        internalFormat === gl.R8I ||
+        internalFormat === gl.R16UI ||
+        internalFormat === gl.R16I ||
+        internalFormat === gl.R32UI ||
+        internalFormat === gl.R32I ||
+        internalFormat === gl.RG8 ||
+        internalFormat === gl.RG8UI ||
+        internalFormat === gl.RG8I ||
+        internalFormat === gl.RG16UI ||
+        internalFormat === gl.RG16I ||
+        internalFormat === gl.RG32UI ||
+        internalFormat === gl.RG32I ||
+        internalFormat === gl.RGB8 ||
+        internalFormat === gl.RGBA8 ||
+        internalFormat === gl.SRGB8_ALPHA8 ||
+        internalFormat === gl.RGBA4 ||
+        internalFormat === gl.RGB565 ||
+        internalFormat === gl.RGB5_A1 ||
+        internalFormat === gl.RGB10_A2 ||
+        internalFormat === gl.RGBA8UI ||
+        internalFormat === gl.RGBA8I ||
+        internalFormat === gl.RGB10_A2UI ||
+        internalFormat === gl.RGBA16UI ||
+        internalFormat === gl.RGBA16I ||
+        internalFormat === gl.RGBA32I ||
+        internalFormat === gl.RGBA32UI ||
+        internalFormat === gl.DEPTH_COMPONENT16 ||
+        internalFormat === gl.DEPTH_COMPONENT24 ||
+        internalFormat === gl.DEPTH_COMPONENT32F ||
+        internalFormat === gl.DEPTH_STENCIL ||
+        internalFormat === gl.DEPTH24_STENCIL8 ||
+        internalFormat === gl.DEPTH32F_STENCIL8 ||
+        internalFormat === gl.STENCIL_INDEX8 ||
+        (this._extensions.ext_color_buffer_float &&
+          (internalFormat === gl.R16F ||
+            internalFormat === gl.RG16F ||
+            internalFormat === gl.RGBA16F ||
+            internalFormat === gl.R32F ||
+            internalFormat === gl.RG32F ||
+            internalFormat === gl.RGBA32F ||
+            internalFormat === gl.R11F_G11F_B10F))
       )
-    )) {
+    ) {
       this.setError(gl.INVALID_ENUM);
       return;
     }
