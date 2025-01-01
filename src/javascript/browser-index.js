@@ -18,12 +18,16 @@ function createContext(width, height, options) {
   canvas.height = height;
 
   try {
-    gl = canvas.getContext('webgl', options);
+    gl = canvas.getContext('webgl2', options);
   } catch (e) {
     try {
-      gl = canvas.getContext('experimental-webgl', options);
+      gl = canvas.getContext('webgl', options);
     } catch (e) {
-      return null;
+      try {
+        gl = canvas.getContext('experimental-webgl', options);
+      } catch (e) {
+        return null;
+      }
     }
   }
 

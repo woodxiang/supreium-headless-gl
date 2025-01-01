@@ -13,6 +13,7 @@
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#include <GLES3/gl3.h>
 
 enum GLObjectType
 {
@@ -118,6 +119,7 @@ struct WebGLRenderingContext : public node::ObjectWrap
       GLenum format,
       GLint width,
       GLint height,
+      GLint depth,
       unsigned char *pixels);
 
   // Error handling
@@ -282,6 +284,8 @@ struct WebGLRenderingContext : public node::ObjectWrap
   static NAN_METHOD(CreateVertexArrayOES);
   static NAN_METHOD(DeleteVertexArrayOES);
   static NAN_METHOD(IsVertexArrayOES);
+
+#include "webgl2.h"
 
   void initPointers();
 

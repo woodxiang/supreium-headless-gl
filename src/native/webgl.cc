@@ -211,7 +211,7 @@ void WebGLRenderingContext::dispose()
       (inst->glDeleteTextures)(1, &obj);
       break;
     case GLOBJECT_TYPE_VERTEX_ARRAY:
-      (inst->glDeleteVertexArraysOES)(1, &obj);
+      (inst->glDeleteVertexArrays)(1, &obj);
       break;
     default:
       break;
@@ -766,6 +766,7 @@ unsigned char *WebGLRenderingContext::unpackPixels(
     GLenum format,
     GLint width,
     GLint height,
+    GLint depth,
     unsigned char *pixels)
 {
 
@@ -805,15 +806,21 @@ unsigned char *WebGLRenderingContext::unpackPixels(
     rowStride += unpack_alignment - (rowStride % unpack_alignment);
   }
 
-  GLint imageSize = rowStride * height;
+  GLint layerSize = rowStride * height;
+  GLint imageSize = layerSize * depth;
   unsigned char *unpacked = new unsigned char[imageSize];
 
   if (unpack_flip_y)
   {
-    for (int i = 0, j = height - 1; j >= 0; ++i, --j)
+    unsigned char *cursor = unpacked;
+    for (int k = 0; k < depth; k++)
     {
-      memcpy(
-          reinterpret_cast<void *>(unpacked + j * rowStride), reinterpret_cast<void *>(pixels + i * rowStride), width * pixelSize);
+      for (int i = 0, j = height - 1; j >= 0; ++i, --j)
+      {
+        memcpy(
+            reinterpret_cast<void *>(unpacked + j * rowStride), reinterpret_cast<void *>(pixels + i * rowStride), width * pixelSize);
+      }
+      cursor += layerSize;
     }
   }
   else
@@ -893,7 +900,7 @@ GL_METHOD(TexImage2D)
     if (inst->unpack_flip_y || inst->unpack_premultiply_alpha)
     {
       unsigned char *unpacked = inst->unpackPixels(
-          type, format, width, height, *pixels);
+          type, format, width, height, 1, *pixels);
       (inst->glTexImage2D)(
           target, level, internalformat, width, height, border, format, type, unpacked);
       delete[] unpacked;
@@ -937,7 +944,7 @@ GL_METHOD(TexSubImage2D)
       inst->unpack_premultiply_alpha)
   {
     unsigned char *unpacked = inst->unpackPixels(
-        type, format, width, height, *pixels);
+        type, format, width, height, 1, *pixels);
     (inst->glTexSubImage2D)(
         target, level, xoffset, yoffset, width, height, format, type, unpacked);
     delete[] unpacked;
@@ -2162,7 +2169,11 @@ GL_METHOD(DrawBuffersWEBGL)
 
   for (GLuint i = 0; i < numBuffers; i++)
   {
+#if NODE_MAJOR_VERSION >= 10
     buffers[i] = Nan::Get(buffersArray, i).ToLocalChecked()->Uint32Value(Nan::GetCurrentContext()).ToChecked();
+#else
+    buffers[i] = Nan::Get(buffersArray, i).ToLocalChecked()->Uint32Value();
+#endif
   }
 
   (inst->glDrawBuffersEXT)(numBuffers, buffers);
@@ -2250,3 +2261,5 @@ GL_METHOD(IsVertexArrayOES)
   info.GetReturnValue().Set(Nan::New<v8::Boolean>(
       (inst->glIsVertexArrayOES)(Nan::To<uint32_t>(info[0]).ToChecked()) != 0));
 }
+
+#include "webgl2.cc"

@@ -15,7 +15,6 @@ const { getEXTTextureFilterAnisotropic } = require('./extensions/ext-texture-fil
 const { getEXTShaderTextureLod } = require('./extensions/ext-shader-texture-lod');
 const { getOESVertexArrayObject } = require('./extensions/oes-vertex-array-object');
 const {
-  bindPublics,
   checkObject,
   checkUniform,
   formatSize,
@@ -69,37 +68,6 @@ const availableExtensions = {
   ext_texture_filter_anisotropic: getEXTTextureFilterAnisotropic,
   ext_shader_texture_lod: getEXTShaderTextureLod,
 };
-
-const privateMethods = ['resize', 'destroy'];
-
-function wrapContext(ctx) {
-  const wrapper = new WebGLRenderingContext();
-  bindPublics(Object.keys(ctx), wrapper, ctx, privateMethods);
-  bindPublics(Object.keys(ctx.constructor.prototype), wrapper, ctx, privateMethods);
-  bindPublics(Object.getOwnPropertyNames(ctx), wrapper, ctx, privateMethods);
-  bindPublics(Object.getOwnPropertyNames(ctx.constructor.prototype), wrapper, ctx, privateMethods);
-
-  Object.defineProperties(wrapper, {
-    drawingBufferWidth: {
-      get() {
-        return ctx.drawingBufferWidth;
-      },
-      set(value) {
-        ctx.drawingBufferWidth = value;
-      },
-    },
-    drawingBufferHeight: {
-      get() {
-        return ctx.drawingBufferHeight;
-      },
-      set(value) {
-        ctx.drawingBufferHeight = value;
-      },
-    },
-  });
-
-  return wrapper;
-}
 
 // We need to wrap some of the native WebGL functions to handle certain error codes and check input values
 class WebGLRenderingContext extends NativeWebGLRenderingContext {
@@ -322,7 +290,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
         }
         return 2;
       case gl.FLOAT:
-        return 1;
+        return pixelSize * 4;
     }
     this.setError(gl.INVALID_ENUM);
     return 0;
@@ -338,7 +306,7 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
 
   _fixupLink(program) {
     if (!super.getProgramParameter(program._, gl.LINK_STATUS)) {
-      program._linkInfoLog = super.getProgramInfoLog(program);
+      program._linkInfoLog = super.getProgramInfoLog(program._);
       return false;
     }
 
@@ -3054,7 +3022,14 @@ class WebGLRenderingContext extends NativeWebGLRenderingContext {
     }
     // Need to check for out of memory error
     this._saveError();
-    super.texImage2D(target, level, internalFormat, width, height, border, format, type, data);
+
+    // support gl.FLOAT when use opengl es 3.0
+    let actualInternalFormat = internalFormat;
+    if (format === gl.RGBA && internalFormat === gl.RGBA && type === gl.FLOAT) {
+      // when use oes_texture_float, use gl.RGBA32F
+      actualInternalFormat = gl.RGBA32F;
+    }
+    super.texImage2D(target, level, actualInternalFormat, width, height, border, format, type, data);
     const error = this.getError();
     this._restoreError(error);
     if (error !== gl.NO_ERROR) {
@@ -3674,4 +3649,4 @@ for (const [key, value] of Object.entries(gl)) {
   Object.assign(WebGLRenderingContext, { [key]: value });
 }
 
-module.exports = { WebGLRenderingContext, wrapContext };
+module.exports = { WebGLRenderingContext };

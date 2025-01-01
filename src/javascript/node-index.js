@@ -1,6 +1,8 @@
 const bits = require('bit-twiddle');
 const { WebGLContextAttributes } = require('./webgl-context-attributes');
-const { WebGLRenderingContext, wrapContext } = require('./webgl-rendering-context');
+const { wrapContext } = require('./wrap-context');
+const { WebGLRenderingContext } = require('./webgl-rendering-context');
+const { WebGL2RenderingContext } = require('./webgl2-rendering-context');
 const { WebGLTextureUnit } = require('./webgl-texture-unit');
 const { WebGLVertexArrayObjectState, WebGLVertexArrayGlobalState } = require('./webgl-vertex-attribute');
 
@@ -20,6 +22,11 @@ function createContext(width, height, options) {
     return null;
   }
 
+  let isWebGL2 = true;
+  if (options.isWebGL2 !== undefined && !options.isWebGL2) {
+    isWebGL2 = false;
+  }
+
   const contextAttributes = new WebGLContextAttributes(
     flag(options, 'alpha', true),
     flag(options, 'depth', true),
@@ -36,18 +43,33 @@ function createContext(width, height, options) {
 
   let ctx;
   try {
-    ctx = new WebGLRenderingContext(
-      1,
-      1,
-      contextAttributes.alpha,
-      contextAttributes.depth,
-      contextAttributes.stencil,
-      contextAttributes.antialias,
-      contextAttributes.premultipliedAlpha,
-      contextAttributes.preserveDrawingBuffer,
-      contextAttributes.preferLowPowerToHighPerformance,
-      contextAttributes.failIfMajorPerformanceCaveat
-    );
+    if (isWebGL2) {
+      ctx = new WebGL2RenderingContext(
+        1,
+        1,
+        contextAttributes.alpha,
+        contextAttributes.depth,
+        contextAttributes.stencil,
+        contextAttributes.antialias,
+        contextAttributes.premultipliedAlpha,
+        contextAttributes.preserveDrawingBuffer,
+        contextAttributes.preferLowPowerToHighPerformance,
+        contextAttributes.failIfMajorPerformanceCaveat
+      );
+    } else {
+      ctx = new WebGLRenderingContext(
+        1,
+        1,
+        contextAttributes.alpha,
+        contextAttributes.depth,
+        contextAttributes.stencil,
+        contextAttributes.antialias,
+        contextAttributes.premultipliedAlpha,
+        contextAttributes.preserveDrawingBuffer,
+        contextAttributes.preferLowPowerToHighPerformance,
+        contextAttributes.failIfMajorPerformanceCaveat
+      );
+    }
   } catch (e) {}
   if (!ctx) {
     return null;
@@ -69,7 +91,12 @@ function createContext(width, height, options) {
   ctx._renderbuffers = {};
 
   ctx._activeProgram = null;
-  ctx._activeFramebuffer = null;
+  if (isWebGL2) {
+    ctx._activeDrawFramebuffer = null;
+    ctx._activeReadFramebuffer = null;
+  } else {
+    ctx._activeFramebuffer = null;
+  }
   ctx._activeRenderbuffer = null;
   ctx._checkStencil = false;
   ctx._stencilState = true;
@@ -124,7 +151,7 @@ function createContext(width, height, options) {
   ctx.clearStencil(0);
   ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT | ctx.STENCIL_BUFFER_BIT);
 
-  return wrapContext(ctx);
+  return wrapContext(ctx, isWebGL2);
 }
 
 module.exports = createContext;
