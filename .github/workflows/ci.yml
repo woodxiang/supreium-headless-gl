@@ -26,6 +26,9 @@ jobs:
                                      libglew-dev libglu1-mesa-dev libosmesa6
                                      libxi-dev mesa-utils pkg-config
       - run: npm ci
+        env:
+          npm_config_build_from_source: true
+          # npm_config_build_from_source is used to force npm post install scripts to build native modules from source instead of downloading prebuilt binaries.
       - run: npm run build --if-present
       - if: runner.os == 'Linux'
         run: xvfb-run npm test
