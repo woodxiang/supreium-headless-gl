@@ -31,6 +31,8 @@ jobs:
           # npm_config_build_from_source is used to force npm post install scripts to build native modules from source instead of downloading prebuilt binaries.
       - run: npm run build --if-present
       - if: runner.os == 'Linux'
+        run: xvfb-run glxinfo
+      - if: runner.os == 'Linux'
         run: xvfb-run npm test
       - if: runner.os != 'Linux'
         run: npm test
