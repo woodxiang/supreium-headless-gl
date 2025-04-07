@@ -11,21 +11,24 @@ It aspires to fully conform to the [WebGL 1.0.3 specification](https://www.khron
 
 ```javascript
 // Create context
-var width   = 64
-var height  = 64
-var gl = require('gl')(width, height, { preserveDrawingBuffer: true })
+const createGL = require('gl')
+
+const width = 64
+const height = 64
+
+const gl = createGL(width, height, { preserveDrawingBuffer: true })
 
 //Clear screen to red
 gl.clearColor(1, 0, 0, 1)
 gl.clear(gl.COLOR_BUFFER_BIT)
 
 //Write output as a PPM formatted image
-var pixels = new Uint8Array(width * height * 4)
+const pixels = new Uint8Array(width * height * 4)
 gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels)
 process.stdout.write(['P3\n# gl.ppm\n', width, " ", height, '\n255\n'].join(''))
 
-for(var i = 0; i < pixels.length; i += 4) {
-  for(var j = 0; j < 3; ++j) {
+for(let i = 0; i < pixels.length; i += 4) {
+  for(let j = 0; j < 3; ++j) {
     process.stdout.write(pixels[i + j] + ' ')
   }
 }
@@ -77,11 +80,11 @@ In a pure DOM implementation, this method would implemented by resizing the WebG
 #### Example
 
 ```javascript
-var assert = require('assert')
-var gl = require('gl')(10, 10)
+const assert = require('assert')
+const gl = require('gl')(10, 10)
 assert(gl.drawingBufferHeight === 10 && gl.drawingBufferWidth === 10)
 
-var ext = gl.getExtension('STACKGL_resize_drawingbuffer')
+const ext = gl.getExtension('STACKGL_resize_drawingbuffer')
 ext.resize(20, 5)
 assert(gl.drawingBufferHeight === 20 && gl.drawingBufferWidth === 5)
 ```
@@ -109,9 +112,9 @@ For long running jobs, garbage collection of contexts is often not fast enough. 
 #### Example
 
 ```javascript
-var gl = require('gl')(10, 10)
+const gl = require('gl')(10, 10)
 
-var ext = gl.getExtension('STACKGL_destroy_context')
+const ext = gl.getExtension('STACKGL_destroy_context')
 ext.destroy()
 ```
 
