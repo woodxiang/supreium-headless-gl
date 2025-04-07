@@ -35,11 +35,11 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Prebuild and Publish
         shell: bash
-        run: node ./node_modules/prebuild/bin.js -t ${{ matrix.target }} --strip --include-regex "\.(node|dll)$" -u ${{ secrets.GITHUB_TOKEN }} --verbose
+        run: node ./node_modules/prebuild/bin.js -t ${{ matrix.target }} --strip --include-regex "\.(node|dylib|dll)$" -u ${{ secrets.GITHUB_TOKEN }} --verbose
       - name: Prebuild and Publish (musl)
         if: runner.os == 'Linux'
         shell: bash
-        run: node ./node_modules/prebuild/bin.js --libc=musl -t ${{ matrix.target }} --strip -u ${{ secrets.GITHUB_TOKEN }} --verbose
+        run: node ./node_modules/prebuild/bin.js --libc=musl -t ${{ matrix.target }} --strip --include-regex "\.(node|dylib|dll)$" -u ${{ secrets.GITHUB_TOKEN }} --verbose
       - name: Attest
         uses: actions/attest-build-provenance@v1
         with:
