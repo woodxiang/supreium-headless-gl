@@ -77,7 +77,8 @@
         ['OS=="win"', {
             'defines' : [
               'WIN32_LEAN_AND_MEAN',
-              'VC_EXTRALEAN'
+              'VC_EXTRALEAN',
+              'NOMINMAX',
             ],
             'configurations': {
               'Release': {
