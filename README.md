@@ -32,7 +32,7 @@ for(var i = 0; i < pixels.length; i += 4) {
 ```
 
 ## Install
-Installing `headless-gl` on a supported platform is a snap using one of the prebuilt binaries. Using [npm](https://www.npmjs.com/) run the command,
+Installing `headless-gl` on a supported platform is a snap using one of the prebuilt binaries. Using [npm](https://www.npmjs.com/), run the command
 
 ```
 npm install gl
@@ -40,7 +40,7 @@ npm install gl
 
 And you are good to go!
 
-Prebuilt binaries are generally available for LTS node versions (e.g. 18, 20). If your system is not supported, then please see the [development](#system-dependencies) section on how to configure your build environment.  Patches to improve support are always welcome!
+Prebuilt binaries are generally available for LTS node versions (e.g. 18, 20, 22). If your system is not supported, then please see the [development](#system-dependencies) section on how to configure your build environment. Patches to improve support are always welcome!
 
 ## Supported platforms and Node.js versions
 
@@ -50,10 +50,13 @@ Node.js versions 18 and up are supported.
 
 ## API
 
-`headless-gl` exports exactly one function which you can use to create a WebGL context,
+`headless-gl` exports exactly one function which you can use to create a WebGL context with the given context attributes:
 
-#### `var gl = require('gl')(width, height[, contextAttributes])`
-Creates a new `WebGLRenderingContext` with the given context attributes.
+```javascript
+const createGL = require('gl')
+
+const gl = createGL(width, height)
+```
 
 * `width` is the width of the drawing buffer
 * `height` is the height of the drawing buffer
@@ -69,7 +72,7 @@ In addition to all the usual WebGL methods, `headless-gl` exposes some custom ex
 
 This extension provides a mechanism to resize the drawing buffer of a WebGL context once it is created.
 
-In a pure DOM implementation, this method would implemented by resizing the WebGLContext's canvas element by modifying its `width/height` properties.  This canvas manipulation is not possible in headless-gl, since a headless context doesn't have a DOM or a canvas element associated to it.
+In a pure DOM implementation, this method would implemented by resizing the WebGLContext's canvas element by modifying its `width/height` properties. This canvas manipulation is not possible in headless-gl, since a headless context doesn't have a DOM or a canvas element associated to it.
 
 #### Example
 
@@ -101,7 +104,7 @@ Resizes the drawing buffer of a WebGL rendering context
 
 Destroys the WebGL context immediately, reclaiming all resources associated with it.
 
-For long running jobs, garbage collection of contexts is often not fast enough.  To prevent the system from becoming overloaded with unused contexts, you can force the system to reclaim a WebGL context immediately by calling `.destroy()`.
+For long running jobs, garbage collection of contexts is often not fast enough. To prevent the system from becoming overloaded with unused contexts, you can force the system to reclaim a WebGL context immediately by calling `.destroy()`.
 
 #### Example
 
@@ -124,9 +127,13 @@ interface STACKGL_destroy_context {
 #### `gl.getExtension('STACKGL_destroy_context').destroy()`
 Immediately destroys the context and all associated resources.
 
+### Expiremental WebGL2 support
+
+To create a WebGL 2 context, set the `createWebGL2Context` property to `true` in the `contextAttributes` argument.
+
 ## System dependencies
 
-In most cases installing `headless-gl` from npm should just work.  However, if you run into problems you might need to adjust your system configuration and make sure all your dependencies are up to date.  For general information on building native modules, see the [`node-gyp`](https://github.com/nodejs/node-gyp) documentation.
+In most cases installing `headless-gl` from npm should just work. However, if you run into problems you might need to adjust your system configuration and make sure all your dependencies are up to date. For general information on building native modules, see the [`node-gyp`](https://github.com/nodejs/node-gyp) documentation.
 
 #### Mac OS X
 
@@ -156,11 +163,12 @@ $ sudo apt-get install -y build-essential libxi-dev libglu1-mesa-dev libglew-dev
 
 ### How can I use headless-gl with a continuous integration service?
 
-`headless-gl` should work out of the box on most CI systems.  Some notes on specific CI systems:
+`headless-gl` should work out of the box on most CI systems. Some notes on specific CI systems:
 
+* GitHub Actions: refer to the workflow files, specifially the `ci` workflow for an example.
 * [CircleCI](https://circleci.com/): `headless-gl` should just work in the default node environment.
 * [AppVeyor](http://www.appveyor.com/): Again it should just work
-* [TravisCI](https://travis-ci.org/): Works out of the box on the OS X image.  For Linux VMs, you need to install mesa and xvfb.  To do this, create a file in the root of your repo called `.travis.yml` and paste the following into it:
+* [TravisCI](https://travis-ci.org/): Works out of the box on the OS X image. For Linux VMs, you need to install mesa and xvfb. To do this, create a file in the root of your repo called `.travis.yml` and paste the following into it:
 
 ```
 language: node_js
@@ -181,8 +189,6 @@ before_script:
   - export DISPLAY=:99.0; sh -e /etc/init.d/xvfb start
 ```
 
-If you know of a service not listed here, open an issue I'll add it to the list.
-
 ### How can `headless-gl` be used on a headless Linux machine?
 
 If you are running your own minimal Linux server, such as the one one would want to use on Amazon AWS or equivalent, it will likely not provide an X11 nor an OpenGL environment. To setup such an environment you can use those two packages:
@@ -196,7 +202,7 @@ Interacting with `Xvfb` requires you to start it on the background and to execut
 
 ### Does headless-gl work in a browser?
 
-Yes, with [browserify](http://browserify.org/).  The `STACKGL_destroy_context` and `STACKGL_resize_drawingbuffer` extensions are emulated as well.
+Yes, with [browserify](http://browserify.org/). The `STACKGL_destroy_context` and `STACKGL_resize_drawingbuffer` extensions are emulated as well.
 
 ### How are `<image>` and `<video>` elements implemented?
 
@@ -222,19 +228,15 @@ Only the following for now:
 * [`EXT_texture_filter_anisotropic`](https://www.khronos.org/registry/webgl/extensions/EXT_texture_filter_anisotropic/)
 * [`EXT_shader_texture_lod`](https://www.khronos.org/registry/webgl/extensions/EXT_shader_texture_lod/)
 
-### How can I keep up to date with what has changed in headless-gl?
-
-There is a [change log](CHANGES.md).
-
 ### Why use this thing instead of `node-webgl`?
 
-Despite the name [node-webgl](https://github.com/mikeseven/node-webgl) doesn't actually implement WebGL - rather it gives you "WebGL"-flavored bindings to whatever OpenGL driver is configured on your system.  If you are starting from an existing WebGL application or library, this means you'll have to do a bunch of work rewriting your WebGL code and shaders to deal with all the idiosyncrasies and bugs present on whatever platforms you try to run on.  The upside though is that `node-webgl` exposes a lot of non-WebGL stuff that might be useful for games like window creation, mouse and keyboard input, requestAnimationFrame emulation, and some native OpenGL features.
+Despite the name, [node-webgl](https://github.com/mikeseven/node-webgl) doesn't actually implement WebGL - rather it gives you "WebGL"-flavored bindings to whatever OpenGL driver is configured on your system. If you are starting from an existing WebGL application or library, this means you'll have to do a bunch of work rewriting your WebGL code and shaders to deal with all the idiosyncrasies and bugs present on whatever platforms you try to run on. The upside though is that `node-webgl` exposes a lot of non-WebGL stuff that might be useful for games like window creation, mouse and keyboard input, requestAnimationFrame emulation, and some native OpenGL features.
 
-`headless-gl` on the other hand just implements WebGL.  It is built on top of [ANGLE](https://bugs.chromium.org/p/angleproject/issues/list) and passes the full Khronos ARB conformance suite, which means it works exactly the same on all supported systems.  This makes it a great choice for running on a server or in a command line tool.  You can use it to run tests, generate images or perform GPGPU computations using shaders.
+`headless-gl` on the other hand just implements WebGL. It is built on top of [ANGLE](https://bugs.chromium.org/p/angleproject/issues/list) and passes the full Khronos ARB conformance suite, which means it works exactly the same on all supported systems. This makes it a great choice for running on a server or in a command line tool. You can use it to run tests, generate images or perform GPGPU computations using shaders.
 
 ### Why use this thing instead of [electron](http://electron.atom.io/)?
 
-Electron is fantastic if you are writing a desktop application or if you need a full DOM implementation.  On the other hand, because it is a larger dependency electron is more difficult to set up and configure in a server-side/CI environment. `headless-gl` is more modular in the sense that it just implements WebGL and nothing else.  As a result creating a `headless-gl` context takes just a few milliseconds on most systems, while spawning a full electron instance can take upwards of 15-30 seconds. If you are using WebGL in a command line interface or need to execute WebGL in a service, `headless-gl` might be a more efficient and simpler choice.
+Electron is fantastic if you are writing a desktop application or if you need a full DOM implementation. On the other hand, because it is a larger dependency electron is more difficult to set up and configure in a server-side/CI environment. `headless-gl` is more modular in the sense that it just implements WebGL and nothing else. As a result creating a `headless-gl` context takes just a few milliseconds on most systems, while spawning a full electron instance can take upwards of 15-30 seconds. If you are using WebGL in a command line interface or need to execute WebGL in a service, `headless-gl` might be a more efficient and simpler choice.
 
 ### How should I set up a development environment for headless-gl?
 
@@ -248,7 +250,7 @@ After you have your [system dependencies installed](#system-dependencies), do th
 Once this is done, you should be good to go!  A few more things
 
 * To run the test cases, use the command `npm test`, or execute specific tests by just running them using `node`.
-* On a Unix-like platform, you can do incremental rebuilds by going into the `build/` directory and running `make`.  This is **way faster** running `npm build` each time you make a change.
+* On a Unix-like platform, you can do incremental rebuilds by going into the `build/` directory and running `make`. This is **way faster** running `npm build` each time you make a change.
 
 ## License
 
