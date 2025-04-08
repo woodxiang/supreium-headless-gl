@@ -5,6 +5,7 @@ appveyor.yml
 build/*
 prebuilds/*
 scripts/*
+.github
 4.6.1
 5.12.0
 6.9.1
