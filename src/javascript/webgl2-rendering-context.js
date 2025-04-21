@@ -228,9 +228,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       return gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT;
     }
 
-    if (depthStencilAttachment instanceof WebGLTexture) {
-      return gl.FRAMEBUFFER_UNSUPPORTED;
-    } else if (depthStencilAttachment instanceof WebGLRenderbuffer) {
+    if (depthStencilAttachment instanceof WebGLRenderbuffer) {
       if (
         depthStencilAttachment._format !== gl.DEPTH_STENCIL &&
         depthStencilAttachment._format !== gl.DEPTH24_STENCIL8 &&
@@ -242,9 +240,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       height.push(depthStencilAttachment._height);
     }
 
-    if (depthAttachment instanceof WebGLTexture) {
-      return gl.FRAMEBUFFER_UNSUPPORTED;
-    } else if (depthAttachment instanceof WebGLRenderbuffer) {
+    if (depthAttachment instanceof WebGLRenderbuffer) {
       if (
         depthAttachment._format !== gl.DEPTH_COMPONENT16 &&
         depthAttachment._format !== gl.DEPTH_COMPONENT24 &&
@@ -256,9 +252,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       height.push(depthAttachment._height);
     }
 
-    if (stencilAttachment instanceof WebGLTexture) {
-      return gl.FRAMEBUFFER_UNSUPPORTED;
-    } else if (stencilAttachment instanceof WebGLRenderbuffer) {
+    if (stencilAttachment instanceof WebGLRenderbuffer) {
       if (stencilAttachment._format !== gl.STENCIL_INDEX8) {
         return gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT;
       }
