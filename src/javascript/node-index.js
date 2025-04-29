@@ -71,7 +71,7 @@ function createContext (width, height, options) {
   ctx._renderbuffers = {}
 
   ctx._activeProgram = null
-  ctx._activeFramebuffer = null
+  ctx._activeFramebuffers = { read: null, draw: null }
   ctx._activeRenderbuffer = null
   ctx._checkStencil = false
   ctx._stencilState = true
