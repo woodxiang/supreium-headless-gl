@@ -262,6 +262,14 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
     return null
   }
 
+  _getActiveFramebuffer (target) {
+    if (target === this.READ_FRAMEBUFFER) {
+      return this._activeFramebuffers.read
+    } else {
+      return this._activeFramebuffers.draw
+    }
+  }
+
   _getAttachments () {
     return this._extensions.webgl_draw_buffers ? this._extensions.webgl_draw_buffers._ALL_ATTACHMENTS : DEFAULT_ATTACHMENTS
   }
@@ -305,7 +313,7 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
   }
 
   _resizeDrawingBuffer (width, height) {
-    const prevFramebuffer = this._activeFramebuffer
+    const prevFramebuffer = this._activeFramebuffers.draw
     const prevTexture = this._getActiveTexture(this.TEXTURE_2D)
     const prevRenderbuffer = this._activeRenderbuffer
 
@@ -399,24 +407,6 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
     if (active) {
       active._refCount -= 1
       active._checkDelete()
-    }
-  }
-
-  _tryDetachFramebuffer (framebuffer, renderbuffer) {
-    // FIXME: Does the texture get unbound from *all* framebuffers, or just the
-    // active FBO?
-    if (framebuffer && framebuffer._linked(renderbuffer)) {
-      const attachments = this._getAttachments()
-      const framebufferAttachments = Object.keys(framebuffer._attachments)
-      for (let i = 0; i < framebufferAttachments.length; ++i) {
-        if (framebuffer._attachments[attachments[i]] === renderbuffer) {
-          this.framebufferTexture2D(
-            this.FRAMEBUFFER,
-            attachments[i] | 0,
-            this.TEXTURE_2D,
-            null)
-        }
-      }
     }
   }
 
@@ -591,18 +581,14 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
     } else {
       return
     }
-    const activeFramebuffer = this._activeFramebuffer
-    if (activeFramebuffer !== framebuffer) {
-      if (activeFramebuffer) {
-        activeFramebuffer._refCount -= 1
-        activeFramebuffer._checkDelete()
-      }
-      if (framebuffer) {
-        framebuffer._refCount += 1
-      }
-    }
-    if (error === 0) {
-      this._activeFramebuffer = framebuffer
+
+    if (target === this.FRAMEBUFFER) {
+      this._activeFramebuffers.draw = framebuffer
+      this._activeFramebuffers.read = framebuffer
+    } else if (target === this.READ_FRAMEBUFFER) {
+      this._activeFramebuffers.read = framebuffer
+    } else if (target === this.DRAW_FRAMEBUFFER) {
+      this._activeFramebuffers.draw = framebuffer
     }
   }
 
@@ -1239,8 +1225,14 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
       return
     }
 
-    if (this._activeFramebuffer === framebuffer) {
+    if (this._activeFramebuffers.draw === framebuffer && this._activeFramebuffers.read === framebuffer) {
       this.bindFramebuffer(this.FRAMEBUFFER, null)
+    } else if (this._isWebGL2()) {
+      if (this._activeFramebuffers.read === framebuffer) {
+        this.bindFramebuffer(this.READ_FRAMEBUFFER, null)
+      } else if (this._activeFramebuffers.draw === framebuffer) {
+        this.bindFramebuffer(this.DRAW_FRAMEBUFFER, null)
+      }
     }
 
     framebuffer._pendingDelete = true
@@ -1272,10 +1264,6 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
     if (this._activeRenderbuffer === renderbuffer) {
       this.bindRenderbuffer(this.RENDERBUFFER, null)
     }
-
-    const activeFramebuffer = this._activeFramebuffer
-
-    this._tryDetachFramebuffer(activeFramebuffer, renderbuffer)
 
     renderbuffer._pendingDelete = true
     renderbuffer._checkDelete()
@@ -1315,28 +1303,6 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
       }
     }
     this.activeTexture(this.TEXTURE0 + curActive)
-
-    // FIXME: Does the texture get unbound from *all* framebuffers, or just the
-    // active FBO?
-    const ctx = this
-    const activeFramebuffer = this._activeFramebuffer
-    function tryDetach (framebuffer) {
-      if (framebuffer && framebuffer._linked(texture)) {
-        const attachments = ctx._getAttachments()
-        for (let i = 0; i < attachments.length; ++i) {
-          const attachment = attachments[i]
-          if (framebuffer._attachments[attachment] === texture) {
-            ctx.framebufferTexture2D(
-              this.FRAMEBUFFER,
-              attachment,
-              this.TEXTURE_2D,
-              null)
-          }
-        }
-      }
-    }
-
-    tryDetach(activeFramebuffer)
 
     // Mark texture for deletion
     texture._pendingDelete = true
@@ -1493,14 +1459,8 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
       throw new TypeError('framebufferRenderbuffer(GLenum, GLenum, GLenum, WebGLRenderbuffer)')
     }
 
-    if (!this._validFramebufferAttachment(attachment) ||
-      renderbufferTarget !== this.RENDERBUFFER) {
-      this.setError(this.INVALID_ENUM)
-      return
-    }
-
-    const framebuffer = this._activeFramebuffer
-    if (!framebuffer) {
+    // Since we emulate the default framebuffer, we can't rely on ANGLE's validation.
+    if (!this._getActiveFramebuffer(target)) {
       this.setError(this.INVALID_OPERATION)
       return
     }
@@ -1526,15 +1486,27 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
       throw new TypeError('framebufferTexture2D(GLenum, GLenum, GLenum, WebGLTexture, GLint)')
     }
 
-    // Check parameters are ok
-    if (!this._validFramebufferAttachment(attachment)) {
-      this.setError(this.INVALID_ENUM)
+    // Check object ownership
+    if (texture && !this._checkWrapper(texture, WebGLTexture)) {
       return
     }
 
-    if (level !== 0) {
-      this.setError(this.INVALID_VALUE)
+    // Since we emulate the default framebuffer, we can't rely on ANGLE's validation.
+    if (!this._getActiveFramebuffer(target)) {
+      this.setError(this.INVALID_OPERATION)
       return
+    }
+
+    super.framebufferTexture2D(target, attachment, textarget, texture?._ ?? null, level)
+  }
+
+  framebufferTextureLayer (target, attachment, texture, level, layer) {
+    target |= 0
+    attachment |= 0
+    level |= 0
+    layer |= 0
+    if (!checkObject(texture)) {
+      throw new TypeError('framebufferTextureLayer(GLenum, GLenum, WebGLTexture, GLint, GLint)')
     }
 
     // Check object ownership
@@ -1542,30 +1514,13 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
       return
     }
 
-    // Check texture target is ok
-    if (textarget === this.TEXTURE_2D) {
-      if (texture && texture._binding !== this.TEXTURE_2D) {
-        this.setError(this.INVALID_OPERATION)
-        return
-      }
-    } else if (this._validCubeTarget(textarget)) {
-      if (texture && texture._binding !== this.TEXTURE_CUBE_MAP) {
-        this.setError(this.INVALID_OPERATION)
-        return
-      }
-    } else {
-      this.setError(this.INVALID_ENUM)
-      return
-    }
-
-    // Check a framebuffer is actually bound
-    const framebuffer = this._activeFramebuffer
-    if (!framebuffer) {
+    // Since we emulate the default framebuffer, we can't rely on ANGLE's validation.
+    if (!this._getActiveFramebuffer(target)) {
       this.setError(this.INVALID_OPERATION)
       return
     }
 
-    super.framebufferTexture2D(target, attachment, textarget, texture?._ ?? null, level)
+    super.framebufferTextureLayer(target, attachment, texture?._ ?? null, level, layer)
   }
 
   frontFace (mode) {
@@ -1651,7 +1606,9 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
       case this.CURRENT_PROGRAM:
         return this._activeProgram
       case this.FRAMEBUFFER_BINDING:
-        return this._activeFramebuffer
+        return this._activeFramebuffers.draw
+      case this.READ_FRAMEBUFFER_BINDING:
+        return this._activeFramebuffers.read
       case this.RENDERBUFFER_BINDING:
         return this._activeRenderbuffer
       case this.TEXTURE_BINDING_2D:
@@ -1731,8 +1688,8 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
     attachment |= 0
     pname |= 0
 
-    // Note: there's an ANGLE bug where it doesn't check for the default framebuffer in WebGL compat.
-    if (!this._activeFramebuffer) {
+    // Since we emulate the default framebuffer, we can't rely on ANGLE's validation.
+    if (!this._getActiveFramebuffer(target)) {
       this.setError(this.INVALID_OPERATION)
       return null
     }
