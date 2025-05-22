@@ -60,6 +60,15 @@ jobs:
           node-version: '24.x'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
-      - run: npm publish --provenance --access public
+      - id: release_tag
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "$VERSION" == *"-"* ]]; then
+            echo "TAG=next" >> $GITHUB_ENV
+          else
+            echo "TAG=latest" >> $GITHUB_ENV
+          fi
+      - name: Publish to NPM
+        run: npm publish --tag "$TAG" --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
