@@ -1401,14 +1401,13 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
 
   // 2963
   // WebGL1
-  // texImage2D(target, level, internalFormat, width, height, border, format, type, pixels)
-  // texImage2D(target, level, internalFormat, format, type, pixels)
+  // texImage2D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei border, GLenum format, GLenum type, ArrayBufferView? pixels)
+  // texImage2D(GLenum target, GLint level, GLenum internalFormat, GLenum format, GLenum type, TexImageSource pixels)
 
   // WebGL2
-  // texImage2D(target, level, internalFormat, width, height, border, format, type, offset)
-  // texImage2D(target, level, internalFormat, width, height, border, format, type, source)
-  // texImage2D(target, level, internalFormat, width, height, border, format, type, srcData, srcOffset)
-
+  // texImage2D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei border, GLenum format, GLenum type, GLintptr offset)
+  // texImage2D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei border, GLenum format, GLenum type, TexImageSource source)
+  // texImage2D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei border, GLenum format, GLenum type, ArrayBufferView srcData, GLintptr srcOffset)
   texImage2D(target, level, internalFormat, width, height, border, format, type, pixels, offset) {
     if (arguments.length === 6) {
       pixels = border;
@@ -1462,6 +1461,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
 
     const ps = pixelSize(internalFormat, type);
     if (ps === 0) {
+      this.setError(gl.INVALID_ENUM);
       return;
     }
 
@@ -1494,7 +1494,8 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       border,
       format,
       type,
-      data
+      data,
+      offset
     );
     const error = this.getError();
     this._restoreError(error);
@@ -1515,15 +1516,11 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
    * webgl2
    */
 
-  // void gl.texImage3D(target, level, internalFormat, width, height, depth, border, format, type, GLintptr offset);
-  // void gl.texImage3D(target, level, internalFormat, width, height, depth, border, format, type, HTMLCanvasElement source);
-  // void gl.texImage3D(target, level, internalFormat, width, height, depth, border, format, type, HTMLImageElement source);
-  // void gl.texImage3D(target, level, internalFormat, width, height, depth, border, format, type, HTMLVideoElement source);
-  // void gl.texImage3D(target, level, internalFormat, width, height, depth, border, format, type, ImageBitmap source);
-  // void gl.texImage3D(target, level, internalFormat, width, height, depth, border, format, type, ImageData source);
-  // void gl.texImage3D(target, level, internalFormat, width, height, depth, border, format, type, ArrayBufferView? srcData);
-  // void gl.texImage3D(target, level, internalFormat, width, height, depth, border, format, type, ArrayBufferView srcData, srcOffset);
-  texImage3D(target, level, internalFormat, width, height, depth, border, format, type, pixels, srcOffset) {
+  // void gl.texImage3D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, GLintptr offset);
+  // void gl.texImage3D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, TexImageSource source);
+  // void gl.texImage3D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, ArrayBufferView? srcData);
+  // void gl.texImage3D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, ArrayBufferView srcData, GLintptr offset);
+  texImage3D(target, level, internalFormat, width, height, depth, border, format, type, pixels, offset) {
     target |= 0;
     level |= 0;
     internalFormat |= 0;
@@ -1533,10 +1530,15 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
     border |= 0;
     format |= 0;
     type |= 0;
-    srcOffset |= 0;
+    offset |= 0;
 
     if (typeof pixels !== 'object' && pixels !== undefined) {
       throw new TypeError('texImage3D(GLenum, GLint, GLenum, GLint, GLint, GLint, GLint, GLenum, GLenum, Uint8Array)');
+    }
+
+    if (typeof pixels === 'number') {
+      offset = pixels;
+      pixels = undefined;
     }
 
     if (!verifyFormat(internalFormat, format, type)) {
@@ -1554,6 +1556,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
 
     const ps = pixelSize(internalFormat, type);
     if (ps === 0) {
+      this.setError(gl.INVALID_ENUM);
       return;
     }
 
@@ -1587,7 +1590,8 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       border,
       format,
       type,
-      data
+      data,
+      offset
     );
     const error = this.getError();
     this._restoreError(error);
@@ -1698,6 +1702,89 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
     NativeWebGLRenderingContext.prototype.texStorage2D.call(this, target, levels, internalFormat, width, height);
   }
 
+  // 3061
+  // WebGL1
+  // texSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, ArrayBufferView? pixels)
+  // texSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLenum format, GLenum type, TexImageSource srcData)
+  // WebGL2
+  // texSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, GLintptr offset) 
+  // texSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, ArrayBufferView pixels, GLintptr srcOffset)
+  // texSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, TexImageSource srcData)
+  texSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels, offset) {
+    if (arguments.length === 7) {
+      pixels = format;
+      type = height;
+      format = width;
+
+      pixels = extractImageData(pixels);
+
+      if (pixels == null) {
+        throw new TypeError(
+          'texSubImage2D(GLenum, GLint, GLint, GLint, GLenum, GLenum, ImageData | HTMLImageElement | HTMLCanvasElement | HTMLVideoElement)'
+        );
+      }
+
+      width = pixels.width;
+      height = pixels.height;
+      pixels = pixels.data;
+    }
+
+    if (typeof pixels !== 'object') {
+      throw new TypeError('texSubImage2D(GLenum, GLint, GLint, GLint, GLint, GLint, GLenum, GLenum, Uint8Array)');
+    }
+
+    target |= 0;
+    level |= 0;
+    xoffset |= 0;
+    yoffset |= 0;
+    width |= 0;
+    height |= 0;
+    format |= 0;
+    type |= 0;
+    offset |= 0;
+
+    if (typeof pixels === 'number') {
+      offset = pixels;
+      pixels = undefined;
+    }
+
+    const texture = this._getTexImage(target);
+    if (!texture) {
+      this.setError(gl.INVALID_OPERATION);
+      return;
+    }
+
+    if (!texture._internalFormat) {
+      this.setError(gl.INVALID_OPERATION);
+      return;
+    }
+
+    const ps = pixelSize(texture._internalFormat, type);
+    if (ps === 0) {
+      return;
+    }
+
+    if (!this._checkDimensions(target, width, height, 1, level)) {
+      return;
+    }
+
+    if (xoffset < 0 || yoffset < 0) {
+      this.setError(gl.INVALID_VALUE);
+      return;
+    }
+
+    const data = convertPixels(pixels);
+    const rowStride = this._computeRowStride(width, ps);
+    const imageSize = rowStride * height;
+
+    if (!data || data.length < imageSize) {
+      this.setError(gl.INVALID_OPERATION);
+      return;
+    }
+
+    NativeWebGLRenderingContext.prototype.texSubImage2D.call(this, target, level, xoffset, yoffset, width, height, format, type, data, offset);
+  }
+
   texStorage3D(target, levels, internalFormat, width, height, depth) {
     target |= 0;
     levels |= 0;
@@ -1722,7 +1809,11 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
     NativeWebGLRenderingContext.prototype.texStorage3D.call(this, target, levels, internalFormat, width, height, depth);
   }
 
-  texSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels) {
+  // WebGL2
+  // texSubImage3D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, GLintptr offset)
+  // texSubImage3D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, TexImageSource srcData)
+  // texSubImage3D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, ArrayBufferView? pixels, GLintptr srcOffset = 0)
+  texSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels, offset) {
     if (typeof pixels !== 'object') {
       throw new TypeError('texSubImage3D(GLenum, GLint, GLint, GLint, GLint, GLint, GLenum, GLenum, Uint8Array)');
     }
@@ -1737,6 +1828,12 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
     depth |= 0;
     format |= 0;
     type |= 0;
+    offset |= 0;
+
+    if (typeof pixels === 'number') {
+      offset = pixels;
+      pixels = undefined;
+    }
 
     const texture = this._getTexImage(target);
     if (!texture) {
@@ -1751,10 +1848,11 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
 
     const ps = pixelSize(texture._internalFormat, type);
     if (ps === 0) {
+      this.setError(gl.INVALID_ENUM);
       return;
     }
 
-    if (!this._checkDimensions(target, width, height, level)) {
+    if (!this._checkDimensions(target, width, height, depth, level)) {
       return;
     }
 
@@ -1772,7 +1870,7 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
       return;
     }
 
-    super.texSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
+    super.texSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data, offset);
   }
 
   renderbufferStorageMultisample(target, samples, internalFormat, width, height) {

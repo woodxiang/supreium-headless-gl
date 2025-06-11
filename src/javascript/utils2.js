@@ -1,5 +1,5 @@
 const { gl } = require('./native-gl');
-const { unpackTypedArray } = require('./utils');
+const { unpackTypedArray, isTypedArray } = require('./utils');
 
 const formatTable = new Map([
   [
@@ -52,6 +52,13 @@ const formatTable = new Map([
     },
   ],
   [
+    gl.R8_SNORM,
+    {
+      format: gl.RED,
+      types: [[gl.BYTE, 1]],
+    },
+  ],
+  [
     gl.R16F,
     {
       format: gl.RED,
@@ -76,10 +83,52 @@ const formatTable = new Map([
     },
   ],
   [
+    gl.R8I,
+    {
+      format: gl.RED_INTEGER,
+      types: [[gl.BYTE, 1]],
+    },
+  ],
+  [
+    gl.R16UI,
+    {
+      format: gl.RED_INTEGER,
+      types: [[gl.UNSIGNED_SHORT, 2]],
+    },
+  ],
+  [
+    gl.R16I,
+    {
+      format: gl.RED_INTEGER,
+      types: [[gl.SHORT, 2]],
+    },
+  ],
+  [
+    gl.R32UI,
+    {
+      format: gl.RED_INTEGER,
+      types: [[gl.UNSIGNED_INT, 4]],
+    },
+  ],
+  [
+    gl.R32I,
+    {
+      format: gl.RED_INTEGER,
+      types: [[gl.INT, 4]],
+    },
+  ],
+  [
     gl.RG8,
     {
       format: gl.RG,
       types: [[gl.UNSIGNED_BYTE, 2]],
+    },
+  ],
+  [
+    gl.RG8_SNORM,
+    {
+      format: gl.RG,
+      types: [[gl.BYTE, 2]],
     },
   ],
   [
@@ -107,6 +156,41 @@ const formatTable = new Map([
     },
   ],
   [
+    gl.RG8I,
+    {
+      format: gl.RG,
+      types: [[gl.BYTE, 2]],
+    },
+  ],
+  [
+    gl.RG16UI,
+    {
+      format: gl.RG,
+      types: [[gl.UNSIGNED_SHORT, 4]],
+    },
+  ],
+  [
+    gl.RG16I,
+    {
+      format: gl.RG,
+      types: [[gl.SHORT, 4]],
+    },
+  ],
+  [
+    gl.RG32UI,
+    {
+      format: gl.RG,
+      types: [[gl.UNSIGNED_INT, 8]],
+    },
+  ],
+  [
+    gl.RG32I,
+    {
+      format: gl.RG,
+      types: [[gl.INT, 8]],
+    },
+  ],
+  [
     gl.RGB8,
     {
       format: gl.RGB,
@@ -128,6 +212,13 @@ const formatTable = new Map([
         [gl.UNSIGNED_BYTE, 3],
         [gl.UNSIGNED_SHORT_5_6_5, 2],
       ],
+    },
+  ],
+  [
+    gl.RGB8_SNORM,
+    {
+      format: gl.RGB,
+      types: [[gl.BYTE, 3]],
     },
   ],
   [
@@ -176,6 +267,41 @@ const formatTable = new Map([
     },
   ],
   [
+    gl.RGB8I,
+    {
+      format: gl.RGB_INTEGER,
+      types: [[gl.BYTE, 3]],
+    },
+  ],
+  [
+    gl.RGB16UI,
+    {
+      format: gl.RGB_INTEGER,
+      types: [[gl.UNSIGNED_SHORT, 6]],
+    },
+  ],
+  [
+    gl.RGB16I,
+    {
+      format: gl.RGB_INTEGER,
+      types: [[gl.SHORT, 6]],
+    },
+  ],
+  [
+    gl.RGB32UI,
+    {
+      format: gl.RGB_INTEGER,
+      types: [[gl.UNSIGNED_INT, 12]],
+    },
+  ],
+  [
+    gl.RGB32I,
+    {
+      format: gl.RGB_INTEGER,
+      types: [[gl.INT, 12]],
+    },
+  ],
+  [
     gl.RGBA8,
     {
       format: gl.RGBA,
@@ -190,6 +316,13 @@ const formatTable = new Map([
     },
   ],
   [
+    gl.RGBA8_SNORM,
+    {
+      format: gl.RGBA,
+      types: [[gl.BYTE, 4]],
+    },
+  ],
+  [
     gl.RGB5_A1,
     {
       format: gl.RGBA,
@@ -200,13 +333,6 @@ const formatTable = new Map([
     },
   ],
   [
-    gl.RGB10_A2,
-    {
-      format: gl.RGBA,
-      types: [[gl.UNSIGNED_INT_2_10_10_10_REV, 4]],
-    },
-  ],
-  [
     gl.RGBA4,
     {
       format: gl.RGBA,
@@ -214,6 +340,13 @@ const formatTable = new Map([
         [gl.UNSIGNED_BYTE, 2],
         [gl.UNSIGNED_SHORT_4_4_4_4, 2],
       ],
+    },
+  ],
+  [
+    gl.RGB10_A2,
+    {
+      format: gl.RGBA,
+      types: [[gl.UNSIGNED_INT_2_10_10_10_REV, 4]],
     },
   ],
   [
@@ -238,6 +371,48 @@ const formatTable = new Map([
     {
       format: gl.RGBA_INTEGER,
       types: [[gl.UNSIGNED_BYTE, 4]],
+    },
+  ],
+  [
+    gl.RGBA8I,
+    {
+      format: gl.RGBA_INTEGER,
+      types: [[gl.BYTE, 4]],
+    },
+  ],
+  [
+    gl.RGB10_A2UI,
+    {
+      format: gl.RGBA_INTEGER,
+      types: [[gl.UNSIGNED_INT_2_10_10_10_REV, 4]],
+    }
+  ],
+  [
+    gl.RGBA16UI,
+    {
+      format: gl.RGBA_INTEGER,
+      types: [[gl.UNSIGNED_SHORT, 8]],
+    },
+  ],
+  [
+    gl.RGBA16I,
+    {
+      format: gl.RGBA_INTEGER,
+      types: [[gl.SHORT, 8]],
+    },
+  ],
+  [
+    gl.RGBA32I,
+    {
+      format: gl.RGBA_INTEGER,
+      types: [[gl.INT, 16]],
+    },
+  ],
+  [
+    gl.RGBA32UI,
+    {
+      format: gl.RGBA_INTEGER,
+      types: [[gl.UNSIGNED_INT, 16]],
     },
   ],
 ]);
@@ -273,10 +448,7 @@ function convertPixels(pixels) {
     if (pixels instanceof ArrayBuffer) {
       return new Uint8Array(pixels);
     } else if (
-      pixels instanceof Uint8Array ||
-      pixels instanceof Uint16Array ||
-      pixels instanceof Uint8ClampedArray ||
-      pixels instanceof Float32Array
+      ArrayBuffer.isView(pixels)
     ) {
       return unpackTypedArray(pixels);
     } else if (pixels instanceof Buffer) {
