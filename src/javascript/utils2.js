@@ -443,16 +443,16 @@ function pixelSize(internalFormat, type) {
   return 0;
 }
 
-function convertPixels(pixels) {
+function convertPixels(pixels, offset = 0) {
   if (typeof pixels === 'object' && pixels !== null) {
     if (pixels instanceof ArrayBuffer) {
-      return new Uint8Array(pixels);
+      return new Uint8Array(pixels, offset);
     } else if (
       ArrayBuffer.isView(pixels)
     ) {
-      return unpackTypedArray(pixels);
+      return unpackTypedArray(pixels, offset);
     } else if (pixels instanceof Buffer) {
-      return new Uint8Array(pixels);
+      return new Uint8Array(pixels, offset);
     }
   }
   return null;

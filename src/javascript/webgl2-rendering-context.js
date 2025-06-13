@@ -1152,23 +1152,38 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
   }
 
   // 2718
-  readPixels(x, y, width, height, format, type, pixels) {
+  // WebGL 1.0 
+  // readPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, Uint8Array|Uint16Array|Float32Array pixels)
+  // WebGL 2.0
+  // readPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLint dstOffset)
+  // readPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, [AllowShared] ArrayBufferView pixels)
+  // readPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, [AllowShared] ArrayBufferView pixels, GLintptr dstOffset)
+  readPixels(x, y, width, height, format, type, pixels, dstOffset) {
     x |= 0;
     y |= 0;
     width |= 0;
     height |= 0;
 
-    if (!(type === gl.FLOAT && format === gl.RGBA)) {
-      if (format === gl.RGB || format === gl.ALPHA || type !== gl.UNSIGNED_BYTE) {
-        this.setError(gl.INVALID_OPERATION);
-        return;
-      } else if (format !== gl.RGBA) {
-        this.setError(gl.INVALID_ENUM);
-        return;
-      } else if (width < 0 || height < 0 || !(pixels instanceof Uint8Array)) {
-        this.setError(gl.INVALID_VALUE);
-        return;
-      }
+    if (!(format === gl.RGBA || format === gl.RGB || format === gl.ALPHA
+      || format === gl.RED || format === gl.RG || format === gl.RED_INTEGER || format === gl.RG_INTEGER
+      || format === gl.RGB_INTEGER || format === gl.RGBA_INTEGER)) {
+      this.setError(gl.INVALID_ENUM);
+      return;
+    }
+
+    if (!(type === gl.UNSIGNED_BYTE || type === gl.UNSIGNED_SHORT_5_6_5
+      || type === gl.UNSIGNED_SHORT_4_4_4_4 || type === gl.UNSIGNED_SHORT_5_5_5_1 || gl.FLOAT
+      || type === gl.BYTE || type === gl.UNSIGNED_INT_2_10_10_10_REV || gl.HALF_FLOAT
+      || type === gl.SHORT || type === gl.UNSIGNED_SHORT || type === gl.INT
+      || type === gl.UNSIGNED_INT || type === gl.UNSIGNED_INT_10F_11F_11F_REV || type === gl.UNSIGNED_INT_5_9_9_9_REV
+    )) {
+      this.setError(gl.INVALID_ENUM);
+      return;
+    }
+
+    if (width < 0 || height < 0) {
+      this.setError(gl.INVALID_VALUE);
+      return;
     }
 
     if (!this._framebufferOk()) {
@@ -1184,7 +1199,8 @@ class WebGL2RenderingContext extends WebGLRenderingContext {
     if (imageSize <= 0) {
       return;
     }
-    if (pixels.length < imageSize) {
+
+    if (pixels.byteLength < imageSize + dstOffset) {
       this.setError(gl.INVALID_VALUE);
       return;
     }

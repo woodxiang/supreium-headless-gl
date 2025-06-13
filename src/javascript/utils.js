@@ -122,8 +122,8 @@ function uniformTypeSize(type) {
   }
 }
 
-function unpackTypedArray(array) {
-  return new Uint8Array(array.buffer).subarray(array.byteOffset, array.byteLength + array.byteOffset);
+function unpackTypedArray(array, offset = 0) {
+  return new Uint8Array(array.buffer).subarray(offset + array.byteOffset, offset + array.byteLength + array.byteOffset);
 }
 
 function extractImageData(pixels) {
