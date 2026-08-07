@@ -20,6 +20,7 @@ const {
   typeSize,
   uniformTypeSize,
   extractImageData,
+  convertPixelFormats,
   isTypedArray,
   unpackTypedArray,
   convertPixels,
@@ -293,12 +294,18 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
     return null
   }
 
-  _isConstantBlendFunc (factor) {
+  _isConstantColorBlendFunc (factor) {
     return (
       factor === this.CONSTANT_COLOR ||
-      factor === this.ONE_MINUS_CONSTANT_COLOR ||
+      factor === this.ONE_MINUS_CONSTANT_COLOR
+    )
+  }
+
+  _isConstantAlphaBlendFunc (factor) {
+    return (
       factor === this.CONSTANT_ALPHA ||
-      factor === this.ONE_MINUS_CONSTANT_ALPHA)
+      factor === this.ONE_MINUS_CONSTANT_ALPHA
+    )
   }
 
   _isObject (object, method, Wrapper) {
@@ -629,6 +636,40 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
     }
   }
 
+  bindBufferBase (target, index, buffer) {
+    target |= 0
+    index |= 0
+    if (!checkObject(buffer)) {
+      throw new TypeError('bindBufferBase(GLenum, GLuint, WebGLBuffer)')
+    }
+
+    if (!buffer) {
+      return super.bindBufferBase(target, index, null)
+    } else if (buffer._pendingDelete) {
+      //
+    } else if (this._checkWrapper(buffer, WebGLBuffer)) {
+      return super.bindBufferBase(target, index, buffer._ | 0)
+    }
+  }
+
+  bindBufferRange (target, index, buffer, offset, size) {
+    target |= 0
+    index |= 0
+    offset |= 0
+    size |= 0
+    if (!checkObject(buffer)) {
+      throw new TypeError('bindBufferRange(GLenum, GLuint, WebGLBuffer, GLintptr, GLsizeiptr)')
+    }
+
+    if (!buffer) {
+      return super.bindBufferRange(target, index, null, offset, size)
+    } else if (buffer._pendingDelete) {
+      //
+    } else if (this._checkWrapper(buffer, WebGLBuffer)) {
+      return super.bindBufferRange(target, index, buffer._ | 0, offset, size)
+    }
+  }
+
   bindRenderbuffer (target, object) {
     if (!checkObject(object)) {
       throw new TypeError('bindRenderbuffer(GLenum, WebGLRenderbuffer)')
@@ -868,7 +909,8 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
       this.setError(this.INVALID_ENUM)
       return
     }
-    if (this._isConstantBlendFunc(sfactor) && this._isConstantBlendFunc(dfactor)) {
+    if ((this._isConstantColorBlendFunc(sfactor) && this._isConstantAlphaBlendFunc(dfactor)) ||
+      (this._isConstantColorBlendFunc(dfactor) && this._isConstantAlphaBlendFunc(sfactor))) {
       this.setError(this.INVALID_OPERATION)
       return
     }
@@ -893,8 +935,8 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
       return
     }
 
-    if ((this._isConstantBlendFunc(srcRGB) && this._isConstantBlendFunc(dstRGB)) ||
-      (this._isConstantBlendFunc(srcAlpha) && this._isConstantBlendFunc(dstAlpha))) {
+    if ((this._isConstantColorBlendFunc(srcRGB) && this._isConstantAlphaBlendFunc(dstRGB)) ||
+      (this._isConstantColorBlendFunc(dstRGB) && this._isConstantAlphaBlendFunc(srcRGB))) {
       this.setError(this.INVALID_OPERATION)
       return
     }
@@ -1980,6 +2022,20 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
     return null
   }
 
+  getUniformBlockIndex (program, uniformBlockName) {
+    if (!checkObject(program)) {
+      throw new TypeError('getUniformBlockIndex(WebGLProgram, String)')
+    }
+    if (!program) {
+      this.setError(this.INVALID_VALUE)
+      return this.INVALID_INDEX || 0xffffffff
+    } else if (this._checkWrapper(program, WebGLProgram)) {
+      uniformBlockName += ''
+      return super.getUniformBlockIndex(program._ | 0, uniformBlockName)
+    }
+    return this.INVALID_INDEX || 0xffffffff
+  }
+
   getVertexAttrib (index, pname) {
     index |= 0
     pname |= 0
@@ -2296,6 +2352,8 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
       width = pixels.width
       height = pixels.height
       pixels = pixels.data
+
+      pixels = convertPixelFormats(this, pixels, this.RGBA, format)
     }
 
     target |= 0
@@ -2366,6 +2424,8 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
       width = pixels.width
       height = pixels.height
       pixels = pixels.data
+
+      pixels = convertPixelFormats(this, pixels, this.RGBA, format)
     }
 
     if (typeof pixels !== 'object') {
@@ -2384,6 +2444,27 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
       format,
       type,
       data)
+  }
+
+  texSubImage3D (target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels) {
+    if (pixels === null || pixels === undefined) {
+      return
+    }
+
+    if (typeof pixels !== 'object') {
+      throw new TypeError('texSubImage3D(GLenum, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLenum, GLenum, Uint8Array)')
+    }
+
+    if (
+      typeof pixels.width !== 'undefined' &&
+      typeof pixels.height !== 'undefined'
+    ) {
+      pixels = extractImageData(pixels).data
+      pixels = convertPixelFormats(this, pixels, this.RGBA, format)
+    }
+    const data = convertPixels(pixels)
+
+    super.texSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data)
   }
 
   texParameterf (target, pname, param) {
@@ -2744,6 +2825,19 @@ class WebGLRenderingContextHelper extends NativeWebGLRenderingContext {
       return
     }
     this.uniform4i(location, value[0], value[1], value[2], value[3])
+  }
+
+  uniformBlockBinding (program, uniformBlockIndex, uniformBlockBinding) {
+    if (!checkObject(program)) {
+      throw new TypeError('uniformBlockBinding(WebGLProgram, GLuint, GLuint)')
+    }
+    if (!program) {
+      this.setError(this.INVALID_VALUE)
+    } else if (this._checkWrapper(program, WebGLProgram)) {
+      uniformBlockIndex |= 0
+      uniformBlockBinding |= 0
+      return super.uniformBlockBinding(program._ | 0, uniformBlockIndex, uniformBlockBinding)
+    }
   }
 
   _checkUniformMatrix (location, transpose, value, name, count) {
